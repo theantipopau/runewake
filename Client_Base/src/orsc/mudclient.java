@@ -456,10 +456,11 @@ public final class mudclient implements Runnable {
 	private int[] experienceArray = new int[S_PLAYER_LEVEL_LIMIT];
 	private int fatigueSleeping = 0;
 	private int fatigueSleepingAuthentic = 0;
-	private int gameHeight = 334;
+	private int gameHeight = 720;
 	private int gameObjectInstanceCount = 0;
 	private final int[] gameObjectInstanceZ = new int[5000];
-	private int gameWidth = 512;
+	private int gameWidth = 1280;
+	private float uiScale = Math.min(1280 / 512.0f, 720 / 334.0f);
 	private int groundItemCount = 0;
 	private boolean inputX_Focused = true;
 	private int inputX_Height = 0;
@@ -513,7 +514,7 @@ public final class mudclient implements Runnable {
 	private int cameraAutoMoveFrameCount = 0;
 	private int m_Oj = 0;
 	private int cameraAutoMoveAmountZ = 2;
-	private int m_qd = 9;
+	private int m_qd = 10;
 	private int m_rc = 0;
 	private int controlButtonAppearanceBottom1;
 	private int m_rf;
@@ -1839,9 +1840,9 @@ public final class mudclient implements Runnable {
 			this.getSurface().drawBox(26, y, 460, 60, 0);
 			this.getSurface().drawBoxBorder(26, y, 460, 60, 0xFFFFFF);
 			y += 22;
-			this.getSurface().drawColoredStringCentered(256, "Please enter your question", 0xFFFFFF, 0, 4, y);
+			this.getSurface().drawColoredStringCentered(halfGameWidth(), "Please enter your question", 0xFFFFFF, 0, 4, y);
 			y += 25;
-			this.getSurface().drawColoredStringCentered(256, this.chatMessageInput + "*", 0xFFFFFF, 0, 4, y);
+			this.getSurface().drawColoredStringCentered(halfGameWidth(), this.chatMessageInput + "*", 0xFFFFFF, 0, 4, y);
 		}
 
 		this.getSurface().drawSprite(spriteSelect(GUIPARTS.BLUEBAR.getDef()), 0, this.gameHeight);
@@ -4878,13 +4879,13 @@ public final class mudclient implements Runnable {
 					this.getSurface().fade2black(16316665);
 					if (Math.random() < 0.15D) {
 						this.getSurface().drawColoredStringCentered((int) (Math.random() * 80.0D), "ZZZ",
-							(int) (1.6777215E7D * Math.random()), 0, 5, (int) (334.0D * Math.random()));
+							(int) (1.6777215E7D * Math.random()), 0, 5, (int) ((double) getGameHeight() * Math.random()));
 					}
 
 					if (0.15D > Math.random()) {
 						this.getSurface().drawColoredStringCentered(getGameWidth() - (int) (80.0D * Math.random()),
 							"ZZZ", (int) (Math.random() * 1.6777215E7D), var1 ^ 13, 5,
-							(int) (334.0D * Math.random()));
+							(int) ((double) getGameHeight() * Math.random()));
 					}
 					//"*"
 					this.getSurface().drawBox(this.halfGameWidth() - 100, 160 - (isAndroid() ? 80 : 0), 200, 40, 0);
@@ -5234,9 +5235,16 @@ public final class mudclient implements Runnable {
 							}
 						} else {
 							this.scene.fogZFalloff = 1;
-							this.scene.fogLandscapeDistance = cameraZoom * 6;
-							this.scene.fogEntityDistance = cameraZoom * 6;
-							this.scene.fogSmoothingStartDistance = cameraZoom * 6;
+							this.scene.fogLandscapeDistance = cameraZoom * 6 + (gameWidth - 512) * 2;
+							this.scene.fogEntityDistance = cameraZoom * 6 + (gameWidth - 512) * 2;
+							this.scene.fogSmoothingStartDistance = cameraZoom * 6 + (gameWidth - 512) * 2 - 100;
+							if (this.frameCounter % 100 == 0) {
+								System.out.println("[FOG DEBUG] gameWidth=" + gameWidth + " cameraZoom=" + cameraZoom
+									+ " fogLandscapeDistance=" + this.scene.fogLandscapeDistance
+									+ " fogEntityDistance=" + this.scene.fogEntityDistance
+									+ " fogSmoothingStartDistance=" + this.scene.fogSmoothingStartDistance
+									+ " fogZFalloff=" + this.scene.fogZFalloff);
+							}
 						}
 
 						centerX = this.cameraPositionX + this.cameraAutoMoveX;
@@ -5306,11 +5314,11 @@ public final class mudclient implements Runnable {
 						centerZ = centerX / 60;
 						centerX %= 60;
 						if (centerX < 10) {
-							this.getSurface().drawColoredStringCentered(256,
+							this.getSurface().drawColoredStringCentered(halfGameWidth(),
 								"Automatic server restart in: " + centerZ + ":0" + centerX, 0xFFFF00, 0, 1,
 								this.getGameHeight() - 7);
 						} else {
-							this.getSurface().drawColoredStringCentered(256,
+							this.getSurface().drawColoredStringCentered(halfGameWidth(),
 								"Automatic server restart in: " + centerZ + ":" + centerX, 0xFFFF00, 0, 1,
 								this.getGameHeight() - 7);
 						}
@@ -5347,9 +5355,10 @@ public final class mudclient implements Runnable {
 						int Offset = 0;
 						for (KillAnnouncer notify : killQueue.Kill) {
 							int picture_width = 20;
-							int width_killed = 507 - this.getSurface().stringWidth(1, notify.killedString);
-							int width_icon = 507 - this.getSurface().stringWidth(1, notify.killedString) - picture_width - 5;
-							int width_killer = 507 - this.getSurface().stringWidth(1, notify.killedString) - picture_width - 8 - this.getSurface().stringWidth(1, notify.killerString);
+							int killFeedRight = getGameWidth() - 5;
+							int width_killed = killFeedRight - this.getSurface().stringWidth(1, notify.killedString);
+							int width_icon = killFeedRight - this.getSurface().stringWidth(1, notify.killedString) - picture_width - 5;
+							int width_killer = killFeedRight - this.getSurface().stringWidth(1, notify.killedString) - picture_width - 8 - this.getSurface().stringWidth(1, notify.killerString);
 
 							this.getSurface().drawString(notify.killerString, width_killer, 50 + Offset, 0xffffff, 1);
 							switch (notify.killPicture) {
@@ -8011,7 +8020,7 @@ public final class mudclient implements Runnable {
 				this.packetHandler.handlePacket2(-79, -83);
 			}
 
-			int var3 = this.getSurface().width2 - 248;
+			int var3 = this.getSurface().width2 - ui(248);
 			int xOffset = var3;
 			if (!C_CUSTOM_UI)
 				this.getSurface().drawSprite(spriteSelect(GUIPARTS.BAGTAB.getDef()), var3, 3);
@@ -8019,19 +8028,19 @@ public final class mudclient implements Runnable {
 			int var4;
 			int var5;
 			int id;
-			int yOffset = 36;
+			int yOffset = ui(36);
 			if (C_CUSTOM_UI)
-				yOffset = maxY - 228;
+				yOffset = maxY - ui(228);
 
 			if (this.tabEquipmentIndex == 0) //inventory tab
 			{
 				for (var4 = 0; this.m_cl > var4; ++var4) {
-					var5 = var3 + var4 % 5 * 49;
-					id = var4 / 5 * 34 + yOffset;
+					var5 = var3 + var4 % 5 * ui(49);
+					id = var4 / 5 * ui(34) + yOffset;
 					if (!S_WANT_EQUIPMENT_TAB && this.inventoryItemCount > var4 && getInventoryItemEquippedID(var4) == 1) {
-						this.getSurface().drawBoxAlpha(var5, id, 49, 34, 0xFF0000, 128);
+						this.getSurface().drawBoxAlpha(var5, id, ui(49), ui(34), 0xFF0000, 128);
 					} else {
-						this.getSurface().drawBoxAlpha(var5, id, 49, 34, GenUtil.buildColor(181, 181, 181), 128);
+						this.getSurface().drawBoxAlpha(var5, id, ui(49), ui(34), GenUtil.buildColor(181, 181, 181), 128);
 					}
 
 					if (var4 < this.inventoryItemCount) {
@@ -8043,43 +8052,43 @@ public final class mudclient implements Runnable {
 							if (S_WANT_CERT_AS_NOTES) {
 								this.getSurface().drawSpriteClipping(
 									spriteSelect(EntityHandler.noteDef),
-									var5, id, 48, 32, EntityHandler.noteDef.getPictureMask(), 0,
+									var5, id, ui(48), ui(32), EntityHandler.noteDef.getPictureMask(), 0,
 									EntityHandler.noteDef.getBlueMask(), false, 0, var1 ^ -15251);
-								getSurface().drawSpriteClipping(spriteSelect(def), var5 + 7,
-									id + 4, 33, 23, def.getPictureMask(), 0,
+								getSurface().drawSpriteClipping(spriteSelect(def), var5 + ui(7),
+									id + ui(4), ui(33), ui(23), def.getPictureMask(), 0,
 									def.getBlueMask(), false, 0, 1);
 							} else {
 								this.getSurface().drawSpriteClipping(
 									spriteSelect(EntityHandler.certificateDef),
-									var5, id, 48, 32, EntityHandler.certificateDef.getPictureMask(), 0,
+									var5, id, ui(48), ui(32), EntityHandler.certificateDef.getPictureMask(), 0,
 									EntityHandler.certificateDef.getBlueMask(), false, 0, var1 ^ -15251);
 							}
 						} else {
 							this.getSurface().drawSpriteClipping(
 								spriteSelect(def),
-								var5, id, 48, 32, def.getPictureMask(), 0,
+								var5, id, ui(48), ui(32), def.getPictureMask(), 0,
 								def.getBlueMask(), false, 0, var1 ^ -15251);
 						}
 
 						if (def.isStackable()) {
-							this.getSurface().drawString("" + getInventoryItemSize(var4), 1 + var5,
-								id + 10, 0xFFFF00, 1);
+							this.getSurface().drawString("" + getInventoryItemSize(var4), ui(1) + var5,
+								id + ui(10), 0xFFFF00, 1);
 						}
 					}
 				}
 
 				for (var4 = 1; var4 <= 4; ++var4) {
-					this.getSurface().drawLineVert(var3 + var4 * 49, yOffset, 0, this.m_cl / 5 * 34);
+					this.getSurface().drawLineVert(var3 + var4 * ui(49), yOffset, 0, this.m_cl / 5 * ui(34));
 				}
 
 				for (var4 = 1; this.m_cl / 5 - 1 >= var4; ++var4) {
-					this.getSurface().drawLineHoriz(var3, yOffset + var4 * 34, 245, 0);
+					this.getSurface().drawLineHoriz(var3, yOffset + var4 * ui(34), ui(245), 0);
 				}
 				if (var2) {
-					var3 = 248 + (this.mouseX - this.getSurface().width2);
+					var3 = ui(248) + (this.mouseX - this.getSurface().width2);
 					var4 = this.mouseY - yOffset;
-					if (var3 >= 0 && var4 >= 0 && var3 < 248 && this.m_cl / 5 * 34 > var4) {
-						var5 = var4 / 34 * 5 + var3 / 49;
+					if (var3 >= 0 && var4 >= 0 && var3 < ui(248) && this.m_cl / 5 * ui(34) > var4) {
+						var5 = var4 / ui(34) * 5 + var3 / ui(49);
 						if (this.inventoryItemCount > var5) {
 							id = getInventoryItemID(var5);
 							Item item = getInventoryItem(var5);
@@ -11497,6 +11506,7 @@ public final class mudclient implements Runnable {
 		}
 		gameWidth = resizeWidth;
 		gameHeight = resizeHeight - 12;
+		uiScale = Math.min(gameWidth / 512.0f, gameHeight / 334.0f);
 
 		resizeWidth = resizeHeight = -1;
 
@@ -14444,7 +14454,7 @@ public final class mudclient implements Runnable {
 					this.world.playerAlive = true;
 					return false;
 				} else {
-					this.getSurface().drawColoredStringCentered(256, "Loading... Please wait", 0xFFFFFF, 0, 1, 192);
+					this.getSurface().drawColoredStringCentered(halfGameWidth(), "Loading... Please wait", 0xFFFFFF, 0, 1, 192);
 					this.drawChatMessageTabs(5);
 					// this.getSurface().draw(this.graphics, this.screenOffsetX,
 					// 256, this.screenOffsetY);
@@ -17679,6 +17689,11 @@ public final class mudclient implements Runnable {
 
 	private int halfGameWidth() {
 		return gameWidth / 2;
+	}
+
+	// Scales a legacy 512x334-baseline UI pixel dimension to the live resolution.
+	private int ui(int px) {
+		return Math.round(px * uiScale);
 	}
 
 	public int getGameHeight() {

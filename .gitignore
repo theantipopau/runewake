@@ -155,3 +155,10 @@ server/ipbans.txt
 server/ipbans.temp
 server/ipmutes.txt
 server/ipmutes.temp
+
+# Local SQLite game databases (contain local dev/test player save state)
+server/inc/sqlite/*.db
+
+# Local dev run logs
+Client_Base/client_log*.txt
+server/server_log.txt

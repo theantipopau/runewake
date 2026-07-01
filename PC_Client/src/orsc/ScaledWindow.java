@@ -108,7 +108,7 @@ public class ScaledWindow extends JFrame implements WindowListener, FocusListene
 		}
 
 		// Set minimum size to applet size
-		setMinimumSize(new Dimension(512, 346));
+		setMinimumSize(new Dimension(1280, 732));
 
 		// Default icon, will be overridden later
 		setIconImage(Utils.getImage("icon.png").getImage());
@@ -136,8 +136,8 @@ public class ScaledWindow extends JFrame implements WindowListener, FocusListene
 		Dimension maxEffectiveWindowSize = getMaximumEffectiveWindowSize();
 		int maxRenderingScalar = 1;
 		for (int i = 6; i >= 1; i--) {
-			float width = 512 * i;
-			float height = 346 * i;
+			float width = 1280 * i;
+			float height = 732 * i;
 
 			if (width <= maxEffectiveWindowSize.width && height <= maxEffectiveWindowSize.height) {
 				maxRenderingScalar = i + 1;
@@ -329,7 +329,7 @@ public class ScaledWindow extends JFrame implements WindowListener, FocusListene
 
 	/** Determines the minimum window size for the applet based on the scalar */
 	public Dimension getMinimumViewportSizeForScalar() {
-		return new Dimension(Math.round(512 * mudclient.renderingScalar), Math.round(346 * mudclient.renderingScalar));
+		return new Dimension(Math.round(1280 * mudclient.renderingScalar), Math.round(732 * mudclient.renderingScalar));
 	}
 
 	/** Resizes the applet contained within {@link OpenRSC} */
