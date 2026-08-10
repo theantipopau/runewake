@@ -1083,6 +1083,38 @@ wall geometry specifically (not floors).
   standing instruction to keep the current play session alive; pick up the
   fix via `run-client.bat` on next relaunch.
 
+## 7m. Server browser `/status` endpoint: found and fixed a real crash (2026-08-10)
+
+Deployed the server browser to GitHub Pages this session
+(`https://theantipopau.github.io/runewake/`), then started a local test
+server to verify the `/status` endpoint end-to-end for the first time (it
+had only been compile-checked before, never actually run — see section A's
+original "not yet tested against a live running server" note).
+
+- [x] **`RSCMultiPortDecoder.addWebHandlerStack()` crashed every websocket-port
+  connection when no SSL certificate is configured** — which is the
+  documented default/simple-hosting case (`Server.java:490-492` logs a WARN
+  and intentionally proceeds without SSL when `SSL_SERVER_CERT_PATH`/
+  `SSL_SERVER_KEY_PATH` are empty). The handler unconditionally built a
+  `new OptionalSslHandler(this.server.getSSLContext())` — but
+  `OptionalSslHandler` requires a non-null `SslContext` to do its job
+  (auto-detecting TLS vs. plaintext), so a null context threw
+  `NullPointerException: sslContext` on the very first byte of *every*
+  connection to the WS port, including `/status`. Confirmed by actually
+  running the server and curling the endpoint (`curl` got "Empty reply from
+  server"; the log showed the NPE). This silently broke the server browser
+  entirely for anyone following `SIMPLE_HOSTING.md`'s plain no-cert path —
+  exactly the path the docs describe as the easy default.
+  **Fix**: only add the `OptionalSslHandler` when a real SSL context exists;
+  without one, every connection on that port is necessarily plaintext
+  ws/http anyway, so skip straight to the plain HTTP/WS stack. Verified
+  fixed by rebuilding and re-testing: `/status` now returns
+  `{"serverName":"RuneWake","players":0,"uptimeMillis":...}` with no
+  exception logged. This was blocking both the WS game connection path and
+  the HTTP status endpoint whenever no cert is configured — likely the
+  actual reason websocket/webclient connections never worked for anyone
+  running the simple no-SSL setup, not just a server-browser-specific bug.
+
 ## 8. Suggested next session
 
 Pick based on what actually bothered you most after testing this build:

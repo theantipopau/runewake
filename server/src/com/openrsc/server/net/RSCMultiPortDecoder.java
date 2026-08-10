@@ -52,7 +52,14 @@ public final class RSCMultiPortDecoder extends ByteToMessageDecoder implements A
 	}
 
 	private void addWebHandlerStack(ChannelHandlerContext ctx) {
-		ctx.pipeline().addFirst(new OptionalSslHandler(this.server.getSSLContext()));
+		// getSSLContext() is null whenever no SSL_SERVER_CERT_PATH/KEY_PATH is configured
+		// (the default/simple-hosting case, logged as a WARN at startup, not an error) -
+		// OptionalSslHandler requires a non-null context to auto-detect TLS vs plaintext,
+		// so only add it when one is actually available. Without a cert, every connection
+		// on this port is necessarily plaintext ws/http, so skip straight to that stack.
+		if (this.server.getSSLContext() != null) {
+			ctx.pipeline().addFirst(new OptionalSslHandler(this.server.getSSLContext()));
+		}
 		ctx.pipeline().addBefore(Server.rscConnectionHandlerId, "httpcodec", new HttpServerCodec());
 		ctx.pipeline().addBefore(Server.rscConnectionHandlerId, "aggregator", new HttpObjectAggregator(65536));
 		ctx.pipeline().addBefore(Server.rscConnectionHandlerId, "httphandler", new HttpRequestHandler("/", this.server));
