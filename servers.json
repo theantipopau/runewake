@@ -1,0 +1,8 @@
+[
+  {
+    "name": "Local test server",
+    "statusUrl": "http://localhost:43494/status",
+    "connectHost": "localhost",
+    "connectPort": 43594
+  }
+]
