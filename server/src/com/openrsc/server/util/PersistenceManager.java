@@ -30,20 +30,16 @@ public final class PersistenceManager {
 	}
 
 	public Object load(String filename) {
-		try {
-			File theFile = new File(getServer().getConfig().CONFIG_DIR, filename);
-			boolean isGzipped = false;
-			if (!theFile.exists()) {
-				// fallback for old servers using .gz definitions
-				theFile = new File(getServer().getConfig().CONFIG_DIR, filename + ".gz");
-				isGzipped = true;
-			}
-			InputStream is = new FileInputStream(theFile);
-			if (isGzipped) {
-				is = new GZIPInputStream(is);
-			}
-			Object rv = xstream.fromXML(is);
-			return rv;
+		File theFile = new File(getServer().getConfig().CONFIG_DIR, filename);
+		boolean isGzipped = false;
+		if (!theFile.exists()) {
+			// fallback for old servers using .gz definitions
+			theFile = new File(getServer().getConfig().CONFIG_DIR, filename + ".gz");
+			isGzipped = true;
+		}
+		try (InputStream fileStream = new FileInputStream(theFile);
+			 InputStream is = isGzipped ? new GZIPInputStream(fileStream) : fileStream) {
+			return xstream.fromXML(is);
 		} catch (IOException ioe) {
 			LOGGER.catching(ioe);
 		}
@@ -51,9 +47,8 @@ public final class PersistenceManager {
 	}
 
 	protected void setupAliases() {
-		try {
+		try (FileInputStream fis = new FileInputStream(new File(getServer().getConfig().CONFIG_DIR, "aliases.xml"))) {
 			Properties aliases = new Properties();
-			FileInputStream fis = new FileInputStream(new File(getServer().getConfig().CONFIG_DIR, "aliases.xml"));
 			aliases.loadFromXML(fis);
 			for (Enumeration<?> e = aliases.propertyNames(); e.hasMoreElements(); ) {
 				String alias = (String) e.nextElement();
@@ -66,11 +61,8 @@ public final class PersistenceManager {
 	}
 
 	public void write(String filename, Object o) {
-		try {
-			OutputStream os = new FileOutputStream(new File(getServer().getConfig().CONFIG_DIR, filename));
-			if (filename.endsWith(".gz")) {
-				os = new GZIPOutputStream(os);
-			}
+		try (OutputStream fileStream = new FileOutputStream(new File(getServer().getConfig().CONFIG_DIR, filename));
+			 OutputStream os = filename.endsWith(".gz") ? new GZIPOutputStream(fileStream) : fileStream) {
 			xstream.toXML(o, os);
 		} catch (IOException ioe) {
 			LOGGER.catching(ioe);

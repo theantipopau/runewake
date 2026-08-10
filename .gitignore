@@ -116,6 +116,7 @@ Android_Client/.idea/
 
 PC_Launcher/OpenRSC.jar
 PC_Launcher/Cache/
+PC_Launcher/bin/
 
 server/.idea/
 server/server.iml

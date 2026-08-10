@@ -549,7 +549,7 @@ public class EntityHandler {
 		sprites = new int[]{0, 1, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 		npcs.add(new NPCDef("Urhney", "He looks a little grumpy", "", 10, 10, 3, 10, false, sprites, 1, 2105376, 3, 15523536, 145, 220, 6, 6, 5, i++));
 		sprites = new int[]{0, 1, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1};
-		npcs.add(new NPCDef("Man", "One of runescapes many citizens", "pickpocket", 11, 8, 7, 11, true, sprites, 1, 2, 3, 15523536, 145, 220, 6, 6, 5, i++));
+		npcs.add(new NPCDef("Man", "One of Runewakes many citizens", "pickpocket", 11, 8, 7, 11, true, sprites, 1, 2, 3, 15523536, 145, 220, 6, 6, 5, i++));
 		sprites = new int[]{0, 1, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 		npcs.add(new NPCDef("Bartender", "I could get a beer off him", "", 0, 0, 3, 0, false, sprites, 1, 8409120, 8409120, 15523536, 145, 220, 6, 6, 5, i++));
 		sprites = new int[]{127, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
@@ -679,7 +679,7 @@ public class EntityHandler {
 		sprites = new int[]{6, 1, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 		npcs.add(new NPCDef("silk trader", "He sells silk", "", 0, 0, 3, 0, false, sprites, 3158064, 16724172, 16724172, 13415270, 145, 220, 6, 6, 5, i++));
 		sprites = new int[]{0, 1, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1};
-		npcs.add(new NPCDef("Man", "One of Runescapes many citizens", "pickpocket", 11, 8, 7, 11, true, sprites, 1, 2, 3, 13415270, 145, 220, 6, 6, 5, i++));
+		npcs.add(new NPCDef("Man", "One of Runewakes many citizens", "pickpocket", 11, 8, 7, 11, true, sprites, 1, 2, 3, 13415270, 145, 220, 6, 6, 5, i++));
 		sprites = new int[]{0, 1, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 		npcs.add(new NPCDef("Guide", "He gives hints to new adventurers", "", 0, 0, 7, 0, false, sprites, 1, 32768, 8388863, 13415270, 145, 220, 6, 6, 5, i++));
 		sprites = new int[]{125, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
@@ -1248,7 +1248,7 @@ public class EntityHandler {
 		sprites = new int[]{0, 4, 38, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 		npcs.add(new NPCDef("Customs Official", "She's here to stop smugglers", "", 23, 12, 15, 14, false, sprites, 1, 2, 3, 9461792, 145, 220, 6, 6, 5, i++));
 		sprites = new int[]{0, 1, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1};
-		npcs.add(new NPCDef("Man", "One of Runescape's citizens", "pickpocket", 11, 8, 7, 11, true, sprites, 1, 2, 3, 15523536, 145, 220, 6, 6, 5, i++));
+		npcs.add(new NPCDef("Man", "One of Runewake's citizens", "pickpocket", 11, 8, 7, 11, true, sprites, 1, 2, 3, 15523536, 145, 220, 6, 6, 5, i++));
 		sprites = new int[]{0, 1, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 		npcs.add(new NPCDef("farmer", "An humble peasant", "pickpocket", 15, 16, 12, 18, true, sprites, 11167296, 8409120, 3, 15523536, 145, 220, 6, 6, 5, i++));
 		sprites = new int[]{3, 56, 38, -1, 109, -1, -1, -1, -1, -1, -1, -1};
@@ -1580,7 +1580,7 @@ public class EntityHandler {
 		sprites = new int[]{165, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 		npcs.add(new NPCDef("King Black Dragon", "The biggest meanest dragon around", "", 250, 240, 240, 250, true, sprites, 0, 0, 0, 0, 542, 391, 10, 7, 84, i++));
 		sprites = new int[]{0, 1, 2, -1, -1, 8, -1, -1, -1, -1, 9, -1};
-		npcs.add(new NPCDef("cooking instructor", "Talk to him to learn about runescape food", "", 20, 20, 3, 20, false, sprites, 1, 16777215, 16777215, 15523536, 145, 220, 6, 6, 5, i++));
+		npcs.add(new NPCDef("cooking instructor", "Talk to him to learn about Runewake food", "", 20, 20, 3, 20, false, sprites, 1, 16777215, 16777215, 15523536, 145, 220, 6, 6, 5, i++));
 		sprites = new int[]{6, 1, 2, -1, -1, -1, -1, -1, 46, -1, -1, -1};
 		npcs.add(new NPCDef("fishing instructor", "He smells of fish", "", 15, 16, 12, 18, false, sprites, 11167296, 8409120, 3, 13415270, 145, 230, 6, 6, 5, i++));
 		sprites = new int[]{7, 1, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1};
@@ -3139,7 +3139,7 @@ public class EntityHandler {
 		items.add(new ItemDef("Swamp paste", "A tar like substance mixed with flour and warmed", "", 30, 263, "items:263", true, false, 0, 12303291, true, false, false, 785));
 		items.add(new ItemDef("Oyster pearl bolts", "Great if you have a crossbow!", "", 110, 266, "items:266", true, Config.S_WANT_EQUIPMENT_TAB, Config.S_WANT_EQUIPMENT_TAB ? 1001 : 0, 0, true, false, false, 786));
 		items.add(new ItemDef("Glarials pebble", "A small pebble with elven inscription", "", 1, 264, "items:264", false, false, 0, 12303291, true, true, false, 787));
-		items.add(new ItemDef("book on baxtorian", "A book on elven history in north runescape", "read", 2, 28, "items:28", false, false, 0, 0, true, true, false, 788));
+		items.add(new ItemDef("book on baxtorian", "A book on elven history in north Runewake", "read", 2, 28, "items:28", false, false, 0, 0, true, true, false, 788));
 		items.add(new ItemDef("large key", "I wonder what this is the key to", "", 1, 25, "items:25", false, false, 0, 16750848, true, true, false, 789));
 		items.add(new ItemDef("Oyster pearl bolt tips", "Can be used to improve crossbow bolts", "", 56, 265, "items:265", true, false, 0, 12303291, true, false, false, 790));
 		items.add(new ItemDef("oyster", "It's empty", "", 5, 267, "items:267", false, false, 0, 0, true, false, true, 791));
@@ -3376,7 +3376,7 @@ public class EntityHandler {
 		items.add(new ItemDef("Slaves Robe Bottom", "A dirty desert skirt", "", 40, 88, "items:88", false, true, 128, 8421376, true, false, true, 1022));
 		items.add(new ItemDef("Slaves Robe Top", "A dirty desert shirt", "", 40, 87, "items:87", false, true, 64, 8421376, true, false, true, 1023));
 		items.add(new ItemDef("Steel Throwing Dart", "A deadly throwing dart with a steel tip.", "", 20, 231, "items:231", true, true, 16, 15658734, true, false, false, 1024));
-		items.add(new ItemDef("Astrology Book", "A book on Astrology in runescape", "Read", 2, 28, "items:28", false, false, 0, 0, true, true, false, 1025));
+		items.add(new ItemDef("Astrology Book", "A book on Astrology in Runewake", "Read", 2, 28, "items:28", false, false, 0, 0, true, true, false, 1025));
 		items.add(new ItemDef("Unholy Symbol mould", "use this with silver in a furnace", "", 200, 349, "items:349", false, false, 0, 0, true, true, true, 1026));
 		items.add(new ItemDef("Unholy Symbol of Zamorak", "this needs stringing", "", 200, 350, "items:350", false, false, 0, 0, true, true, true, 1027));
 		items.add(new ItemDef("Unblessed Unholy Symbol of Zamorak", "this needs blessing", "", 200, 351, "items:351", false, true, 1024, 0, true, true, true, 1028));
@@ -5761,7 +5761,7 @@ public class EntityHandler {
 		objects.add(new GameObjectDef("Coffin", "This coffin is open", "Search", "Close", 1, 2, 2, 0, "coffin2", i++));
 		objects.add(new GameObjectDef("gate", "You can pass through this on the members server", "open", "Examine", 2, 1, 2, 0, "metalgateclosed", i++));
 		objects.add(new GameObjectDef("gate", "You can pass through this on the members server", "open", "Examine", 2, 1, 2, 0, "metalgateclosed", i++));
-		objects.add(new GameObjectDef("sign", "The Bank of runescape", "WalkTo", "Examine", 0, 1, 1, 0, "shopsign", i++));
+		objects.add(new GameObjectDef("sign", "The Bank of Runewake", "WalkTo", "Examine", 0, 1, 1, 0, "shopsign", i++));
 		objects.add(new GameObjectDef("cupboard", "The cupboard is shut", "open", "Examine", 1, 1, 2, 0, "cupboard", i++));
 		objects.add(new GameObjectDef("cupboard", "Perhaps I should search it", "Search", "close", 1, 1, 2, 0, "cupboardopen", i++));
 		objects.add(new GameObjectDef("doors", "The doors are shut", "Open", "Examine", 2, 1, 2, 0, "doubledoorsclosed", i++));

@@ -39,6 +39,8 @@ public class GraphicsController {
 	// public int[] image2D_setParam3;
 	// public byte[][] spriteColours;
 	public boolean loggedIn = false;
+	/** Kept in sync with {@link mudclient#uiScale} every frame; feeds {@link #fontScale()}. */
+	public float uiScale = 1.0f;
 	public int height2;
 	public int[] pixelData;
 	public int width2;
@@ -147,59 +149,176 @@ public class GraphicsController {
 		this.width2 = width;
 	}
 
+	/**
+	 * Font-specific scale factor, deliberately dampened relative to {@link #uiScale}.
+	 * The rest of the UI scales 1:1 with window size, but the client enforces a
+	 * minimum window of 1280x732, which alone already puts {@code uiScale} above
+	 * 2x — scaling text at that same rate makes it look oversized at any window
+	 * size, since there's no smaller end of the range to compare against. Using
+	 * {@code sqrt(uiScale)} keeps text legible at the enforced minimum (~1.47x
+	 * instead of ~2.15x+) while still growing, just more gently, on larger windows.
+	 */
+	private float fontScale() {
+		return this.uiScale <= 1.0f ? 1.0f : (float) Math.sqrt(this.uiScale);
+	}
+
 	private void plotCharacter(boolean antiAliased, byte[] fontData, int x, int color, int indexAddr, int y) {
 		try {
 
-			int width = fontData[indexAddr + 3];
-			int height = fontData[indexAddr + 4];
-			int left = x + fontData[indexAddr + 5];
-			int top = y - fontData[indexAddr + 6];
-			int dataAddr = (fontData[indexAddr] << 14) + (fontData[indexAddr + 1] << 7) + fontData[indexAddr + 2];
-			int startPixel = left + top * this.width2;
+			float fontScale = this.fontScale();
+			if (fontScale <= 1.0f) {
+				// Baseline (unscaled) path, left byte-for-byte identical to the original renderer.
+				int width = fontData[indexAddr + 3];
+				int height = fontData[indexAddr + 4];
+				int left = x + fontData[indexAddr + 5];
+				int top = y - fontData[indexAddr + 6];
+				int dataAddr = (fontData[indexAddr] << 14) + (fontData[indexAddr + 1] << 7) + fontData[indexAddr + 2];
+				int startPixel = left + top * this.width2;
 
-			int rowStride = this.width2 - width;
-			if (top < this.clipTop) {
-				int lost = this.clipTop - top;
-				dataAddr += lost * width;
-				startPixel += this.width2 * lost;
-				height -= lost;
-				top = this.clipTop;
-			}
-
-			if (top + height >= this.clipBottom) {
-				height -= 1 + top + height - this.clipBottom;
-			}
-
-			int srcStride = 0;
-			if (this.clipLeft > left) {
-				int lost = this.clipLeft - left;
-				srcStride += lost;
-				width -= lost;
-				dataAddr += lost;
-				left = this.clipLeft;
-				rowStride += lost;
-				startPixel += lost;
-			}
-
-			if (this.clipRight <= width + left) {
-				int lost = width + left - this.clipRight + 1;
-				rowStride += lost;
-				srcStride += lost;
-				width -= lost;
-			}
-
-			if (width > 0 && height > 0) {
-				if (antiAliased) {
-					this.plotLetterAntialiased(fontData, color, width, startPixel, height, srcStride, rowStride,
-						this.pixelData, dataAddr);
-				} else {
-					this.plotLetter(color, this.pixelData, startPixel, rowStride, height, width, dataAddr, fontData,
-						srcStride);
+				int rowStride = this.width2 - width;
+				if (top < this.clipTop) {
+					int lost = this.clipTop - top;
+					dataAddr += lost * width;
+					startPixel += this.width2 * lost;
+					height -= lost;
+					top = this.clipTop;
 				}
+
+				if (top + height >= this.clipBottom) {
+					height -= 1 + top + height - this.clipBottom;
+				}
+
+				int srcStride = 0;
+				if (this.clipLeft > left) {
+					int lost = this.clipLeft - left;
+					srcStride += lost;
+					width -= lost;
+					dataAddr += lost;
+					left = this.clipLeft;
+					rowStride += lost;
+					startPixel += lost;
+				}
+
+				if (this.clipRight <= width + left) {
+					int lost = width + left - this.clipRight + 1;
+					rowStride += lost;
+					srcStride += lost;
+					width -= lost;
+				}
+
+				if (width > 0 && height > 0) {
+					if (antiAliased) {
+						this.plotLetterAntialiased(fontData, color, width, startPixel, height, srcStride, rowStride,
+							this.pixelData, dataAddr);
+					} else {
+						this.plotLetter(color, this.pixelData, startPixel, rowStride, height, width, dataAddr, fontData,
+							srcStride);
+					}
+				}
+				return;
+			}
+
+			// Scaled path: block-scale each source glyph pixel to precisely match `fontScale`
+			// (fractional Math.round(px * fontScale), not a snap to the nearest integer
+			// multiple), anchored at the same baseline (x, y) the unscaled renderer would use.
+			int srcWidth = fontData[indexAddr + 3];
+			int srcHeight = fontData[indexAddr + 4];
+			int destWidth = Math.max(1, Math.round(srcWidth * fontScale));
+			int destHeight = Math.max(1, Math.round(srcHeight * fontScale));
+			int originX = x + Math.round(fontData[indexAddr + 5] * fontScale);
+			int originY = y - Math.round(fontData[indexAddr + 6] * fontScale);
+			int dataAddr = (fontData[indexAddr] << 14) + (fontData[indexAddr + 1] << 7) + fontData[indexAddr + 2];
+
+			int drawLeft = Math.max(originX, this.clipLeft);
+			int drawTop = Math.max(originY, this.clipTop);
+			int drawRight = Math.min(originX + destWidth, this.clipRight);
+			int drawBottom = Math.min(originY + destHeight, this.clipBottom);
+
+			if (drawRight > drawLeft && drawBottom > drawTop) {
+				this.plotLetterScaled(antiAliased, fontData, color, dataAddr, srcWidth, srcHeight,
+					originX, originY, destWidth, destHeight, drawLeft, drawTop, drawRight, drawBottom);
 			}
 		} catch (RuntimeException var17) {
 			throw GenUtil.makeThrowable(var17, "ua.SA(" + "dummy" + ',' + antiAliased + ','
 				+ (fontData != null ? "{...}" : "null") + ',' + x + ',' + color + ',' + indexAddr + ',' + y + ')');
+		}
+	}
+
+	/**
+	 * Fractional-scale glyph blit used whenever {@link #uiScale} is above 1x. Maps each
+	 * destination pixel back to its source glyph pixel via the {@code destWidth/destHeight}
+	 * ratio (same idea as {@link #spriteClipping}'s scale factors), so text grows at exactly
+	 * the same rate as everything else the {@code ui()} helper scales — no snapping to the
+	 * next whole multiple.
+	 * {@code originX}/{@code originY} are the *unclipped* top-left of the scaled glyph, so
+	 * clipping only narrows the iteration bounds without needing separate src/dest strides.
+	 * <p>
+	 * Bilinearly interpolates the source glyph's coverage rather than nearest-neighbor
+	 * sampling it, so scaled text gets smooth (anti-aliased) edges instead of blocky pixels -
+	 * this applies regardless of the font's own {@code antiAliased} flag (every font in
+	 * {@link Fonts#fontAntiAliased} is currently false, i.e. hard on/off source data): a
+	 * non-antialiased source byte is first normalized to a hard 0/255 coverage value, then
+	 * interpolated the same way an already-antialiased source would be, so the smoothing
+	 * comes from the interpolation itself rather than requiring pre-existing grayscale art.
+	 * The actual color blend formula is untouched, existing code (previously only reached via
+	 * nearest-neighbor sampling for the handful of antialiased fonts) - only how the alpha
+	 * value fed into it gets computed is new.
+	 */
+	private void plotLetterScaled(boolean antiAliased, byte[] src, int color, int dataAddr, int srcWidth, int srcHeight,
+								   int originX, int originY, int destWidth, int destHeight,
+								   int drawLeft, int drawTop, int drawRight, int drawBottom) {
+		int scaleX = Math.max(1, (srcWidth << 16) / destWidth);
+		int scaleY = Math.max(1, (srcHeight << 16) / destHeight);
+
+		for (int dy = drawTop; dy < drawBottom; ++dy) {
+			int srcYFixed = (dy - originY) * scaleY;
+			int srcY0 = srcYFixed >> 16;
+			int fracY = srcYFixed & 0xFFFF;
+			if (srcY0 >= srcHeight) {
+				srcY0 = srcHeight - 1;
+			}
+			int srcY1 = srcY0 + 1 < srcHeight ? srcY0 + 1 : srcY0;
+			int destRowHead = dy * this.width2;
+
+			for (int dx = drawLeft; dx < drawRight; ++dx) {
+				int srcXFixed = (dx - originX) * scaleX;
+				int srcX0 = srcXFixed >> 16;
+				int fracX = srcXFixed & 0xFFFF;
+				if (srcX0 >= srcWidth) {
+					srcX0 = srcWidth - 1;
+				}
+				int srcX1 = srcX0 + 1 < srcWidth ? srcX0 + 1 : srcX0;
+
+				int c00 = 0xFF & src[dataAddr + srcY0 * srcWidth + srcX0];
+				int c10 = 0xFF & src[dataAddr + srcY0 * srcWidth + srcX1];
+				int c01 = 0xFF & src[dataAddr + srcY1 * srcWidth + srcX0];
+				int c11 = 0xFF & src[dataAddr + srcY1 * srcWidth + srcX1];
+				if (!antiAliased) {
+					c00 = c00 != 0 ? 255 : 0;
+					c10 = c10 != 0 ? 255 : 0;
+					c01 = c01 != 0 ? 255 : 0;
+					c11 = c11 != 0 ? 255 : 0;
+				}
+
+				int top = c00 + (((c10 - c00) * fracX) >> 16);
+				int bottom = c01 + (((c11 - c01) * fracX) >> 16);
+				int alpha = top + (((bottom - top) * fracY) >> 16);
+
+				int destIdx = destRowHead + dx;
+				if (alpha <= 30) {
+					continue;
+				} else if (alpha < 230) {
+					int invAlpha = 256 - alpha;
+					int destColor = this.pixelData[destIdx];
+					this.pixelData[destIdx] = (FastMath.bitwiseAnd(0xFF00FF00,
+						FastMath.bitwiseAnd(0xFF00FF, color) * alpha
+							+ FastMath.bitwiseAnd(destColor, 0xFF00FF) * invAlpha)
+						+ FastMath.bitwiseAnd(invAlpha * FastMath.bitwiseAnd(0xFF00, destColor)
+						+ alpha * FastMath.bitwiseAnd(0xFF00, color), 0xFF0000)) >> 8;
+				} else {
+					this.pixelData[destIdx] = color;
+				}
+			}
 		}
 	}
 
@@ -923,14 +1042,39 @@ public class GraphicsController {
 
 			try {
 				int firstColumn = srcStartX;
+				// Source row count, used to clamp the "next row" bilinear sample at the sprite's bottom edge.
+				int srcHeight = srcWidth > 0 ? src.length / srcWidth : 0;
 
 				for (int i = -destHeight; i < 0; i += heightStep) {
-					int srcRowHead = (srcStartY >> 16) * srcWidth;
+					int srcY = srcStartY >> 16;
+					int fracY = srcStartY & 0xFFFF;
+					int srcRowHead = srcY * srcWidth;
+					int srcRowHead2 = (srcY + 1 < srcHeight ? srcY + 1 : srcY) * srcWidth;
 					srcStartY += scaleY;
 
 					for (int j = -destWidth; j < 0; ++j) {
-						int color = src[(srcStartX >> 16) + srcRowHead];
+						int srcX = srcStartX >> 16;
+						int fracX = srcStartX & 0xFFFF;
+						int srcX2 = srcX + 1 < srcWidth ? srcX + 1 : srcX;
 						srcStartX += scaleX;
+
+						int c00 = src[srcX + srcRowHead];
+						int color;
+						if (fracX == 0 && fracY == 0) {
+							// Exact source pixel, no interpolation needed.
+							color = c00;
+						} else {
+							int c10 = src[srcX2 + srcRowHead];
+							int c01 = src[srcX + srcRowHead2];
+							int c11 = src[srcX2 + srcRowHead2];
+							if (c00 == 0 || c10 == 0 || c01 == 0 || c11 == 0) {
+								// Never blend toward the transparent marker (0) - it would produce a
+								// dark halo around sprite edges. Fall back to nearest-neighbor here.
+								color = c00;
+							} else {
+								color = bilinearBlend(c00, c10, c01, c11, fracX, fracY);
+							}
+						}
 						if (color != 0) {
 							dest[destHead++] = color;
 						} else {
@@ -952,6 +1096,34 @@ public class GraphicsController {
 					+ destHeight + ',' + srcStartX + ',' + destRowStride + ',' + destWidth + ',' + srcWidth
 					+ ',' + destHead + ')');
 		}
+	}
+
+	/**
+	 * Bilinearly blends 4 packed 0xRRGGBB samples using 16-bit fixed-point
+	 * fractions (0-65535), for smoother up-scaled sprite drawing (e.g.
+	 * projectiles) instead of blocky nearest-neighbor sampling.
+	 */
+	private int bilinearBlend(int c00, int c10, int c01, int c11, int fracX, int fracY) {
+		int r00 = (c00 >> 16) & 0xFF, g00 = (c00 >> 8) & 0xFF, b00 = c00 & 0xFF;
+		int r10 = (c10 >> 16) & 0xFF, g10 = (c10 >> 8) & 0xFF, b10 = c10 & 0xFF;
+		int r01 = (c01 >> 16) & 0xFF, g01 = (c01 >> 8) & 0xFF, b01 = c01 & 0xFF;
+		int r11 = (c11 >> 16) & 0xFF, g11 = (c11 >> 8) & 0xFF, b11 = c11 & 0xFF;
+
+		int rTop = r00 + (((r10 - r00) * fracX) >> 16);
+		int gTop = g00 + (((g10 - g00) * fracX) >> 16);
+		int bTop = b00 + (((b10 - b00) * fracX) >> 16);
+
+		int rBot = r01 + (((r11 - r01) * fracX) >> 16);
+		int gBot = g01 + (((g11 - g01) * fracX) >> 16);
+		int bBot = b01 + (((b11 - b01) * fracX) >> 16);
+
+		int r = rTop + (((rBot - rTop) * fracY) >> 16);
+		int g = gTop + (((gBot - gTop) * fracY) >> 16);
+		int b = bTop + (((bBot - bTop) * fracY) >> 16);
+
+		int color = (r << 16) | (g << 8) | b;
+		// Guard against interpolation accidentally landing on the transparent marker.
+		return color == 0 ? 1 : color;
 	}
 
 	/*
@@ -1669,16 +1841,21 @@ public class GraphicsController {
 							}
 
 							int addr = Fonts.inputFilterCharFontAddr[here];
-							if (this.loggedIn && !Fonts.fontAntiAliased[font] && color != 0) {
-								this.plotCharacter(Fonts.fontAntiAliased[font], fontData, 1 + x, 0, addr, y);
+							int shadowOffset = Math.max(1, Math.round(this.fontScale()));
+							// Drop-shadow now also draws for antialiased fonts (previously gated off
+							// entirely) - plotCharacter's antialiased path handles color=0 the same as
+							// any other color, so this is just reusing the already-correct blend path
+							// with the shadow's dark color, not new pixel math.
+							if (this.loggedIn && color != 0) {
+								this.plotCharacter(Fonts.fontAntiAliased[font], fontData, shadowOffset + x, 0, addr, y);
 							}
 
-							if (this.loggedIn && !Fonts.fontAntiAliased[font] && color != 0) {
-								this.plotCharacter(Fonts.fontAntiAliased[font], fontData, x, 0, addr, y + 1);
+							if (this.loggedIn && color != 0) {
+								this.plotCharacter(Fonts.fontAntiAliased[font], fontData, x, 0, addr, y + shadowOffset);
 							}
 
 							this.plotCharacter(Fonts.fontAntiAliased[font], fontData, x, color, addr, y);
-							x += fontData[addr + 7];
+							x += Math.round(fontData[addr + 7] * this.fontScale());
 						}
 					}
 				}
@@ -2214,8 +2391,9 @@ public class GraphicsController {
 			textX -= (textWidth / 2);
 			textY += (textHeight / 2);
 		}
-		drawString(text, textX - 1, textY, 0x0F0F0F, fontSize);
-		drawString(text, textX, textY - 1, 0x0F0F0F, fontSize);
+		int shadowOffset = Math.max(1, Math.round(this.fontScale()));
+		drawString(text, textX - shadowOffset, textY, 0x0F0F0F, fontSize);
+		drawString(text, textX, textY - shadowOffset, 0x0F0F0F, fontSize);
 
 		drawString(text, textX, textY, textColor, fontSize);
 	}
@@ -2300,7 +2478,7 @@ public class GraphicsController {
 					scaleY += scaleY;
 				}
 
-				this.plot_scale_black_mask(sprite.getPixels(), heightStep, scaleX, 0, srcStartY,
+			this.plot_scale_black_mask(sprite.getPixels(), heightStep, scaleX, 0, srcStartY,
 					this.pixelData, (byte) 78, scaleY, destHeight, srcStartX, destRowStride, destWidth, spriteWidth,
 					destHead);
 			} catch (Exception var16) {
@@ -2312,6 +2490,7 @@ public class GraphicsController {
 				"ua.D(" + x + ',' + y + ',' + destHeight + ',' + destWidth + ',' + 5924 + ',' + sprite + ')');
 		}
 	}
+
 
 	public final void fade2black(int var1) {
 		try {
@@ -2333,7 +2512,7 @@ public class GraphicsController {
 	public final int fontHeight(int font) {
 		try {
 
-			return font != 0
+			int height = font != 0
 				? (font != 1
 				? (font == 2 ? 14
 				: (font == 3 ? 15
@@ -2342,6 +2521,7 @@ public class GraphicsController {
 				: 15)))
 				: 14)
 				: 12;
+			return Math.round(height * this.fontScale());
 		} catch (RuntimeException var4) {
 			throw GenUtil.makeThrowable(var4, "ua.QA(" + "dummy" + ',' + font + ')');
 		}
@@ -2629,7 +2809,7 @@ public class GraphicsController {
 				}
 			}
 
-			return width;
+			return Math.round(width * this.fontScale());
 		} catch (RuntimeException var8) {
 			throw GenUtil.makeThrowable(var8,
 				"ua.K(" + font + ',' + "dummy" + ',' + (str != null ? "{...}" : "null") + ')');

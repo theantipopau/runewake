@@ -12,9 +12,13 @@ public class Config {
 	private static Properties prop = new Properties();
 
 	public static boolean DEBUG = false; // Enables print out of the config being sent to the client
-	static String WINDOW_TITLE = "Open RSC"; // Only set here due to config not set by server fast enough at load time
-	public static String SERVER_NAME = "Runescape";
-	public static String SERVER_NAME_WELCOME = "Runescape Classic";
+	// Regenerates the 8 in-game bitmap fonts from a modern system font at startup (desktop only -
+	// falls back to the original fonts automatically if generation fails or isn't supported).
+	// Flip to false to instantly revert to the original bitmap fonts without touching any code.
+	public static boolean S_WANT_MODERN_FONT = true;
+	static String WINDOW_TITLE = "RuneWake"; // Only set here due to config not set by server fast enough at load time
+	public static String SERVER_NAME = "RuneWake";
+	public static String SERVER_NAME_WELCOME = "RuneWake";
 	public static String WELCOME_TEXT = "You need a members account to use this server";
 	public static String SERVER_IP = null; // Modify this to override "Cache/ip.txt"
 	public static int SERVER_PORT; // Modify SERVER_IP above to override "Cache/port.txt" with this value

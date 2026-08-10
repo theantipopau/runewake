@@ -1066,7 +1066,7 @@ public class Functions {
 					return player.getBankPinOptOut();
 				case 3:
 					npcsay(player, n, "I knew you had good common sense!");
-					npcsay(player, n, "We're very glad at the Bank of Runescape to offer this enhanced security feature to you.");
+					npcsay(player, n, "We're very glad at the Bank of Runewake to offer this enhanced security feature to you.");
 					return player.getBankPinOptOut();
 				default:
 					return player.getBankPinOptOut();

@@ -276,6 +276,20 @@ public class GameActivity extends Activity implements ClientPort {
     }
 
     @Override
+    public Sprite loadScaledImageSprite(String resourceName, int targetWidth, int targetHeight) {
+        // Not implemented on Android - callers fall back to existing behavior when this
+        // returns null (see mudclient.drawLogin()).
+        return null;
+    }
+
+    @Override
+    public boolean regenerateFonts() {
+        // Not implemented on Android (java.awt.Font isn't available there) - callers keep the
+        // original bitmap fonts when this returns false.
+        return false;
+    }
+
+    @Override
     public void playSound(byte[] soundData, int offset, int dataLength) {
         if (gameView != null) gameView.playSound(soundData, offset, dataLength);
     }

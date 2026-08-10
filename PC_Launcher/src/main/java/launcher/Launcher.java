@@ -114,9 +114,16 @@ public class Launcher extends Component {
     final MainWindow frame = new MainWindow();
     frame.build();
 
-    // Fetch OpenRSC client jar and cache updates; also init progress bar
-    updater = new ClientUpdater(Main.configFileLocation);
-    updater.updateOpenRSCClient();
+    // Fetch OpenRSC client jar and cache updates; also init progress bar.
+    // Previously ran unconditionally regardless of --no-update/-n, even though that flag's own
+    // help text says it "disables autoupdate" - the flag only skipped the launcher's own
+    // self-update prompt above, not this actual client/cache download. Gating this too makes
+    // --no-update actually mean what it says, and gives a safe way to run the launcher without
+    // hitting the configured file server at all.
+    if (!Main.disabledUpdate) {
+      updater = new ClientUpdater(Main.configFileLocation);
+      updater.updateOpenRSCClient();
+    }
   }
 
   public static Double fetchLatestVersionNumber() {

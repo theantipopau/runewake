@@ -219,10 +219,13 @@ public class ItemContainer {
 
 	public boolean insert(int slot, int to) {
 		synchronized (list) {
+			Item[] array = list.toArray(new Item[list.size()]);
+			if (slot < 0 || to < 0 || slot >= array.length || to >= array.length) {
+				return false;
+			}
 			// we reset the item in the from slot
 			Item from = list.get(slot);
-			Item[] array = list.toArray(new Item[list.size()]);
-			if (slot >= array.length || from == null || to >= array.length) {
+			if (from == null) {
 				return false;
 			}
 			array[slot] = null;

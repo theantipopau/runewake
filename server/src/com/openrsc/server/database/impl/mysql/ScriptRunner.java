@@ -128,7 +128,9 @@ public class ScriptRunner {
      */
     public void runScript(String filepath) throws IOException, SQLException {
         File file = new File(userDirectory, filepath);
-        this.runScript(new BufferedReader(new FileReader(file)));
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            this.runScript(reader);
+        }
     }
 
     /**
@@ -232,7 +234,9 @@ public class ScriptRunner {
 
     private void runScriptFile(Connection conn, String filepath) throws IOException, SQLException {
         File file = new File(userDirectory, filepath);
-        this.runScript(conn, new BufferedReader(new FileReader(file)));
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            this.runScript(conn, reader);
+        }
     }
 
     private void execSqlCommand(Connection conn, StringBuffer command,

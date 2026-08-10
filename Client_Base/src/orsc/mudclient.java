@@ -67,7 +67,7 @@ public final class mudclient implements Runnable {
 	public static KillAnnouncerQueue killQueue = new KillAnnouncerQueue();
 	public static int skillCount;
 	public static HashMap<String, File> soundCache = new HashMap<String, File>();
-	public static boolean optionSoundDisabled = true;
+	public static boolean optionSoundDisabled = false;
 	static byte[][] s_kb = new byte[250][];
 	static int[] s_wb;
 	private static int FPS = 0;
@@ -108,8 +108,12 @@ public final class mudclient implements Runnable {
 	private final String[] characterDialogString = new String[150];
 	private final int[] characterDialogX = new int[150];
 	private final int[] characterDialogY = new int[150];
+	/** Distance-based fade alpha (0-192) for the matching {@link #characterDialogString} entry, same idea as {@link #characterHealthAlpha}. */
+	private final int[] characterDialogAlpha = new int[150];
 	private final int[] characterHealthX = new int[150];
 	private final int[] characterHealthY = new int[150];
+	/** Distance-based fade alpha (0-192) for the matching {@link #characterHealthBar} entry, computed from the entity's on-screen projected size at populate-time so health bars fade in with distance instead of popping in at full opacity. */
+	private final int[] characterHealthAlpha = new int[150];
 	private final Item[] duelConfirm = new Item[8];
 	//private final int[] duelConfirmItemCount = new int[8];
 	private final Item[] duel = new Item[8];
@@ -675,6 +679,9 @@ public final class mudclient implements Runnable {
 	private int welcomeRecoverySetDays = 0;
 	private boolean welcomeScreenShown = false;
 	//private int welcomeUnreadMessages = 0;
+	private Sprite loginBackgroundSprite;
+	private int loginBackgroundSpriteWidth = -1;
+	private int loginBackgroundSpriteHeight = -1;
 	private World world;
 	private int pointsSkillId;
 	private int pointsOptionId;
@@ -895,6 +902,13 @@ public final class mudclient implements Runnable {
 			Fonts.addFont(DataOperations.loadData("h16b.jf", 0, Archive));
 			Fonts.addFont(DataOperations.loadData("h20b.jf", 0, Archive));
 			Fonts.addFont(DataOperations.loadData("h24b.jf", 0, Archive));
+
+			// All 8 original bitmap fonts are now loaded and known-good - only attempt to
+			// replace them with a generated modern font after that, so any failure here just
+			// leaves the originals in place (regenerateFonts() itself never partially commits).
+			if (Config.S_WANT_MODERN_FONT) {
+				clientPort.regenerateFonts();
+			}
 			return true;
 		} catch (Exception var4) {
 			var4.printStackTrace();
@@ -1677,41 +1691,43 @@ public final class mudclient implements Runnable {
 
 	private void createRecoveryQuestionPanel() {
 		this.panelSetRecoveryQuestion = new Panel(this.getSurface(), 100);
-		int i1 = 8;
-		this.controlRecoveryInstruction = this.panelSetRecoveryQuestion.addCenteredText(256, i1, "@yel@Please provide 5 security questions in case you lose your password", 1, true);
-		i1 += 22;
-		this.panelSetRecoveryQuestion.addCenteredText(256, i1, "If you ever lose your password, you will need these to prove you own your account.", 1, true);
-		i1 += 13;
-		this.panelSetRecoveryQuestion.addCenteredText(256, i1, "Your answers are encrypted and are ONLY used for password recovery purposes.", 1, true);
-		i1 += 22;
-		this.panelSetRecoveryQuestion.addCenteredText(256, i1, "@ora@IMPORTANT:@whi@ To recover your password you must give the EXACT same answers you", 1, true);
-		i1 += 13;
-		this.panelSetRecoveryQuestion.addCenteredText(256, i1, "give here. If you think you might forget an answer, or someone else could guess the", 1, true);
-		i1 += 13;
-		this.panelSetRecoveryQuestion.addCenteredText(256, i1, "answer, then press the 'different question' button to get a better question.", 1, true);
-		i1 += 35;
+		this.panelSetRecoveryQuestion.setButtonColorScheme(GenUtil.buildColor(198, 170, 112), GenUtil.buildColor(150, 122, 76),
+			GenUtil.buildColor(96, 74, 44), GenUtil.buildColor(56, 42, 24));
+		int i1 = ui(8);
+		this.controlRecoveryInstruction = this.panelSetRecoveryQuestion.addCenteredText(halfGameWidth(), i1, "@yel@Please provide 5 security questions in case you lose your password", 1, true);
+		i1 += ui(22);
+		this.panelSetRecoveryQuestion.addCenteredText(halfGameWidth(), i1, "If you ever lose your password, you will need these to prove you own your account.", 1, true);
+		i1 += ui(13);
+		this.panelSetRecoveryQuestion.addCenteredText(halfGameWidth(), i1, "Your answers are encrypted and are ONLY used for password recovery purposes.", 1, true);
+		i1 += ui(22);
+		this.panelSetRecoveryQuestion.addCenteredText(halfGameWidth(), i1, "@ora@IMPORTANT:@whi@ To recover your password you must give the EXACT same answers you", 1, true);
+		i1 += ui(13);
+		this.panelSetRecoveryQuestion.addCenteredText(halfGameWidth(), i1, "give here. If you think you might forget an answer, or someone else could guess the", 1, true);
+		i1 += ui(13);
+		this.panelSetRecoveryQuestion.addCenteredText(halfGameWidth(), i1, "answer, then press the 'different question' button to get a better question.", 1, true);
+		i1 += ui(35);
 		for (int j1 = 0; j1 < 5; j1++) {
-			this.panelSetRecoveryQuestion.addButtonBackground(170, i1, 310, 30);
+			this.panelSetRecoveryQuestion.addButtonBackground(halfGameWidth() - ui(86), i1, ui(310), ui(30));
 			this.jfb[j1] = "~:" + this.recoveryQAindices[j1];
-			this.controlSetQuestion[j1] = this.panelSetRecoveryQuestion.addCenteredText(170, i1 - 7, (j1 + 1) + ": "
+			this.controlSetQuestion[j1] = this.panelSetRecoveryQuestion.addCenteredText(halfGameWidth() - ui(86), i1 - ui(7), (j1 + 1) + ": "
 				+ this.questions[this.recoveryQAindices[j1]], 1, true);
-			this.controlSetAnswer[j1] = this.panelSetRecoveryQuestion.addCenteredTextEntry(170, i1 + 7, 310, 80, 30, 1, false, true);
-			this.panelSetRecoveryQuestion.addButtonBackground(370, i1, 80, 30);
-			this.panelSetRecoveryQuestion.addCenteredText(370, i1 - 7, "Different", 1, true);
-			this.panelSetRecoveryQuestion.addCenteredText(370, i1 + 7, "Question", 1, true);
-			this.controlCustomQuestion[j1] = this.panelSetRecoveryQuestion.addButton(370, i1, 80, 30);
-			this.panelSetRecoveryQuestion.addButtonBackground(455, i1, 80, 30);
-			this.panelSetRecoveryQuestion.addCenteredText(455, i1 - 7, "Enter own", 1, true);
-			this.panelSetRecoveryQuestion.addCenteredText(455, i1 + 7, "Question", 1, true);
-			this.controlCustomAnswer[j1] = this.panelSetRecoveryQuestion.addButton(455, i1, 80, 30);
-			i1 += 35;
+			this.controlSetAnswer[j1] = this.panelSetRecoveryQuestion.addCenteredTextEntry(halfGameWidth() - ui(86), i1 + ui(7), ui(310), 80, ui(30), 1, false, true);
+			this.panelSetRecoveryQuestion.addButtonBackground(halfGameWidth() + ui(114), i1, ui(80), ui(30));
+			this.panelSetRecoveryQuestion.addCenteredText(halfGameWidth() + ui(114), i1 - ui(7), "Different", 1, true);
+			this.panelSetRecoveryQuestion.addCenteredText(halfGameWidth() + ui(114), i1 + ui(7), "Question", 1, true);
+			this.controlCustomQuestion[j1] = this.panelSetRecoveryQuestion.addButton(halfGameWidth() + ui(114), i1, ui(80), ui(30));
+			this.panelSetRecoveryQuestion.addButtonBackground(halfGameWidth() + ui(199), i1, ui(80), ui(30));
+			this.panelSetRecoveryQuestion.addCenteredText(halfGameWidth() + ui(199), i1 - ui(7), "Enter own", 1, true);
+			this.panelSetRecoveryQuestion.addCenteredText(halfGameWidth() + ui(199), i1 + ui(7), "Question", 1, true);
+			this.controlCustomAnswer[j1] = this.panelSetRecoveryQuestion.addButton(halfGameWidth() + ui(199), i1, ui(80), ui(30));
+			i1 += ui(35);
 		}
 
 		this.panelSetRecoveryQuestion.setFocus(this.controlSetAnswer[0]);
-		i1 += 10;
-		this.panelSetRecoveryQuestion.addButtonBackground(256, i1, 250, 30);
-		this.panelSetRecoveryQuestion.addCenteredText(256, i1, "Click here when finished", 4, true);
-		this.finishSetRecovery = this.panelSetRecoveryQuestion.addButton(256, i1, 250, 30);
+		i1 += ui(10);
+		this.panelSetRecoveryQuestion.addButtonBackground(halfGameWidth(), i1, ui(250), ui(30));
+		this.panelSetRecoveryQuestion.addCenteredText(halfGameWidth(), i1, "Click here when finished", 4, true);
+		this.finishSetRecovery = this.panelSetRecoveryQuestion.addButton(halfGameWidth(), i1, ui(250), ui(30));
 	}
 
 	public void method_181() {
@@ -1836,12 +1852,12 @@ public final class mudclient implements Runnable {
 		this.getSurface().blackScreen(true);
 		this.panelSetRecoveryQuestion.drawPanel();
 		if (this.qaIndex != -1) {
-			int y = 150;
-			this.getSurface().drawBox(26, y, 460, 60, 0);
-			this.getSurface().drawBoxBorder(26, y, 460, 60, 0xFFFFFF);
-			y += 22;
+			int y = ui(150);
+			this.getSurface().drawBox(halfGameWidth() - ui(230), y, ui(460), ui(60), 0);
+			this.getSurface().drawBoxBorder(halfGameWidth() - ui(230), y, ui(460), ui(60), 0xFFFFFF);
+			y += ui(22);
 			this.getSurface().drawColoredStringCentered(halfGameWidth(), "Please enter your question", 0xFFFFFF, 0, 4, y);
-			y += 25;
+			y += ui(25);
 			this.getSurface().drawColoredStringCentered(halfGameWidth(), this.chatMessageInput + "*", 0xFFFFFF, 0, 4, y);
 		}
 
@@ -1853,36 +1869,38 @@ public final class mudclient implements Runnable {
 
 	private void createPasswordRecoveryPanel() {
 		this.panelRecovery = new Panel(this.getSurface(), 100);
-		int i1 = 10;
-		this.instructPassRecovery1 = this.panelRecovery.addCenteredText(256, i1, "@yel@To prove this is your account please provide the answers to", 1, true);
-		i1 += 15;
-		this.instructPassRecovery2 = this.panelRecovery.addCenteredText(256, i1, "@yel@your security questions. You will then be able to reset your password", 1, true);
-		i1 += 35;
+		this.panelRecovery.setButtonColorScheme(GenUtil.buildColor(198, 170, 112), GenUtil.buildColor(150, 122, 76),
+			GenUtil.buildColor(96, 74, 44), GenUtil.buildColor(56, 42, 24));
+		int i1 = ui(10);
+		this.instructPassRecovery1 = this.panelRecovery.addCenteredText(halfGameWidth(), i1, "@yel@To prove this is your account please provide the answers to", 1, true);
+		i1 += ui(15);
+		this.instructPassRecovery2 = this.panelRecovery.addCenteredText(halfGameWidth(), i1, "@yel@your security questions. You will then be able to reset your password", 1, true);
+		i1 += ui(35);
 		for (int j1 = 0; j1 < 5; j1++) {
-			this.panelRecovery.addButtonBackground(256, i1, 410, 30);
-			this.controlPassQuestion[j1] = this.panelRecovery.addCenteredText(256, i1 - 7, (j1 + 1) + ": question?", 1, true);
-			this.controlPassAnswer[j1] = this.panelRecovery.addCenteredTextEntry(256, i1 + 7, 310, 80, 30, 1, true, true);
-			i1 += 35;
+			this.panelRecovery.addButtonBackground(halfGameWidth(), i1, ui(410), ui(30));
+			this.controlPassQuestion[j1] = this.panelRecovery.addCenteredText(halfGameWidth(), i1 - ui(7), (j1 + 1) + ": question?", 1, true);
+			this.controlPassAnswer[j1] = this.panelRecovery.addCenteredTextEntry(halfGameWidth(), i1 + ui(7), ui(310), 80, ui(30), 1, true, true);
+			i1 += ui(35);
 		}
 
 		this.panelRecovery.setFocus(this.controlPassAnswer[0]);
-		this.panelRecovery.addButtonBackground(256, i1, 410, 30);
-		this.panelRecovery.addCenteredText(256, i1 - 7, "If you know it, enter a previous password used on this account", 1, true);
-		this.controlPreviousPassword = this.panelRecovery.addCenteredTextEntry(256, i1 + 7, 310, 80, 30, 1, true, true);
-		i1 += 35;
-		this.panelRecovery.addButtonBackground(151, i1, 200, 30);
-		this.panelRecovery.addCenteredText(151, i1 - 7, "Choose a NEW password", 1, true);
-		this.controlNewPassword = this.panelRecovery.addCenteredTextEntry(146, i1 + 7, 200, 80, 30, 1, true, true);
-		this.panelRecovery.addButtonBackground(361, i1, 200, 30);
-		this.panelRecovery.addCenteredText(361, i1 - 7, "Confirm new password", 1, true);
-		this.controlConfirmation = this.panelRecovery.addCenteredTextEntry(366, i1 + 7, 200, 80, 30, 1, true, true);
-		i1 += 35;
-		this.panelRecovery.addButtonBackground(201, i1, 100, 30);
-		this.panelRecovery.addCenteredText(201, i1, "Submit", 4, true);
-		this.passwordRecoverSubmit = this.panelRecovery.addButton(201, i1, 100, 30);
-		this.panelRecovery.addButtonBackground(311, i1, 100, 30);
-		this.panelRecovery.addCenteredText(311, i1, "Cancel", 4, true);
-		this.passwordRecoverCancel = this.panelRecovery.addButton(311, i1, 100, 30);
+		this.panelRecovery.addButtonBackground(halfGameWidth(), i1, ui(410), ui(30));
+		this.panelRecovery.addCenteredText(halfGameWidth(), i1 - ui(7), "If you know it, enter a previous password used on this account", 1, true);
+		this.controlPreviousPassword = this.panelRecovery.addCenteredTextEntry(halfGameWidth(), i1 + ui(7), ui(310), 80, ui(30), 1, true, true);
+		i1 += ui(35);
+		this.panelRecovery.addButtonBackground(halfGameWidth() - ui(105), i1, ui(200), ui(30));
+		this.panelRecovery.addCenteredText(halfGameWidth() - ui(105), i1 - ui(7), "Choose a NEW password", 1, true);
+		this.controlNewPassword = this.panelRecovery.addCenteredTextEntry(halfGameWidth() - ui(110), i1 + ui(7), ui(200), 80, ui(30), 1, true, true);
+		this.panelRecovery.addButtonBackground(halfGameWidth() + ui(105), i1, ui(200), ui(30));
+		this.panelRecovery.addCenteredText(halfGameWidth() + ui(105), i1 - ui(7), "Confirm new password", 1, true);
+		this.controlConfirmation = this.panelRecovery.addCenteredTextEntry(halfGameWidth() + ui(110), i1 + ui(7), ui(200), 80, ui(30), 1, true, true);
+		i1 += ui(35);
+		this.panelRecovery.addButtonBackground(halfGameWidth() - ui(55), i1, ui(100), ui(30));
+		this.panelRecovery.addCenteredText(halfGameWidth() - ui(55), i1, "Submit", 4, true);
+		this.passwordRecoverSubmit = this.panelRecovery.addButton(halfGameWidth() - ui(55), i1, ui(100), ui(30));
+		this.panelRecovery.addButtonBackground(halfGameWidth() + ui(55), i1, ui(100), ui(30));
+		this.panelRecovery.addCenteredText(halfGameWidth() + ui(55), i1, "Cancel", 4, true);
+		this.passwordRecoverCancel = this.panelRecovery.addButton(halfGameWidth() + ui(55), i1, ui(100), ui(30));
 	}
 
 	public void setShowRecoveryDialogue(boolean show) {
@@ -1907,40 +1925,42 @@ public final class mudclient implements Runnable {
 
 	public void createContactDetailsPanel() {
 		this.panelContact = new Panel(this.getSurface(), 100);
-		int i = 256;
-		int j = 400;
-		int k = 25;
-		this.instructContactDetails = this.panelContact.addCenteredText(256, k, "@yel@Please supply your contact details", 5, true);
-		k += 30;
-		this.panelContact.addCenteredText(256, k, "We need this information to provide an efficient customer support service ", 1, true);
-		k += 15;
-		this.panelContact.addCenteredText(256, k, "and also to work out where to locate future RuneScape servers.", 1, true);
-		k += 25;
-		this.panelContact.addCenteredText(256, k, "We know some people are concerned about entering their email address on", 1, true);
-		k += 15;
-		this.panelContact.addCenteredText(255, k, "websites, and for this reason we take our users privacy very seriously.", 1, true);
-		k += 15;
-		this.panelContact.addCenteredText(256, k, "For our full policy please click the relevant link below this game window", 1, true);
-		k += 40;
-		this.panelContact.addButtonBackground(i, k, j, 30);
-		this.panelContact.addCenteredText(i, k - 7, "Full name", 1, true);
-		this.controlContactName = this.panelContact.addCenteredTextEntry(i, k + 7, j, 80, 30, 1, false, true);
-		k += 35;
-		this.panelContact.addButtonBackground(i, k, j, 30);
-		this.panelContact.addCenteredText(i, k - 7, "Postcode/Zipcode", 1, true);
-		this.controlContactZipCode = this.panelContact.addCenteredTextEntry(i, k + 7, j, 80, 30, 1, false, true);
-		k += 35;
-		this.panelContact.addButtonBackground(i, k, j, 30);
-		this.panelContact.addCenteredText(i, k - 7, "Country", 1, true);
-		this.controlContactCountry = this.panelContact.addCenteredTextEntry(i, k + 7, j, 80, 30, 1, false, true);
-		k += 35;
-		this.panelContact.addButtonBackground(i, k, j, 30);
-		this.panelContact.addCenteredText(i, k - 7, "Email address", 1, true);
-		this.controlContactEmail = this.panelContact.addCenteredTextEntry(i, k + 7, j, 80, 30, 1, false, true);
-		k += 35;
-		this.panelContact.addButtonBackground(i, k, 100, 30);
+		this.panelContact.setButtonColorScheme(GenUtil.buildColor(198, 170, 112), GenUtil.buildColor(150, 122, 76),
+			GenUtil.buildColor(96, 74, 44), GenUtil.buildColor(56, 42, 24));
+		int i = halfGameWidth();
+		int j = ui(400);
+		int k = ui(25);
+		this.instructContactDetails = this.panelContact.addCenteredText(halfGameWidth(), k, "@yel@Please supply your contact details", 5, true);
+		k += ui(30);
+		this.panelContact.addCenteredText(halfGameWidth(), k, "We need this information to provide an efficient customer support service ", 1, true);
+		k += ui(15);
+		this.panelContact.addCenteredText(halfGameWidth(), k, "and also to work out where to locate future RuneWake servers.", 1, true);
+		k += ui(25);
+		this.panelContact.addCenteredText(halfGameWidth(), k, "We know some people are concerned about entering their email address on", 1, true);
+		k += ui(15);
+		this.panelContact.addCenteredText(halfGameWidth() - ui(1), k, "websites, and for this reason we take our users privacy very seriously.", 1, true);
+		k += ui(15);
+		this.panelContact.addCenteredText(halfGameWidth(), k, "For our full policy please click the relevant link below this game window", 1, true);
+		k += ui(40);
+		this.panelContact.addButtonBackground(i, k, j, ui(30));
+		this.panelContact.addCenteredText(i, k - ui(7), "Full name", 1, true);
+		this.controlContactName = this.panelContact.addCenteredTextEntry(i, k + ui(7), j, 80, ui(30), 1, false, true);
+		k += ui(35);
+		this.panelContact.addButtonBackground(i, k, j, ui(30));
+		this.panelContact.addCenteredText(i, k - ui(7), "Postcode/Zipcode", 1, true);
+		this.controlContactZipCode = this.panelContact.addCenteredTextEntry(i, k + ui(7), j, 80, ui(30), 1, false, true);
+		k += ui(35);
+		this.panelContact.addButtonBackground(i, k, j, ui(30));
+		this.panelContact.addCenteredText(i, k - ui(7), "Country", 1, true);
+		this.controlContactCountry = this.panelContact.addCenteredTextEntry(i, k + ui(7), j, 80, ui(30), 1, false, true);
+		k += ui(35);
+		this.panelContact.addButtonBackground(i, k, j, ui(30));
+		this.panelContact.addCenteredText(i, k - ui(7), "Email address", 1, true);
+		this.controlContactEmail = this.panelContact.addCenteredTextEntry(i, k + ui(7), j, 80, ui(30), 1, false, true);
+		k += ui(35);
+		this.panelContact.addButtonBackground(i, k, ui(100), ui(30));
 		this.panelContact.addCenteredText(i, k, "Submit", 4, true);
-		this.finishSubmitContact = this.panelContact.addButton(i, k, 100, 30);
+		this.finishSubmitContact = this.panelContact.addButton(i, k, ui(100), ui(30));
 		this.panelContact.setFocus(this.controlContactName);
 	}
 
@@ -2016,96 +2036,96 @@ public final class mudclient implements Runnable {
 		try {
 			this.panelAppearance = new Panel(this.getSurface(), 100);
 
-			this.panelAppearance.addCenteredText(256, 10, "Please design Your Character", 4, true);
-			short var2 = 140;
-			byte var3 = 34;
-			int var6 = var2 + 116;
+			this.panelAppearance.addCenteredText(halfGameWidth(), ui(10), "Please design Your Character", 4, true);
+			int var2 = ui(140);
+			int var3 = ui(34);
+			int var6 = halfGameWidth();
 			// divide in 2 if typed (modes)
 			var6 /= factor;
-			int yFromTopDistance = var3 - 10;
-			this.panelAppearance.addCenteredText(var6 - 55, yFromTopDistance + 110, "Front", 3, true);
-			this.panelAppearance.addCenteredText(var6, yFromTopDistance + 110, "Side", 3, true);
-			this.panelAppearance.addCenteredText(var6 + 55, 110 + yFromTopDistance, "Back", 3, true);
-			yFromTopDistance += 145;
-			byte var4 = 54;
-			this.panelAppearance.addDecoratedBox((var6 - var4), yFromTopDistance, 53, 41);
-			this.panelAppearance.addCenteredText(var6 - var4, yFromTopDistance - 8, "Head", 1, true);
-			this.panelAppearance.addCenteredText(var6 - var4, yFromTopDistance + 8, "Type", 1, true);
-			this.panelAppearance.addSprite(var6 - var4 - 40, yFromTopDistance, spriteSelect(GUIPARTS.LEFTARROW.getDef()));
-			this.controlButtonAppearanceHeadMinus = this.panelAppearance.addButton(-40 - var4 + var6, yFromTopDistance, 20, 20);
-			this.panelAppearance.addSprite(var6 - var4 + 40, yFromTopDistance, spriteSelect(GUIPARTS.RIGHTARROW.getDef()));
-			this.controlButtonAppearanceHeadPlus = this.panelAppearance.addButton(var6 + (40 - var4), yFromTopDistance, 20, 20);
-			this.panelAppearance.addDecoratedBox((var6 + var4), yFromTopDistance, 53, 41);
-			this.panelAppearance.addCenteredText(var6 + var4, yFromTopDistance - 8, "Hair", 1, true);
-			this.panelAppearance.addCenteredText(var4 + var6, 8 + yFromTopDistance, "Color", 1, true);
-			this.panelAppearance.addSprite(var4 + (var6 - 40), yFromTopDistance, spriteSelect(GUIPARTS.LEFTARROW.getDef()));
-			this.controlButtonAppearanceHair1 = this.panelAppearance.addButton(var6 + var4 - 40, yFromTopDistance, 20, 20);
-			this.panelAppearance.addSprite(40 + var4 + var6, yFromTopDistance, spriteSelect(GUIPARTS.RIGHTARROW.getDef()));
-			this.controlButtonAppearanceHair2 = this.panelAppearance.addButton(40 + var4 + var6, yFromTopDistance, 20, 20);
-			yFromTopDistance += 50;
-			this.panelAppearance.addDecoratedBox((var6 - var4), yFromTopDistance, 53, 41);
-			this.panelAppearance.addCenteredText(var6 - var4, yFromTopDistance - 8, "Body", 1, true);
-			this.panelAppearance.addCenteredText(var6 - var4, yFromTopDistance + 8, "Type", 1, true);
-			this.panelAppearance.addSprite(var6 - var4 - 40, yFromTopDistance, spriteSelect(GUIPARTS.LEFTARROW.getDef()));
-			this.controlButtonAppearanceGender1 = this.panelAppearance.addButton(var6 - 40 - var4, yFromTopDistance, 20, 20);
-			this.panelAppearance.addSprite(40 - var4 + var6, yFromTopDistance, spriteSelect(GUIPARTS.RIGHTARROW.getDef()));
-			this.controlButtonAppearanceGender2 = this.panelAppearance.addButton(40 + (var6 - var4), yFromTopDistance, 20, 20);
-			this.panelAppearance.addDecoratedBox((var4 + var6), yFromTopDistance, 53, 41);
-			this.panelAppearance.addCenteredText(var4 + var6, yFromTopDistance - 8, "Top", 1, true);
-			this.panelAppearance.addCenteredText(var4 + var6, 8 + yFromTopDistance, "Color", 1, true);
-			this.panelAppearance.addSprite(var6 + (var4 - 40), yFromTopDistance, spriteSelect(GUIPARTS.LEFTARROW.getDef()));
-			this.controlButtonAppearanceTop1 = this.panelAppearance.addButton(var4 + (var6 - 40), yFromTopDistance, 20, 20);
-			this.panelAppearance.addSprite(40 + var4 + var6, yFromTopDistance, spriteSelect(GUIPARTS.RIGHTARROW.getDef()));
-			this.controlButtonAppearanceTop2 = this.panelAppearance.addButton(var6 - (-var4 - 40), yFromTopDistance, 20, 20);
-			yFromTopDistance += 50;
+			int yFromTopDistance = var3 - ui(10);
+			this.panelAppearance.addCenteredText(var6 - ui(55), yFromTopDistance + ui(110), "Front", 3, true);
+			this.panelAppearance.addCenteredText(var6, yFromTopDistance + ui(110), "Side", 3, true);
+			this.panelAppearance.addCenteredText(var6 + ui(55), ui(110) + yFromTopDistance, "Back", 3, true);
+			yFromTopDistance += ui(145);
+			int var4 = ui(54);
+			this.panelAppearance.addDecoratedBox((var6 - var4), yFromTopDistance, ui(53), ui(41));
+			this.panelAppearance.addCenteredText(var6 - var4, yFromTopDistance - ui(8), "Head", 1, true);
+			this.panelAppearance.addCenteredText(var6 - var4, yFromTopDistance + ui(8), "Type", 1, true);
+			this.panelAppearance.addSprite(var6 - var4 - ui(40), yFromTopDistance, spriteSelect(GUIPARTS.LEFTARROW.getDef()));
+			this.controlButtonAppearanceHeadMinus = this.panelAppearance.addButton(ui(-40) - var4 + var6, yFromTopDistance, ui(20), ui(20));
+			this.panelAppearance.addSprite(var6 - var4 + ui(40), yFromTopDistance, spriteSelect(GUIPARTS.RIGHTARROW.getDef()));
+			this.controlButtonAppearanceHeadPlus = this.panelAppearance.addButton(var6 + (ui(40) - var4), yFromTopDistance, ui(20), ui(20));
+			this.panelAppearance.addDecoratedBox((var6 + var4), yFromTopDistance, ui(53), ui(41));
+			this.panelAppearance.addCenteredText(var6 + var4, yFromTopDistance - ui(8), "Hair", 1, true);
+			this.panelAppearance.addCenteredText(var4 + var6, ui(8) + yFromTopDistance, "Color", 1, true);
+			this.panelAppearance.addSprite(var4 + (var6 - ui(40)), yFromTopDistance, spriteSelect(GUIPARTS.LEFTARROW.getDef()));
+			this.controlButtonAppearanceHair1 = this.panelAppearance.addButton(var6 + var4 - ui(40), yFromTopDistance, ui(20), ui(20));
+			this.panelAppearance.addSprite(ui(40) + var4 + var6, yFromTopDistance, spriteSelect(GUIPARTS.RIGHTARROW.getDef()));
+			this.controlButtonAppearanceHair2 = this.panelAppearance.addButton(ui(40) + var4 + var6, yFromTopDistance, ui(20), ui(20));
+			yFromTopDistance += ui(50);
+			this.panelAppearance.addDecoratedBox((var6 - var4), yFromTopDistance, ui(53), ui(41));
+			this.panelAppearance.addCenteredText(var6 - var4, yFromTopDistance - ui(8), "Body", 1, true);
+			this.panelAppearance.addCenteredText(var6 - var4, yFromTopDistance + ui(8), "Type", 1, true);
+			this.panelAppearance.addSprite(var6 - var4 - ui(40), yFromTopDistance, spriteSelect(GUIPARTS.LEFTARROW.getDef()));
+			this.controlButtonAppearanceGender1 = this.panelAppearance.addButton(var6 - ui(40) - var4, yFromTopDistance, ui(20), ui(20));
+			this.panelAppearance.addSprite(ui(40) - var4 + var6, yFromTopDistance, spriteSelect(GUIPARTS.RIGHTARROW.getDef()));
+			this.controlButtonAppearanceGender2 = this.panelAppearance.addButton(ui(40) + (var6 - var4), yFromTopDistance, ui(20), ui(20));
+			this.panelAppearance.addDecoratedBox((var4 + var6), yFromTopDistance, ui(53), ui(41));
+			this.panelAppearance.addCenteredText(var4 + var6, yFromTopDistance - ui(8), "Top", 1, true);
+			this.panelAppearance.addCenteredText(var4 + var6, ui(8) + yFromTopDistance, "Color", 1, true);
+			this.panelAppearance.addSprite(var6 + (var4 - ui(40)), yFromTopDistance, spriteSelect(GUIPARTS.LEFTARROW.getDef()));
+			this.controlButtonAppearanceTop1 = this.panelAppearance.addButton(var4 + (var6 - ui(40)), yFromTopDistance, ui(20), ui(20));
+			this.panelAppearance.addSprite(ui(40) + var4 + var6, yFromTopDistance, spriteSelect(GUIPARTS.RIGHTARROW.getDef()));
+			this.controlButtonAppearanceTop2 = this.panelAppearance.addButton(var6 - (-var4 - ui(40)), yFromTopDistance, ui(20), ui(20));
+			yFromTopDistance += ui(50);
 			if (var1 != -24595) {
 				this.renderLoginScreenViewports(-127);
 			}
 
-			this.panelAppearance.addDecoratedBox((var6 - var4), yFromTopDistance, 53, 41);
-			this.panelAppearance.addCenteredText(var6 - var4, yFromTopDistance - 8, "Skin", 1, true);
-			this.panelAppearance.addCenteredText(var6 - var4, yFromTopDistance + 8, "Color", 1, true);
-			this.panelAppearance.addSprite(var6 - 40 - var4, yFromTopDistance, spriteSelect(GUIPARTS.LEFTARROW.getDef()));
-			this.controlButtonAppearanceSkin1 = this.panelAppearance.addButton(var6 - var4 - 40, yFromTopDistance, 20, 20);
-			this.panelAppearance.addSprite(var6 - var4 + 40, yFromTopDistance, spriteSelect(GUIPARTS.RIGHTARROW.getDef()));
-			this.controlButtonAppearanceSkin2 = this.panelAppearance.addButton(var6 + (40 - var4), yFromTopDistance, 20, 20);
-			this.panelAppearance.addDecoratedBox((var4 + var6), yFromTopDistance, 53, 41);
-			this.panelAppearance.addCenteredText(var4 + var6, yFromTopDistance - 8, "Bottom", 1, true);
-			this.panelAppearance.addCenteredText(var4 + var6, yFromTopDistance + 8, "Color", 1, true);
-			this.panelAppearance.addSprite(var4 - 40 + var6, yFromTopDistance, spriteSelect(GUIPARTS.LEFTARROW.getDef()));
-			this.controlButtonAppearanceBottom1 = this.panelAppearance.addButton(var6 - (40 - var4), yFromTopDistance, 20, 20);
-			this.panelAppearance.addSprite(var6 + var4 + 40, yFromTopDistance, spriteSelect(GUIPARTS.RIGHTARROW.getDef()));
-			this.controlButtonAppearanceBottom2 = this.panelAppearance.addButton(40 + var4 + var6, yFromTopDistance, 20, 20);
-			yFromTopDistance += 82;
-			yFromTopDistance -= 35;
-			this.panelAppearance.addButtonBackground(var6 * factor, yFromTopDistance, 200, 30);
+			this.panelAppearance.addDecoratedBox((var6 - var4), yFromTopDistance, ui(53), ui(41));
+			this.panelAppearance.addCenteredText(var6 - var4, yFromTopDistance - ui(8), "Skin", 1, true);
+			this.panelAppearance.addCenteredText(var6 - var4, yFromTopDistance + ui(8), "Color", 1, true);
+			this.panelAppearance.addSprite(var6 - ui(40) - var4, yFromTopDistance, spriteSelect(GUIPARTS.LEFTARROW.getDef()));
+			this.controlButtonAppearanceSkin1 = this.panelAppearance.addButton(var6 - var4 - ui(40), yFromTopDistance, ui(20), ui(20));
+			this.panelAppearance.addSprite(var6 - var4 + ui(40), yFromTopDistance, spriteSelect(GUIPARTS.RIGHTARROW.getDef()));
+			this.controlButtonAppearanceSkin2 = this.panelAppearance.addButton(var6 + (ui(40) - var4), yFromTopDistance, ui(20), ui(20));
+			this.panelAppearance.addDecoratedBox((var4 + var6), yFromTopDistance, ui(53), ui(41));
+			this.panelAppearance.addCenteredText(var4 + var6, yFromTopDistance - ui(8), "Bottom", 1, true);
+			this.panelAppearance.addCenteredText(var4 + var6, yFromTopDistance + ui(8), "Color", 1, true);
+			this.panelAppearance.addSprite(var4 - ui(40) + var6, yFromTopDistance, spriteSelect(GUIPARTS.LEFTARROW.getDef()));
+			this.controlButtonAppearanceBottom1 = this.panelAppearance.addButton(var6 - (ui(40) - var4), yFromTopDistance, ui(20), ui(20));
+			this.panelAppearance.addSprite(var6 + var4 + ui(40), yFromTopDistance, spriteSelect(GUIPARTS.RIGHTARROW.getDef()));
+			this.controlButtonAppearanceBottom2 = this.panelAppearance.addButton(ui(40) + var4 + var6, yFromTopDistance, ui(20), ui(20));
+			yFromTopDistance += ui(82);
+			yFromTopDistance -= ui(35);
+			this.panelAppearance.addButtonBackground(var6 * factor, yFromTopDistance, ui(200), ui(30));
 			this.panelAppearance.addCenteredText(var6 * factor, yFromTopDistance, "Accept", 4, false);
-			this.controlButtonAppearanceAccept = this.panelAppearance.addButton(var6 * factor, yFromTopDistance, 200, 30);
+			this.controlButtonAppearanceAccept = this.panelAppearance.addButton(var6 * factor, yFromTopDistance, ui(200), ui(30));
 
-			yFromTopDistance = 50;
+			yFromTopDistance = ui(50);
 			if (type == 1) {
-				var6 = 372;
+				var6 = halfGameWidth() + ui(116);
 				this.panelAppearance.addCenteredText(var6, yFromTopDistance, "Each player mode has different", 0, true);
-				yFromTopDistance += 13;
+				yFromTopDistance += ui(13);
 				this.panelAppearance.addCenteredText(var6, yFromTopDistance, "challenges. But the choice you make here", 0, true);
-				yFromTopDistance += 13;
+				yFromTopDistance += ui(13);
 				this.panelAppearance.addCenteredText(var6, yFromTopDistance, "isn't strictly permanent, and you may", 0, true);
-				yFromTopDistance += 13;
+				yFromTopDistance += ui(13);
 				this.panelAppearance.addCenteredText(var6, yFromTopDistance, "request to change to regular at any time.", 0, true);
-				yFromTopDistance += 73;
-				this.panelAppearance.addDecoratedBox(var6, yFromTopDistance, 215, 125);
+				yFromTopDistance += ui(73);
+				this.panelAppearance.addDecoratedBox(var6, yFromTopDistance, ui(215), ui(125));
 				String[] modes_ironman = {
 					"Regular", "Ironman", "Ultimate", "Hardcore"
 				};
-				this.playerMode1 = this.panelAppearance.addVerticalList(var6, yFromTopDistance + 2, modes_ironman, 4, true);
-				yFromTopDistance += 75;
-				this.panelAppearance.addDecoratedBox(var6, yFromTopDistance + 21, 215, 60);
+				this.playerMode1 = this.panelAppearance.addVerticalList(var6, yFromTopDistance + ui(2), modes_ironman, 4, true);
+				yFromTopDistance += ui(75);
+				this.panelAppearance.addDecoratedBox(var6, yFromTopDistance + ui(21), ui(215), ui(60));
 				this.panelAppearance.addCenteredText(var6, yFromTopDistance, "Do you wish to use the world's " + Config.S_SKILLING_EXP_RATE + "X", 0, true);
-				yFromTopDistance += 13;
+				yFromTopDistance += ui(13);
 				this.panelAppearance.addCenteredText(var6, yFromTopDistance, "xp rate? Note: By choosing no you can", 0, true);
-				yFromTopDistance += 13;
+				yFromTopDistance += ui(13);
 				this.panelAppearance.addCenteredText(var6, yFromTopDistance, "experience the original 1X xp rate!", 0, true);
-				yFromTopDistance += 13;
+				yFromTopDistance += ui(13);
 				String[] modes_xp = {
 					"Yes please", "No, original"
 				};
@@ -2120,56 +2140,60 @@ public final class mudclient implements Runnable {
 		try {
 
 			this.panelLoginWelcome = new Panel(this.getSurface(), 50);
-			byte yOffsetWelcome = 40;
+			this.panelLoginWelcome.setButtonColorScheme(GenUtil.buildColor(198, 170, 112), GenUtil.buildColor(150, 122, 76),
+				GenUtil.buildColor(96, 74, 44), GenUtil.buildColor(56, 42, 24));
+			int yOffsetWelcome = ui(40);
 			int yOffsetLogin = 0;
 			if (isAndroid()) {
-				yOffsetWelcome = -125;
-				yOffsetLogin = -200;
+				yOffsetWelcome = ui(-125);
+				yOffsetLogin = ui(-200);
 			}
 
 			if (!wantMembers()) { // Free version
-				this.panelLoginWelcome.addCenteredText(halfGameWidth(), halfGameHeight() + 23 + yOffsetWelcome, "Welcome to " + getServerNameWelcome(), 4, true);
-				this.panelLoginWelcome.addCenteredText(halfGameWidth(), halfGameHeight() + 38 + yOffsetWelcome, getWelcomeText(), 4, true);
+				this.panelLoginWelcome.addCenteredText(halfGameWidth(), halfGameHeight() + ui(23) + yOffsetWelcome, "Welcome to " + getServerNameWelcome(), 4, true);
+				this.panelLoginWelcome.addCenteredText(halfGameWidth(), halfGameHeight() + ui(38) + yOffsetWelcome, getWelcomeText(), 4, true);
 
-				panelLoginWelcome.addButtonBackground(halfGameWidth() - 100, halfGameHeight() + 73 + yOffsetWelcome, 120, 35);
-				panelLoginWelcome.addButtonBackground(halfGameWidth() + 100, halfGameHeight() + 73 + yOffsetWelcome, 120, 35);
+				panelLoginWelcome.addButtonBackground(halfGameWidth() - ui(100), halfGameHeight() + ui(73) + yOffsetWelcome, ui(120), ui(35));
+				panelLoginWelcome.addButtonBackground(halfGameWidth() + ui(100), halfGameHeight() + ui(73) + yOffsetWelcome, ui(120), ui(35));
 
-				panelLoginWelcome.addCenteredText(halfGameWidth() - 100, halfGameHeight() + 73 + yOffsetWelcome, "New User", 5, false);
-				panelLoginWelcome.addCenteredText(halfGameWidth() + 100, halfGameHeight() + 73 + yOffsetWelcome, "Existing User", 5, false);
+				panelLoginWelcome.addCenteredText(halfGameWidth() - ui(100), halfGameHeight() + ui(73) + yOffsetWelcome, "New User", 5, false);
+				panelLoginWelcome.addCenteredText(halfGameWidth() + ui(100), halfGameHeight() + ui(73) + yOffsetWelcome, "Existing User", 5, false);
 
-				loginButtonNewUser = panelLoginWelcome.addButton(halfGameWidth() - 100, halfGameHeight() + 73 + yOffsetWelcome, 120, 35);
-				loginButtonExistingUser = panelLoginWelcome.addButton(halfGameWidth() + 100, halfGameHeight() + 73 + yOffsetWelcome, 120, 35);
+				loginButtonNewUser = panelLoginWelcome.addButton(halfGameWidth() - ui(100), halfGameHeight() + ui(73) + yOffsetWelcome, ui(120), ui(35));
+				loginButtonExistingUser = panelLoginWelcome.addButton(halfGameWidth() + ui(100), halfGameHeight() + ui(73) + yOffsetWelcome, ui(120), ui(35));
 			} else { // Members version
-				this.panelLoginWelcome.addCenteredText(halfGameWidth(), halfGameHeight() + 33 + yOffsetWelcome, "Welcome to " + getServerNameWelcome(), 4, true);
-				this.panelLoginWelcome.addCenteredText(halfGameWidth(), halfGameHeight() + 48 + yOffsetWelcome, getWelcomeText(), 4, true);
+				this.panelLoginWelcome.addCenteredText(halfGameWidth(), halfGameHeight() + ui(33) + yOffsetWelcome, "Welcome to " + getServerNameWelcome(), 4, true);
+				this.panelLoginWelcome.addCenteredText(halfGameWidth(), halfGameHeight() + ui(48) + yOffsetWelcome, getWelcomeText(), 4, true);
 
-				panelLoginWelcome.addButtonBackground(halfGameWidth() - 100, halfGameHeight() + 83 + yOffsetWelcome, 120, 35);
-				panelLoginWelcome.addButtonBackground(halfGameWidth() + 100, halfGameHeight() + 83 + yOffsetWelcome, 120, 35);
+				panelLoginWelcome.addButtonBackground(halfGameWidth() - ui(100), halfGameHeight() + ui(83) + yOffsetWelcome, ui(120), ui(35));
+				panelLoginWelcome.addButtonBackground(halfGameWidth() + ui(100), halfGameHeight() + ui(83) + yOffsetWelcome, ui(120), ui(35));
 
-				panelLoginWelcome.addCenteredText(halfGameWidth() - 100, halfGameHeight() + 83 + yOffsetWelcome, "New User", 5, false);
-				panelLoginWelcome.addCenteredText(halfGameWidth() + 100, halfGameHeight() + 83 + yOffsetWelcome, "Existing User", 5, false);
+				panelLoginWelcome.addCenteredText(halfGameWidth() - ui(100), halfGameHeight() + ui(83) + yOffsetWelcome, "New User", 5, false);
+				panelLoginWelcome.addCenteredText(halfGameWidth() + ui(100), halfGameHeight() + ui(83) + yOffsetWelcome, "Existing User", 5, false);
 
-				loginButtonNewUser = panelLoginWelcome.addButton(halfGameWidth() - 100, halfGameHeight() + 83 + yOffsetWelcome, 120, 35);
-				loginButtonExistingUser = panelLoginWelcome.addButton(halfGameWidth() + 100, halfGameHeight() + 83 + yOffsetWelcome, 120, 35);
+				loginButtonNewUser = panelLoginWelcome.addButton(halfGameWidth() - ui(100), halfGameHeight() + ui(83) + yOffsetWelcome, ui(120), ui(35));
+				loginButtonExistingUser = panelLoginWelcome.addButton(halfGameWidth() + ui(100), halfGameHeight() + ui(83) + yOffsetWelcome, ui(120), ui(35));
 			}
 
 			this.panelLogin = new Panel(this.getSurface(), 50);
-			short androidHeightOffset = isAndroid() ? (short) 30 : 230;
-			this.controlLoginStatus1 = this.panelLogin.addCenteredText(halfGameWidth(), halfGameHeight() + 35 + yOffsetLogin, "", 4, true);
-			this.controlLoginStatus2 = this.panelLogin.addCenteredText(halfGameWidth(), halfGameHeight() + 55 + yOffsetLogin,
+			this.panelLogin.setButtonColorScheme(GenUtil.buildColor(198, 170, 112), GenUtil.buildColor(150, 122, 76),
+				GenUtil.buildColor(96, 74, 44), GenUtil.buildColor(56, 42, 24));
+			int androidHeightOffset = isAndroid() ? 30 : 230;
+			this.controlLoginStatus1 = this.panelLogin.addCenteredText(halfGameWidth(), halfGameHeight() + ui(35) + yOffsetLogin, "", 4, true);
+			this.controlLoginStatus2 = this.panelLogin.addCenteredText(halfGameWidth(), halfGameHeight() + ui(55) + yOffsetLogin,
 				"Please enter your username and password", 4, true);
 			int var6 = androidHeightOffset + 28;
-			this.panelLogin.addButtonBackground(halfGameWidth() - 116, halfGameHeight() + 91 + yOffsetLogin, 200, 40);
-			this.panelLogin.addCenteredText(halfGameWidth() - 116, halfGameHeight() + 81 + yOffsetLogin, "Username:", 4, false);
-			this.controlLoginUser = this.panelLogin.addCenteredTextEntry(halfGameWidth() - 116, halfGameHeight() + 98 + yOffsetLogin, 200, 320, 40, 4, false, false);
+			this.panelLogin.addButtonBackground(halfGameWidth() - ui(116), halfGameHeight() + ui(91) + yOffsetLogin, ui(200), ui(40));
+			this.panelLogin.addCenteredText(halfGameWidth() - ui(116), halfGameHeight() + ui(81) + yOffsetLogin, "Username:", 4, false);
+			this.controlLoginUser = this.panelLogin.addCenteredTextEntry(halfGameWidth() - ui(116), halfGameHeight() + ui(98) + yOffsetLogin, ui(200), 320, ui(40), 4, false, false);
 
 			if (var1 != 3845) {
 				this.drawNPC(51, 106, -15, -96, 26, 108, 22, -63);
 			}
 
-			this.panelLogin.addButtonBackground(halfGameWidth() - 46, halfGameHeight() + 138 + yOffsetLogin, 200, 40);
-			this.panelLogin.addCenteredText(halfGameWidth() - 46, halfGameHeight() + 128 + yOffsetLogin, "Password:", 4, false);
-			this.controlLoginPass = this.panelLogin.addCenteredTextEntry(halfGameWidth() - 46, halfGameHeight() + 146 + yOffsetLogin, 200, 20, 40, 4, true, false);
+			this.panelLogin.addButtonBackground(halfGameWidth() - ui(46), halfGameHeight() + ui(138) + yOffsetLogin, ui(200), ui(40));
+			this.panelLogin.addCenteredText(halfGameWidth() - ui(46), halfGameHeight() + ui(128) + yOffsetLogin, "Password:", 4, false);
+			this.controlLoginPass = this.panelLogin.addCenteredTextEntry(halfGameWidth() - ui(46), halfGameHeight() + ui(146) + yOffsetLogin, ui(200), 20, ui(40), 4, true, false);
 
 			if (Remember()) {
 				String cred = ClientPort.loadCredentials();
@@ -2184,16 +2208,16 @@ public final class mudclient implements Runnable {
 				}
 			}
 
-			this.panelLogin.addButtonBackground(halfGameWidth() + 154, halfGameHeight() + 83 + yOffsetLogin, 120, 25);
-			this.panelLogin.addCenteredText(halfGameWidth() + 154, halfGameHeight() + 83 + yOffsetLogin, "Ok", 4, false);
-			this.m_be = this.panelLogin.addButton(halfGameWidth() + 154, halfGameHeight() + 83 + yOffsetLogin, 120, 25);
-			this.panelLogin.addButtonBackground(halfGameWidth() + 154, halfGameHeight() + 113 + yOffsetLogin, 120, 25);
-			this.panelLogin.addCenteredText(halfGameWidth() + 154, halfGameHeight() + 113 + yOffsetLogin, "Cancel", 4, false);
-			this.m_Xi = this.panelLogin.addButton(halfGameWidth() + 154, halfGameHeight() + 113 + yOffsetLogin, 120, 25);
+			this.panelLogin.addButtonBackground(halfGameWidth() + ui(154), halfGameHeight() + ui(83) + yOffsetLogin, ui(120), ui(25));
+			this.panelLogin.addCenteredText(halfGameWidth() + ui(154), halfGameHeight() + ui(83) + yOffsetLogin, "Ok", 4, false);
+			this.m_be = this.panelLogin.addButton(halfGameWidth() + ui(154), halfGameHeight() + ui(83) + yOffsetLogin, ui(120), ui(25));
+			this.panelLogin.addButtonBackground(halfGameWidth() + ui(154), halfGameHeight() + ui(113) + yOffsetLogin, ui(120), ui(25));
+			this.panelLogin.addCenteredText(halfGameWidth() + ui(154), halfGameHeight() + ui(113) + yOffsetLogin, "Cancel", 4, false);
+			this.m_Xi = this.panelLogin.addButton(halfGameWidth() + ui(154), halfGameHeight() + ui(113) + yOffsetLogin, ui(120), ui(25));
 			this.panelLogin.setFocus(this.controlLoginUser);
-			this.panelLogin.addButtonBackground(halfGameWidth() + 154, halfGameHeight() + 143 + yOffsetLogin, 120, 25);
-			this.panelLogin.addCenteredText(halfGameWidth() + 154, halfGameHeight() + 143 + yOffsetLogin, "Forgot password", 4, false);
-			this.lostPasswordButtonIdx = this.panelLogin.addButton(halfGameWidth() + 154, halfGameHeight() + 143 + yOffsetLogin, 120, 25);
+			this.panelLogin.addButtonBackground(halfGameWidth() + ui(154), halfGameHeight() + ui(143) + yOffsetLogin, ui(120), ui(25));
+			this.panelLogin.addCenteredText(halfGameWidth() + ui(154), halfGameHeight() + ui(143) + yOffsetLogin, "Forgot password", 4, false);
+			this.lostPasswordButtonIdx = this.panelLogin.addButton(halfGameWidth() + ui(154), halfGameHeight() + ui(143) + yOffsetLogin, ui(120), ui(25));
 
 			//int offRememb = -1;
 			//int offHide = -1;
@@ -2211,75 +2235,77 @@ public final class mudclient implements Runnable {
 			if (S_WANT_HIDE_IP) {
 				this.settingsHideIP = ClientPort.loadHideIp();
 				String text = (this.settingsHideIP != 1) ? "Hide IP" : "Show IP";
-				this.panelLogin.addButtonBackground(halfGameWidth() + 24, halfGameHeight() + 91 + yOffsetLogin, 60, 40);
-				this.panelLogin.addCenteredText(halfGameWidth() + 24, halfGameHeight() + 91 + yOffsetLogin, text, 3, false);
-				this.hideIpButtonIdx = this.panelLogin.addButton(halfGameWidth() + 24, halfGameHeight() + 91 + yOffsetLogin, 60, 40);
+				this.panelLogin.addButtonBackground(halfGameWidth() + ui(24), halfGameHeight() + ui(91) + yOffsetLogin, ui(60), ui(40));
+				this.panelLogin.addCenteredText(halfGameWidth() + ui(24), halfGameHeight() + ui(91) + yOffsetLogin, text, 3, false);
+				this.hideIpButtonIdx = this.panelLogin.addButton(halfGameWidth() + ui(24), halfGameHeight() + ui(91) + yOffsetLogin, ui(60), ui(40));
 			}
 			if (Remember()) {
-				this.panelLogin.addButtonBackground(halfGameWidth() - 186, halfGameHeight() + 138 + yOffsetLogin, 60, 40);
-				this.panelLogin.addCenteredText(halfGameWidth() - 186, halfGameHeight() + 138 + yOffsetLogin, "Save", 3, false);
-				this.rememberButtonIdx = this.panelLogin.addButton(halfGameWidth() - 186, halfGameHeight() + 138 + yOffsetLogin, 60, 40);
+				this.panelLogin.addButtonBackground(halfGameWidth() - ui(186), halfGameHeight() + ui(138) + yOffsetLogin, ui(60), ui(40));
+				this.panelLogin.addCenteredText(halfGameWidth() - ui(186), halfGameHeight() + ui(138) + yOffsetLogin, "Save", 3, false);
+				this.rememberButtonIdx = this.panelLogin.addButton(halfGameWidth() - ui(186), halfGameHeight() + ui(138) + yOffsetLogin, ui(60), ui(40));
 			}
 
 			/* Registration setup */
 
 			menuNewUser = new Panel(getSurface(), 50);
+			menuNewUser.setButtonColorScheme(GenUtil.buildColor(198, 170, 112), GenUtil.buildColor(150, 122, 76),
+				GenUtil.buildColor(96, 74, 44), GenUtil.buildColor(56, 42, 24));
 			if (isAndroid()) {
-				menuNewUser.addCenteredText(halfGameWidth() - 6, halfGameHeight() - 149, "@whi@To open keyboard press the back button", 5, false);
+				menuNewUser.addCenteredText(halfGameWidth() - ui(6), halfGameHeight() - ui(149), "@whi@To open keyboard press the back button", 5, false);
 			}
-			menuNewUser.addCenteredText(halfGameWidth() - 6, halfGameHeight() - 127, "@whi@Enter a username between 2 and 12 characters long", 1, false);
-			menuNewUser.addCenteredText(halfGameWidth() - 6, halfGameHeight() - 116, "@red@(Only regular letters, numbers and spaces are allowed)", 0, false);
-			menuNewUser.addButtonBackground(halfGameWidth() - 6, halfGameHeight() - 90, 420, 34);
-			menuNewUser.addCenteredText(halfGameWidth() - 6, halfGameHeight() - 99, "Choose a Username (This is the name other users will see)", 4,
+			menuNewUser.addCenteredText(halfGameWidth() - ui(6), halfGameHeight() - ui(127), "@whi@Enter a username between 2 and 12 characters long", 1, false);
+			menuNewUser.addCenteredText(halfGameWidth() - ui(6), halfGameHeight() - ui(116), "@red@(Only regular letters, numbers and spaces are allowed)", 0, false);
+			menuNewUser.addButtonBackground(halfGameWidth() - ui(6), halfGameHeight() - ui(90), ui(420), ui(34));
+			menuNewUser.addCenteredText(halfGameWidth() - ui(6), halfGameHeight() - ui(99), "Choose a Username (This is the name other users will see)", 4,
 				false);
-			menuNewUserUsername = menuNewUser.addCenteredTextEntry(halfGameWidth() - 6, halfGameHeight() - 82, 200, 12, 40, 4, false, false);
+			menuNewUserUsername = menuNewUser.addCenteredTextEntry(halfGameWidth() - ui(6), halfGameHeight() - ui(82), ui(200), 12, ui(40), 4, false, false);
 
 			if (!wantEmail()) { // moves the password box down a bit for a clean look
-				menuNewUser.addCenteredText(halfGameWidth() - 6, halfGameHeight() - 38, "@whi@Password must be at least between 4 and 20 characters long", 1, false);
-				menuNewUser.addCenteredText(halfGameWidth() - 6, halfGameHeight() - 27, "@red@(DO NOT use the same password that you use elsewhere. Regular letters and numbers only)", 0, false);
+				menuNewUser.addCenteredText(halfGameWidth() - ui(6), halfGameHeight() - ui(38), "@whi@Password must be at least between 4 and 20 characters long", 1, false);
+				menuNewUser.addCenteredText(halfGameWidth() - ui(6), halfGameHeight() - ui(27), "@red@(DO NOT use the same password that you use elsewhere. Regular letters and numbers only)", 0, false);
 
-				menuNewUser.addButtonBackground(halfGameWidth() - 106 - 6, halfGameHeight() - 1, 208, 34);
-				menuNewUser.addCenteredText(halfGameWidth() - 106 - 6, halfGameHeight() - 6, "Choose a Password", 4, false);
-				menuNewUserPassword = menuNewUser.addCenteredTextEntry(halfGameWidth() - 106 - 6, halfGameHeight() + 7, 100, 20, 40, 4, true, false);
+				menuNewUser.addButtonBackground(halfGameWidth() - ui(106) - ui(6), halfGameHeight() - ui(1), ui(208), ui(34));
+				menuNewUser.addCenteredText(halfGameWidth() - ui(106) - ui(6), halfGameHeight() - ui(6), "Choose a Password", 4, false);
+				menuNewUserPassword = menuNewUser.addCenteredTextEntry(halfGameWidth() - ui(106) - ui(6), halfGameHeight() + ui(7), ui(100), 20, ui(40), 4, true, false);
 
-				menuNewUser.addButtonBackground(halfGameWidth() + 106 - 6, halfGameHeight() - 1, 208, 34);
-				menuNewUser.addCenteredText(halfGameWidth() + 106 - 6, halfGameHeight() - 6, "Confirm Password", 4, false);
-				menuNewUserConfirmPassword = menuNewUser.addCenteredTextEntry(halfGameWidth() + 106 - 6, halfGameHeight() + 7, 100, 20, 40, 4, true, false);
+				menuNewUser.addButtonBackground(halfGameWidth() + ui(106) - ui(6), halfGameHeight() - ui(1), ui(208), ui(34));
+				menuNewUser.addCenteredText(halfGameWidth() + ui(106) - ui(6), halfGameHeight() - ui(6), "Confirm Password", 4, false);
+				menuNewUserConfirmPassword = menuNewUser.addCenteredTextEntry(halfGameWidth() + ui(106) - ui(6), halfGameHeight() + ui(7), ui(100), 20, ui(40), 4, true, false);
 			} else { // leaves space for the email box below
-				menuNewUser.addCenteredText(halfGameWidth() - 6, halfGameHeight() - 64, "@whi@Password must be at least between 4 and 20 characters long", 1, false);
-				menuNewUser.addCenteredText(halfGameWidth() - 6, halfGameHeight() - 53, "@red@(DO NOT use the same password that you use elsewhere. Regular letters and numbers only)", 0, false);
+				menuNewUser.addCenteredText(halfGameWidth() - ui(6), halfGameHeight() - ui(64), "@whi@Password must be at least between 4 and 20 characters long", 1, false);
+				menuNewUser.addCenteredText(halfGameWidth() - ui(6), halfGameHeight() - ui(53), "@red@(DO NOT use the same password that you use elsewhere. Regular letters and numbers only)", 0, false);
 
-				menuNewUser.addButtonBackground(halfGameWidth() - 106 - 6, halfGameHeight() - 28, 208, 34);
-				menuNewUser.addCenteredText(halfGameWidth() - 106 - 6, halfGameHeight() - 37, "Choose a Password", 4, false);
-				menuNewUserPassword = menuNewUser.addCenteredTextEntry(halfGameWidth() - 106 - 6, halfGameHeight() - 20, 100, 20, 40, 4, true, false);
+				menuNewUser.addButtonBackground(halfGameWidth() - ui(106) - ui(6), halfGameHeight() - ui(28), ui(208), ui(34));
+				menuNewUser.addCenteredText(halfGameWidth() - ui(106) - ui(6), halfGameHeight() - ui(37), "Choose a Password", 4, false);
+				menuNewUserPassword = menuNewUser.addCenteredTextEntry(halfGameWidth() - ui(106) - ui(6), halfGameHeight() - ui(20), ui(100), 20, ui(40), 4, true, false);
 
-				menuNewUser.addButtonBackground(halfGameWidth() + 106 - 6, halfGameHeight() - 28, 208, 34);
-				menuNewUser.addCenteredText(halfGameWidth() + 106 - 6, halfGameHeight() - 37, "Confirm Password", 4, false);
-				menuNewUserConfirmPassword = menuNewUser.addCenteredTextEntry(halfGameWidth() + 106 - 6, halfGameHeight() - 20, 100, 20, 40, 4, true, false);
+				menuNewUser.addButtonBackground(halfGameWidth() + ui(106) - ui(6), halfGameHeight() - ui(28), ui(208), ui(34));
+				menuNewUser.addCenteredText(halfGameWidth() + ui(106) - ui(6), halfGameHeight() - ui(37), "Confirm Password", 4, false);
+				menuNewUserConfirmPassword = menuNewUser.addCenteredTextEntry(halfGameWidth() + ui(106) - ui(6), halfGameHeight() - ui(20), ui(100), 20, ui(40), 4, true, false);
 			}
 
 			if (wantEmail()) {
-				menuNewUser.addCenteredText(halfGameWidth() - 6, halfGameHeight() - 2, "@whi@It's recommended to use a valid email address", 1, false);
-				menuNewUser.addButtonBackground(halfGameWidth() - 6, halfGameHeight() + 26, 420, 34);
-				menuNewUser.addCenteredText(halfGameWidth() - 6, halfGameHeight() + 17, "E-mail address", 4, false);
-				menuNewUserEmail = menuNewUser.addCenteredTextEntry(halfGameWidth(), halfGameHeight() + 34, 200, 40, 40, 4, false, false);
+				menuNewUser.addCenteredText(halfGameWidth() - ui(6), halfGameHeight() - ui(2), "@whi@It's recommended to use a valid email address", 1, false);
+				menuNewUser.addButtonBackground(halfGameWidth() - ui(6), halfGameHeight() + ui(26), ui(420), ui(34));
+				menuNewUser.addCenteredText(halfGameWidth() - ui(6), halfGameHeight() + ui(17), "E-mail address", 4, false);
+				menuNewUserEmail = menuNewUser.addCenteredTextEntry(halfGameWidth(), halfGameHeight() + ui(34), ui(200), 40, ui(40), 4, false, false);
 			}
 
 			// menuNewUser.addButtonBackground(250, i + 22, 420, 44);
 
-			menuNewUser.addButtonBackground(halfGameWidth() - 81, halfGameHeight() + 66, 270, 34);
-			menuNewUserStatus = menuNewUser.addCenteredText(halfGameWidth() - 81, halfGameHeight() + 57,
+			menuNewUser.addButtonBackground(halfGameWidth() - ui(81), halfGameHeight() + ui(66), ui(270), ui(34));
+			menuNewUserStatus = menuNewUser.addCenteredText(halfGameWidth() - ui(81), halfGameHeight() + ui(57),
 				"To create an account please enter", 4, true);
-			menuNewUserStatus2 = menuNewUser.addCenteredText(halfGameWidth() - 81, halfGameHeight() + 74,
+			menuNewUserStatus2 = menuNewUser.addCenteredText(halfGameWidth() - ui(81), halfGameHeight() + ui(74),
 				"all the requested details", 4, true);
 
-			menuNewUser.addButtonBackground(halfGameWidth() + 94, halfGameHeight() + 66, 70, 34);
-			menuNewUser.addCenteredText(halfGameWidth() + 94, halfGameHeight() + 66, "Submit", 5, false);
-			menuNewUserSubmit = menuNewUser.addButton(halfGameWidth() + 79, halfGameHeight() + 66, 100, 34);
+			menuNewUser.addButtonBackground(halfGameWidth() + ui(94), halfGameHeight() + ui(66), ui(70), ui(34));
+			menuNewUser.addCenteredText(halfGameWidth() + ui(94), halfGameHeight() + ui(66), "Submit", 5, false);
+			menuNewUserSubmit = menuNewUser.addButton(halfGameWidth() + ui(79), halfGameHeight() + ui(66), ui(100), ui(34));
 
-			menuNewUser.addButtonBackground(halfGameWidth() + 169, halfGameHeight() + 66, 70, 34);
-			menuNewUser.addCenteredText(halfGameWidth() + 169, halfGameHeight() + 66, "Cancel", 5, false);
-			menuNewUserCancel = menuNewUser.addButton(halfGameWidth() + 169, halfGameHeight() + 66, 100, 34);
+			menuNewUser.addButtonBackground(halfGameWidth() + ui(169), halfGameHeight() + ui(66), ui(70), ui(34));
+			menuNewUser.addCenteredText(halfGameWidth() + ui(169), halfGameHeight() + ui(66), "Cancel", 5, false);
+			menuNewUserCancel = menuNewUser.addButton(halfGameWidth() + ui(169), halfGameHeight() + ui(66), ui(100), ui(34));
 
 		} catch (RuntimeException var4) {
 			throw GenUtil.makeThrowable(var4, "client.B(" + var1 + ')');
@@ -2289,11 +2315,11 @@ public final class mudclient implements Runnable {
 	private void createMessageTabPanel(int var1) {
 		try {
 			this.panelMessageTabs = new Panel(this.getSurface(), 10);
-			this.panelMessageChat = this.panelMessageTabs.addScrollingList2(5, 269, 502, var1, 20, 1, true);
-			this.panelMessageEntry = this.panelMessageTabs.addLeftTextEntry(7, 324, 498, 14, 1, 80, false, true);
-			this.panelMessageQuest = this.panelMessageTabs.addScrollingList2(5, 269, 502, 56, 20, 1, true);
-			this.panelMessagePrivate = this.panelMessageTabs.addScrollingList2(5, 269, 502, 56, 20, 1, true);
-			this.panelMessageClan = this.panelMessageTabs.addScrollingList2(5, 269, 502, 56, 20, 1, true);
+			this.panelMessageChat = this.panelMessageTabs.addScrollingList2(ui(5), ui(269), ui(502), ui(var1), 20, 1, true);
+			this.panelMessageEntry = this.panelMessageTabs.addLeftTextEntry(ui(7), ui(324), ui(498), ui(14), 1, 80, false, true);
+			this.panelMessageQuest = this.panelMessageTabs.addScrollingList2(ui(5), ui(269), ui(502), ui(56), 20, 1, true);
+			this.panelMessagePrivate = this.panelMessageTabs.addScrollingList2(ui(5), ui(269), ui(502), ui(56), 20, 1, true);
+			this.panelMessageClan = this.panelMessageTabs.addScrollingList2(ui(5), ui(269), ui(502), ui(56), 20, 1, true);
 			this.panelMessageTabs.setFocus(this.panelMessageEntry);
 		} catch (RuntimeException var3) {
 			throw GenUtil.makeThrowable(var3, "client.JC(" + var1 + ')');
@@ -2550,7 +2576,7 @@ public final class mudclient implements Runnable {
 						int var7 = this.menuCommon.getHeight();
 						this.menuX = this.mouseX - menuWidth / 2;
 						this.topMouseMenuVisible = true;
-						this.menuY = this.mouseY - 7;
+						this.menuY = this.mouseY - ui(7);
 						if (this.menuX < 0) {
 							this.menuX = 0;
 						}
@@ -2560,12 +2586,12 @@ public final class mudclient implements Runnable {
 						}
 
 						this.mouseButtonClick = 0;
-						if (this.menuY + var7 > getGameHeight() - 19) {
-							this.menuY = getGameHeight() - 19 - var7;
+						if (this.menuY + var7 > getGameHeight() - ui(19)) {
+							this.menuY = getGameHeight() - ui(19) - var7;
 						}
 
-						if (menuWidth + this.menuX > getGameWidth() - 2) {
-							this.menuX = getGameWidth() - 2 - menuWidth;
+						if (menuWidth + this.menuX > getGameWidth() - ui(2)) {
+							this.menuX = getGameWidth() - ui(2) - menuWidth;
 						}
 					}
 				}
@@ -2646,6 +2672,8 @@ public final class mudclient implements Runnable {
 							return;
 						}
 
+						this.getSurface().uiScale = this.uiScale;
+
 						if (this.currentViewMode == GameMode.LOGIN) {
 							this.getSurface().loggedIn = false;
 							this.drawLogin();
@@ -2678,46 +2706,45 @@ public final class mudclient implements Runnable {
 			this.getSurface().interlace = false;
 			this.getSurface().blackScreen(true);
 			this.panelAppearance.drawPanel();
-			short var2 = 140;
-			int var5 = var2 + 116;
+			int var5 = halfGameWidth();
 
 			var5 /= factor;
 
-			byte var3 = 50;
-			int y = var3 - 25;
+			int var3 = ui(50);
+			int y = var3 - ui(25);
 
 			// pants
-			this.getSurface().spriteClip3(var5 - 87, this.getPlayerClothingColors()[this.characterBottomColour],
-				spriteSelect(EntityHandler.getAnimationDef(this.character2Colour), 0), y, 102, (byte) 105, 64);
+			this.getSurface().spriteClip3(var5 - ui(87), this.getPlayerClothingColors()[this.characterBottomColour],
+				spriteSelect(EntityHandler.getAnimationDef(this.character2Colour), 0), y, ui(102), (byte) 105, ui(64));
 
 			// body
-			this.getSurface().drawSpriteClipping(spriteSelect(EntityHandler.getAnimationDef(appearanceBodyGender), 0), var5 - 32 - 55, y, 64,
-				102, this.getPlayerClothingColors()[this.characterTopColour], this.getPlayerSkinColors()[this.appearanceSkinColour], 0, false, 0, 1);
+			this.getSurface().drawSpriteClipping(spriteSelect(EntityHandler.getAnimationDef(appearanceBodyGender), 0), var5 - ui(32) - ui(55), y, ui(64),
+				ui(102), this.getPlayerClothingColors()[this.characterTopColour], this.getPlayerSkinColors()[this.appearanceSkinColour], 0, false, 0, 1);
 
 			this.getSurface().drawSpriteClipping(spriteSelect(EntityHandler.getAnimationDef(appearanceHeadType), 0),
-				var5 - 32 - 55, y, 64, 102, this.getPlayerHairColors()[this.appearanceHairColour],
+				var5 - ui(32) - ui(55), y, ui(64), ui(102), this.getPlayerHairColors()[this.appearanceHairColour],
 				this.getPlayerSkinColors()[this.appearanceSkinColour], 0, false, 0, var1 + 13760);
 
-			this.getSurface().spriteClip3(var5 - 32, this.getPlayerClothingColors()[this.characterBottomColour],
-				spriteSelect(EntityHandler.getAnimationDef(character2Colour), 6), y, 102, (byte) 105, 64);
+			this.getSurface().spriteClip3(var5 - ui(32), this.getPlayerClothingColors()[this.characterBottomColour],
+				spriteSelect(EntityHandler.getAnimationDef(character2Colour), 6), y, ui(102), (byte) 105, ui(64));
 
-			this.getSurface().drawSpriteClipping(spriteSelect(EntityHandler.getAnimationDef(this.appearanceBodyGender), 6), var5 - 32, y,
-				64, 102, this.getPlayerClothingColors()[this.characterTopColour], this.getPlayerSkinColors()[this.appearanceSkinColour], 0, false, 0,
+			this.getSurface().drawSpriteClipping(spriteSelect(EntityHandler.getAnimationDef(this.appearanceBodyGender), 6), var5 - ui(32), y,
+				ui(64), ui(102), this.getPlayerClothingColors()[this.characterTopColour], this.getPlayerSkinColors()[this.appearanceSkinColour], 0, false, 0,
 				1);
 
 			this.getSurface().drawSpriteClipping(spriteSelect(EntityHandler.getAnimationDef(this.appearanceHeadType), 6),
-				var5 - 32, y, 64, 102, this.getPlayerHairColors()[this.appearanceHairColour], this.getPlayerSkinColors()[this.appearanceSkinColour],
+				var5 - ui(32), y, ui(64), ui(102), this.getPlayerHairColors()[this.appearanceHairColour], this.getPlayerSkinColors()[this.appearanceSkinColour],
 				0, false, 0, 1);
 
-			this.getSurface().spriteClip3(var5 + 55 - 32, this.getPlayerClothingColors()[this.characterBottomColour],
-				spriteSelect(EntityHandler.getAnimationDef(this.character2Colour), 12), y, 102, (byte) 110, 64);
+			this.getSurface().spriteClip3(var5 + ui(55) - ui(32), this.getPlayerClothingColors()[this.characterBottomColour],
+				spriteSelect(EntityHandler.getAnimationDef(this.character2Colour), 12), y, ui(102), (byte) 110, ui(64));
 
 			this.getSurface().drawSpriteClipping(spriteSelect(EntityHandler.getAnimationDef(this.appearanceBodyGender), 12),
-				55 + (var5 - 32), y, 64, 102, this.getPlayerClothingColors()[this.characterTopColour],
+				ui(55) + (var5 - ui(32)), y, ui(64), ui(102), this.getPlayerClothingColors()[this.characterTopColour],
 				this.getPlayerSkinColors()[this.appearanceSkinColour], 0, false, 0, var1 + 13760);
 
 			this.getSurface().drawSpriteClipping(
-				spriteSelect(EntityHandler.getAnimationDef(this.appearanceHeadType), 12), var5 + 55 - 32, y, 64, 102,
+				spriteSelect(EntityHandler.getAnimationDef(this.appearanceHeadType), 12), var5 + ui(55) - ui(32), y, ui(64), ui(102),
 				this.getPlayerHairColors()[this.appearanceHairColour], this.getPlayerSkinColors()[this.appearanceSkinColour], 0, false, 0, 1);
 			this.getSurface().drawSprite(spriteSelect(GUIPARTS.BLUEBAR.getDef()), 0, this.getGameHeight());
 			// this.getSurface().draw(this.graphics, this.screenOffsetX, 256,
@@ -2748,6 +2775,51 @@ public final class mudclient implements Runnable {
 		return getSurface().spriteSelect(sprite);
 	}
 
+	/**
+	 * Fades an entity's health bar in from 0 to full (192) alpha based on its projected
+	 * on-screen width, since world-space distance isn't available at the 2D overlay layer —
+	 * only the already-perspective-projected size is. Avoids health bars snapping in at full
+	 * opacity the instant an entity crosses the draw-distance cutoff in Scene.java.
+	 */
+	private static final int HEALTH_BAR_FADE_MIN_WIDTH = 4;
+	private static final int HEALTH_BAR_FADE_MAX_WIDTH = 20;
+
+	private int computeDistanceFadeAlpha(int projectedWidth) {
+		if (projectedWidth >= HEALTH_BAR_FADE_MAX_WIDTH) {
+			return 192;
+		}
+		if (projectedWidth <= HEALTH_BAR_FADE_MIN_WIDTH) {
+			return 0;
+		}
+		return 192 * (projectedWidth - HEALTH_BAR_FADE_MIN_WIDTH) / (HEALTH_BAR_FADE_MAX_WIDTH - HEALTH_BAR_FADE_MIN_WIDTH);
+	}
+
+	/**
+	 * Approximates a distance fade for text/2D-overlay colors without needing true
+	 * alpha-blended text rendering (the plain, non-antialiased draw path has no alpha
+	 * concept at all — see the font-scaling work earlier this session). Blends the
+	 * color toward black in proportion to a 0-192 alpha value (same scale as
+	 * {@link #computeDistanceFadeAlpha}), which reads as "fading in" against the
+	 * game's dark 3D backdrop without touching the text renderer itself.
+	 */
+	private int fadeColorByAlpha(int color, int alpha) {
+		if (alpha >= 192) {
+			return color;
+		}
+		if (alpha <= 0) {
+			return 0;
+		}
+		int r = ((color >> 16) & 0xFF) * alpha / 192;
+		int g = ((color >> 8) & 0xFF) * alpha / 192;
+		int b = (color & 0xFF) * alpha / 192;
+		return (r << 16) | (g << 8) | b;
+	}
+
+	/** Same as {@link #fadeColorByAlpha}, but computes the alpha from an entity's projected on-screen width first. */
+	private int fadeColorByDistance(int color, int projectedWidth) {
+		return fadeColorByAlpha(color, computeDistanceFadeAlpha(projectedWidth));
+	}
+
 	private void drawCharacterOverlay() {
 		try {
 			for (int i = 0; this.characterDialogCount > i; ++i) {
@@ -2773,7 +2845,8 @@ public final class mudclient implements Runnable {
 				}
 
 				this.characterDialogY[i] = y;
-				this.getSurface().drawWrappedCenteredString(this.characterDialogString[i], x, y, 300, 1, 0xFFFF00,
+				this.getSurface().drawWrappedCenteredString(this.characterDialogString[i], x, y, 300, 1,
+					fadeColorByAlpha(0xFFFF00, this.characterDialogAlpha[i]),
 					false);
 			}
 
@@ -2799,8 +2872,9 @@ public final class mudclient implements Runnable {
 				int x = this.characterHealthX[i];
 				int y = this.characterHealthY[i];
 				int percent = this.characterHealthBar[i];
-				this.getSurface().drawBoxAlpha(x - 15, y - 3, percent, 5, 0x00FF00, 192);
-				this.getSurface().drawBoxAlpha(percent - 15 + x, y - 3, 30 - percent, 5, 0xFF0000, 192);
+				int alpha = this.characterHealthAlpha[i];
+				this.getSurface().drawBoxAlpha(x - 15, y - 3, percent, 5, 0x00FF00, alpha);
+				this.getSurface().drawBoxAlpha(percent - 15 + x, y - 3, 30 - percent, 5, 0xFF0000, alpha);
 			}
 
 		} catch (RuntimeException var12) {
@@ -2810,13 +2884,13 @@ public final class mudclient implements Runnable {
 
 	private void drawChatMessageTabs(int var1) {
 		try {
-			this.getSurface().drawSpriteClipping(spriteSelect(GUIPARTS.BLUEBAR.getDef()), 0, getGameHeight(), getGameWidth(), 10, 0, 0, 0, false, 0, 1);
+			this.getSurface().drawSpriteClipping(spriteSelect(GUIPARTS.BLUEBAR.getDef()), 0, getGameHeight(), getGameWidth(), ui(10), 0, 0, 0, false, 0, 1);
 			if (S_WANT_CLANS) {
-				this.getSurface().drawSprite(spriteSelect(GUIPARTS.CHATTABS.getDef()), halfGameWidth() - 256,
-					this.getGameHeight() - 4);
+				this.getSurface().drawSprite(spriteSelect(GUIPARTS.CHATTABS.getDef()), halfGameWidth() - ui(256),
+					this.getGameHeight() - ui(4));
 			} else {
-				this.getSurface().drawSprite(spriteSelect(GUIPARTS.CHATTABSCLAN.getDef()), halfGameWidth() - 256,
-					this.getGameHeight() - 4);
+				this.getSurface().drawSprite(spriteSelect(GUIPARTS.CHATTABSCLAN.getDef()), halfGameWidth() - ui(256),
+					this.getGameHeight() - ui(4));
 			}
 
 			if (var1 == 5) {
@@ -2827,8 +2901,8 @@ public final class mudclient implements Runnable {
 				if (this.messageTabActivity_Game % 30 > 15) {
 					color = GenUtil.buildColor(255, 50, 50);
 				}
-				this.getSurface().drawColoredStringCentered(halfGameWidth() - 200, "All messages", color, 0, 0,
-					6 + this.getGameHeight());
+				this.getSurface().drawColoredStringCentered(halfGameWidth() - ui(200), "All messages", color, 0, 0,
+					ui(6) + this.getGameHeight());
 
 				color = GenUtil.buildColor(255, 255, 255);
 				if (this.messageTabSelected == MessageTab.CHAT) {
@@ -2837,8 +2911,8 @@ public final class mudclient implements Runnable {
 				if (this.messageTabActivity_Chat % 30 > 15) {
 					color = GenUtil.buildColor(255, 50, 50);
 				}
-				this.getSurface().drawColoredStringCentered(halfGameWidth() - 100, "Chat history", color, 0, 0,
-					this.getGameHeight() + 6);
+				this.getSurface().drawColoredStringCentered(halfGameWidth() - ui(100), "Chat history", color, 0, 0,
+					this.getGameHeight() + ui(6));
 
 				color = GenUtil.buildColor(255, 255, 255);
 				if (this.messageTabSelected == MessageTab.QUEST) {
@@ -2848,7 +2922,7 @@ public final class mudclient implements Runnable {
 					color = GenUtil.buildColor(255, 50, 50);
 				}
 				this.getSurface().drawColoredStringCentered(halfGameWidth(), "Quest history", color, 0, 0,
-					6 + this.getGameHeight());
+					ui(6) + this.getGameHeight());
 
 				color = GenUtil.buildColor(255, 255, 255);
 				if (this.messageTabSelected == MessageTab.PRIVATE) {
@@ -2857,8 +2931,8 @@ public final class mudclient implements Runnable {
 				if (this.messageTabActivity_Private % 30 > 15) {
 					color = GenUtil.buildColor(255, 50, 50);
 				}
-				this.getSurface().drawColoredStringCentered(halfGameWidth() + 100, "Private history", color, 0, 0,
-					this.getGameHeight() + 6);
+				this.getSurface().drawColoredStringCentered(halfGameWidth() + ui(100), "Private history", color, 0, 0,
+					this.getGameHeight() + ui(6));
 				if (S_WANT_CLANS) {
 					color = GenUtil.buildColor(255, 255, 255);
 					if (this.messageTabSelected == MessageTab.CLAN) {
@@ -2867,10 +2941,10 @@ public final class mudclient implements Runnable {
 					if (this.messageTabActivity_Clan % 30 > 15) {
 						color = GenUtil.buildColor(255, 50, 50);
 					}
-					this.getSurface().drawColoredStringCentered(halfGameWidth() + 200, "Clan history", color, 0, 0, 6 + this.getGameHeight());
+					this.getSurface().drawColoredStringCentered(halfGameWidth() + ui(200), "Clan history", color, 0, 0, ui(6) + this.getGameHeight());
 				} else {
 					color = GenUtil.buildColor(255, 255, 255);
-					this.getSurface().drawColoredStringCentered(halfGameWidth() + 200, "Report Abuse", color, 0, 0, 6 + this.getGameHeight());
+					this.getSurface().drawColoredStringCentered(halfGameWidth() + ui(200), "Report Abuse", color, 0, 0, ui(6) + this.getGameHeight());
 				}
 			}
 		} catch (RuntimeException var3) {
@@ -2881,18 +2955,18 @@ public final class mudclient implements Runnable {
 	private void drawDialogCombatStyle() {
 		try {
 
-			byte sx = 7;
-			byte sy = 15;
-			short width;
+			int sx = ui(7);
+			int sy = ui(15);
+			int width;
 			if (isAndroid()) {
-				width = 140;
+				width = ui(140);
 			} else {
-				width = 175;
+				width = ui(175);
 			}
 			if (this.mouseButtonClick != 0) {
 				for (int row = 1; row < 5; ++row) {
-					if (row > 0 && sx < this.mouseX && this.mouseX < width + sx && this.mouseY > row * 20 + sy
-						&& row * 20 + sy + 20 > this.mouseY) {
+					if (row > 0 && sx < this.mouseX && this.mouseX < width + sx && this.mouseY > row * ui(20) + sy
+						&& row * ui(20) + sy + ui(20) > this.mouseY) {
 						this.mouseButtonClick = 0;
 						this.combatStyle = row - 1;
 						this.proposedStyle = this.combatStyle;
@@ -2906,21 +2980,21 @@ public final class mudclient implements Runnable {
 
 			for (int row = 0; row < 5; ++row) {
 				if (1 + this.combatStyle == row) {
-					this.getSurface().drawBoxAlpha(sx, sy + row * 20, width, 20, GenUtil.buildColor(255, 0, 0), 128);
+					this.getSurface().drawBoxAlpha(sx, sy + row * ui(20), width, ui(20), GenUtil.buildColor(255, 0, 0), 210);
 				} else {
-					this.getSurface().drawBoxAlpha(sx, sy + row * 20, width, 20, GenUtil.buildColor(190, 190, 190),
+					this.getSurface().drawBoxAlpha(sx, sy + row * ui(20), width, ui(20), GenUtil.buildColor(190, 190, 190),
 						128);
 				}
 
-				this.getSurface().drawLineHoriz(sx, sy + row * 20, width, 0);
-				this.getSurface().drawLineHoriz(sx, 20 + sy + row * 20, width, 0);
+				this.getSurface().drawLineHoriz(sx, sy + row * ui(20), width, 0);
+				this.getSurface().drawLineHoriz(sx, ui(20) + sy + row * ui(20), width, 0);
 			}
 
-			this.getSurface().drawColoredStringCentered(width / 2 + sx, (isAndroid() ? "C" : "Select c") + "ombat style", 0xFFFFFF, 0, 3, 16 + sy);
-			this.getSurface().drawColoredStringCentered(width / 2 + sx, "Controlled (+1 " + (isAndroid() ? "all" : "of each") + ")", 0, 0, 3, sy + 36);
-			this.getSurface().drawColoredStringCentered(width / 2 + sx, "Aggressive (+3 " + (isAndroid() ? "str" : "strength") + ")", 0, 0, 3, 56 + sy);
-			this.getSurface().drawColoredStringCentered(width / 2 + sx, "Accurate   (+3 " + (isAndroid() ? "att" : "attack") + ")", 0, 0, 3, sy + 76);
-			this.getSurface().drawColoredStringCentered(width / 2 + sx, "Defensive  (+3 " + (isAndroid() ? "def" : "defense") + ")", 0, 0, 3, sy + 96);
+			this.getSurface().drawColoredStringCentered(width / 2 + sx, (isAndroid() ? "C" : "Select c") + "ombat style", 0xFFFFFF, 0, 3, ui(16) + sy);
+			this.getSurface().drawColoredStringCentered(width / 2 + sx, "Controlled (+1 " + (isAndroid() ? "all" : "of each") + ")", 0, 0, 3, sy + ui(36));
+			this.getSurface().drawColoredStringCentered(width / 2 + sx, "Aggressive (+3 " + (isAndroid() ? "str" : "strength") + ")", 0, 0, 3, ui(56) + sy);
+			this.getSurface().drawColoredStringCentered(width / 2 + sx, "Accurate   (+3 " + (isAndroid() ? "att" : "attack") + ")", 0, 0, 3, sy + ui(76));
+			this.getSurface().drawColoredStringCentered(width / 2 + sx, "Defensive  (+3 " + (isAndroid() ? "def" : "defense") + ")", 0, 0, 3, sy + ui(96));
 		} catch (RuntimeException var7) {
 			throw GenUtil.makeThrowable(var7, "client.TB(" + "dummy" + ')');
 		}
@@ -3004,21 +3078,21 @@ public final class mudclient implements Runnable {
 				if (this.mouseButtonClick == 1 && this.mouseButtonItemCountIncrement == 0) {
 					this.mouseButtonItemCountIncrement = 1;
 				}
-				if (getMouseY() >= 239 + 36 && getMouseY() <= 257 + 36) {
+				if (getMouseY() >= ui(239) + ui(36) && getMouseY() <= ui(257) + ui(36)) {
 					if (mouseButtonClick != 0 && S_WANT_EQUIPMENT_TAB) {
-						if (getMouseX() >= 22 + 320 && getMouseX() <= 22 + 348) {
+						if (getMouseX() >= ui(22) + ui(320) && getMouseX() <= ui(22) + ui(348)) {
 							stakeOfferEquipMode = false;
-						} else if (getMouseX() >= 22 + 348 && getMouseX() <= 22 + 376)
+						} else if (getMouseX() >= ui(22) + ui(348) && getMouseX() <= ui(22) + ui(376))
 							stakeOfferEquipMode = true;
 						mouseButtonClick = 0;
 					}
 				}
-				int mouseX_Local = this.mouseX - 22;
-				int mouseY_Local = this.mouseY - 36;
-				if (mouseX_Local >= 0 && mouseY_Local >= 0 && mouseX_Local < 468 && mouseY_Local < 262) {
+				int mouseX_Local = this.mouseX - ui(22);
+				int mouseY_Local = this.mouseY - ui(36);
+				if (mouseX_Local >= 0 && mouseY_Local >= 0 && mouseX_Local < ui(468) && mouseY_Local < ui(262)) {
 					if (this.mouseButtonItemCountIncrement > 0) {
-						if (mouseX_Local > 216 && mouseY_Local > 30 && mouseX_Local < 462 && mouseY_Local < 235) {
-							int slot = (mouseX_Local - 217) / 49 + (mouseY_Local - 31) / 34 * 5;
+						if (mouseX_Local > ui(216) && mouseY_Local > ui(30) && mouseX_Local < ui(462) && mouseY_Local < ui(235)) {
+							int slot = (mouseX_Local - ui(217)) / ui(49) + (mouseY_Local - ui(31)) / ui(34) * 5;
 							if (slot >= 0) {
 								if (stakeOfferEquipMode) {
 									this.duelStakeItem(-1, slot);
@@ -3029,30 +3103,30 @@ public final class mudclient implements Runnable {
 							}
 						}
 
-						if (mouseX_Local > 8 && mouseY_Local > 30 && mouseX_Local < 205 && mouseY_Local < 129) {
-							int slot = (mouseX_Local - 9) / 49 + (mouseY_Local - 31) / 34 * 4;
+						if (mouseX_Local > ui(8) && mouseY_Local > ui(30) && mouseX_Local < ui(205) && mouseY_Local < ui(129)) {
+							int slot = (mouseX_Local - ui(9)) / ui(49) + (mouseY_Local - ui(31)) / ui(34) * 4;
 							if (slot >= 0 && slot < this.duelOfferItemsCount) {
 								this.duelRemoveItem(slot, -1);
 							}
 						}
 
 						boolean settingsChanged = false;
-						if (mouseX_Local >= 93 && mouseY_Local >= 221 && mouseX_Local <= 104 && mouseY_Local <= 232) {
+						if (mouseX_Local >= ui(93) && mouseY_Local >= ui(221) && mouseX_Local <= ui(104) && mouseY_Local <= ui(232)) {
 							settingsChanged = true;
 							this.duelSettingsRetreat = !this.duelSettingsRetreat;
 						}
 
-						if (mouseX_Local >= 93 && mouseY_Local >= 240 && mouseX_Local <= 104 && mouseY_Local <= 251) {
+						if (mouseX_Local >= ui(93) && mouseY_Local >= ui(240) && mouseX_Local <= ui(104) && mouseY_Local <= ui(251)) {
 							this.duelSettingsMagic = !this.duelSettingsMagic;
 							settingsChanged = true;
 						}
 
-						if (mouseX_Local >= 191 && mouseY_Local >= 221 && mouseX_Local <= 202 && mouseY_Local <= 232) {
+						if (mouseX_Local >= ui(191) && mouseY_Local >= ui(221) && mouseX_Local <= ui(202) && mouseY_Local <= ui(232)) {
 							this.duelSettingsPrayer = !this.duelSettingsPrayer;
 							settingsChanged = true;
 						}
 
-						if (mouseX_Local >= 191 && mouseY_Local >= 240 && mouseX_Local <= 202 && mouseY_Local <= 251) {
+						if (mouseX_Local >= ui(191) && mouseY_Local >= ui(240) && mouseX_Local <= ui(202) && mouseY_Local <= ui(251)) {
 							settingsChanged = true;
 							this.duelSettingsWeapons = !this.duelSettingsWeapons;
 						}
@@ -3068,13 +3142,13 @@ public final class mudclient implements Runnable {
 							this.duelOfferAccepted = false;
 						}
 
-						if (mouseX_Local >= 217 && mouseY_Local >= 238 && mouseX_Local <= 286 && mouseY_Local <= 259) {
+						if (mouseX_Local >= ui(217) && mouseY_Local >= ui(238) && mouseX_Local <= ui(286) && mouseY_Local <= ui(259)) {
 							this.duelOfferAccepted = true;
 							this.packetHandler.getClientStream().newPacket(176);
 							this.packetHandler.getClientStream().finishPacket();
 						}
 
-						if (mouseX_Local >= 394 && mouseY_Local >= 238 && mouseX_Local < 463 && mouseY_Local < 259) {
+						if (mouseX_Local >= ui(394) && mouseY_Local >= ui(238) && mouseX_Local < ui(463) && mouseY_Local < ui(259)) {
 							this.showDialogDuel = false;
 							this.packetHandler.getClientStream().newPacket(197);
 							this.packetHandler.getClientStream().finishPacket();
@@ -3085,11 +3159,11 @@ public final class mudclient implements Runnable {
 					}
 
 					if (this.mouseButtonClick == 2) {
-						if (mouseX_Local > 216 && mouseY_Local > 30 && mouseX_Local < 462 && mouseY_Local < 235) {
+						if (mouseX_Local > ui(216) && mouseY_Local > ui(30) && mouseX_Local < ui(462) && mouseY_Local < ui(235)) {
 							int w = this.menuCommon.getWidth();
 							int h = this.menuCommon.getHeight();
 							this.menuX = this.mouseX - w / 2;
-							this.menuY = this.mouseY - 7;
+							this.menuY = this.mouseY - ui(7);
 							this.topMouseMenuVisible = true;
 							if (this.menuY < 0) {
 								this.menuY = 0;
@@ -3099,15 +3173,15 @@ public final class mudclient implements Runnable {
 								this.menuX = 0;
 							}
 
-							if (w + this.menuX > 510) {
-								this.menuX = 510 - w;
+							if (w + this.menuX > getGameWidth() - ui(2)) {
+								this.menuX = getGameWidth() - ui(2) - w;
 							}
 
-							if (h + this.menuY > 315) {
-								this.menuY = 315 - h;
+							if (h + this.menuY > getGameHeight() - ui(19)) {
+								this.menuY = getGameHeight() - ui(19) - h;
 							}
 
-							int invIndex = (mouseX_Local - 217) / 49 + (mouseY_Local - 31) / 34 * 5;
+							int invIndex = (mouseX_Local - ui(217)) / ui(49) + (mouseY_Local - ui(31)) / ui(34) * 5;
 							if (invIndex >= 0) {
 								if (stakeOfferEquipMode) {
 									Object[] equipment = getEquipmentItems();
@@ -3146,7 +3220,7 @@ public final class mudclient implements Runnable {
 								}
 								int width = this.menuDuel.getWidth();
 								int height = this.menuDuel.getHeight();
-								this.menuDuelY = this.mouseY - 7;
+								this.menuDuelY = this.mouseY - ui(7);
 								this.menuDuelX = this.mouseX - width / 2;
 								if (this.menuDuelX < 0) {
 									this.menuDuelX = 0;
@@ -3156,18 +3230,18 @@ public final class mudclient implements Runnable {
 									this.menuDuelY = 0;
 								}
 
-								if (this.menuDuelX + width > 510) {
-									this.menuDuelX = 510 - width;
+								if (this.menuDuelX + width > getGameWidth() - ui(2)) {
+									this.menuDuelX = getGameWidth() - ui(2) - width;
 								}
 
-								if (this.menuDuelY + height > 315) {
-									this.menuDuelY = 315 - height;
+								if (this.menuDuelY + height > getGameHeight() - ui(19)) {
+									this.menuDuelY = getGameHeight() - ui(19) - height;
 								}
 							}
 						}
 
-						if (mouseX_Local > 8 && mouseY_Local > 30 && mouseX_Local < 205 && mouseY_Local < 133) {
-							int slot = (mouseX_Local - 9) / 49 + (mouseY_Local - 31) / 34 * 4;
+						if (mouseX_Local > ui(8) && mouseY_Local > ui(30) && mouseX_Local < ui(205) && mouseY_Local < ui(133)) {
+							int slot = (mouseX_Local - ui(9)) / ui(49) + (mouseY_Local - ui(31)) / ui(34) * 4;
 							if (slot >= 0 && this.duelOfferItemsCount > slot) {
 								int id = getDuelItemID(slot);
 								if (getDuelItem(slot).getNoted()) {
@@ -3192,7 +3266,7 @@ public final class mudclient implements Runnable {
 									MenuItemAction.DUEL_REMOVE, "Remove X", -2);
 								int w = this.menuDuel.getWidth();
 								int h = this.menuDuel.getHeight();
-								this.menuDuelY = this.mouseY - 7;
+								this.menuDuelY = this.mouseY - ui(7);
 								this.menuDuelX = this.mouseX - w / 2;
 								if (this.menuDuelX < 0) {
 									this.menuDuelX = 0;
@@ -3202,12 +3276,12 @@ public final class mudclient implements Runnable {
 									this.menuDuelY = 0;
 								}
 
-								if (this.menuDuelX + w > 510) {
-									this.menuDuelX = 510 - w;
+								if (this.menuDuelX + w > getGameWidth() - ui(2)) {
+									this.menuDuelX = getGameWidth() - ui(2) - w;
 								}
 
-								if (h + this.menuDuelY > 315) {
-									this.menuDuelY = 315 - h;
+								if (h + this.menuDuelY > getGameHeight() - ui(19)) {
+									this.menuDuelY = getGameHeight() - ui(19) - h;
 								}
 							}
 						}
@@ -3218,8 +3292,8 @@ public final class mudclient implements Runnable {
 					if (this.menuDuel_Visible) {
 						int w = this.menuDuel.getWidth();
 						int h = this.menuDuel.getHeight();
-						if (this.menuDuelX - 10 > this.mouseX || this.mouseY < this.menuDuelY - 10
-							|| this.mouseX > this.menuDuelX + w + 10 || this.mouseY > 10 + h + this.menuDuelY) {
+						if (this.menuDuelX - ui(10) > this.mouseX || this.mouseY < this.menuDuelY - ui(10)
+							|| this.mouseX > this.menuDuelX + w + ui(10) || this.mouseY > ui(10) + h + this.menuDuelY) {
 							this.menuDuel_Visible = false;
 						}
 					}
@@ -3231,88 +3305,88 @@ public final class mudclient implements Runnable {
 			}
 
 			if (this.showDialogDuel) {
-				byte xr = 22;
-				byte yr = 36;
-				this.getSurface().drawBox(xr, yr, 468, 12, 13175581);
+				int xr = ui(22);
+				int yr = ui(36);
+				this.getSurface().drawBox(xr, yr, ui(468), ui(12), 13175581);
 				int colorA = 10000536;
-				this.getSurface().drawBoxAlpha(xr, 12 + yr, 468, 18, colorA, 160);
-				this.getSurface().drawBoxAlpha(xr, 30 + yr, 8, 248, colorA, 160);
-				this.getSurface().drawBoxAlpha(xr + 205, 30 + yr, 11, 248, colorA, 160);
-				this.getSurface().drawBoxAlpha(xr + 462, 30 + yr, 6, 248, colorA, 160);
-				this.getSurface().drawBoxAlpha(xr + 8, yr + 99, 197, 24, colorA, 160);
-				this.getSurface().drawBoxAlpha(8 + xr, 192 + yr, 197, 23, colorA, 160);
-				this.getSurface().drawBoxAlpha(xr + 8, yr + 258, 197, 20, colorA, 160);
-				this.getSurface().drawBoxAlpha(xr + 216, yr + 235, 246, 43, colorA, 160);
+				this.getSurface().drawBoxAlpha(xr, ui(12) + yr, ui(468), ui(18), colorA, 160);
+				this.getSurface().drawBoxAlpha(xr, ui(30) + yr, ui(8), ui(248), colorA, 160);
+				this.getSurface().drawBoxAlpha(xr + ui(205), ui(30) + yr, ui(11), ui(248), colorA, 160);
+				this.getSurface().drawBoxAlpha(xr + ui(462), ui(30) + yr, ui(6), ui(248), colorA, 160);
+				this.getSurface().drawBoxAlpha(xr + ui(8), yr + ui(99), ui(197), ui(24), colorA, 160);
+				this.getSurface().drawBoxAlpha(ui(8) + xr, ui(192) + yr, ui(197), ui(23), colorA, 160);
+				this.getSurface().drawBoxAlpha(xr + ui(8), yr + ui(258), ui(197), ui(20), colorA, 160);
+				this.getSurface().drawBoxAlpha(xr + ui(216), yr + ui(235), ui(246), ui(43), colorA, 160);
 				int colorB = 13684944;
-				this.getSurface().drawBoxAlpha(8 + xr, yr + 30, 197, 69, colorB, 160);
-				this.getSurface().drawBoxAlpha(xr + 8, 123 + yr, 197, 69, colorB, 160);
-				this.getSurface().drawBoxAlpha(8 + xr, yr + 215, 197, 43, colorB, 160);
-				this.getSurface().drawBoxAlpha(216 + xr, yr + 30, 246, 205, colorB, 160);
+				this.getSurface().drawBoxAlpha(ui(8) + xr, yr + ui(30), ui(197), ui(69), colorB, 160);
+				this.getSurface().drawBoxAlpha(xr + ui(8), ui(123) + yr, ui(197), ui(69), colorB, 160);
+				this.getSurface().drawBoxAlpha(ui(8) + xr, yr + ui(215), ui(197), ui(43), colorB, 160);
+				this.getSurface().drawBoxAlpha(ui(216) + xr, yr + ui(30), ui(246), ui(205), colorB, 160);
 
 				for (int i = 0; i < 3; ++i) {
-					this.getSurface().drawLineHoriz(xr + 8, yr + 30 + i * 34, 197, 0);
+					this.getSurface().drawLineHoriz(xr + ui(8), yr + ui(30) + i * ui(34), ui(197), 0);
 				}
 
 				for (int i = 0; i < 3; ++i) {
-					this.getSurface().drawLineHoriz(8 + xr, i * 34 + yr + 123, 197, 0);
+					this.getSurface().drawLineHoriz(ui(8) + xr, i * ui(34) + yr + ui(123), ui(197), 0);
 				}
 
 				for (int i = 0; i < 7; ++i) {
-					this.getSurface().drawLineHoriz(216 + xr, i * 34 + yr + 30, 246, 0);
+					this.getSurface().drawLineHoriz(ui(216) + xr, i * ui(34) + yr + ui(30), ui(246), 0);
 				}
 
 				for (int i = 0; i < 6; ++i) {
 					if (i < 5) {
-						this.getSurface().drawLineVert(i * 49 + 8 + xr, yr + 30, 0, 69);
-						this.getSurface().drawLineVert(i * 49 + xr + 8, yr + 123, 0, 69);
+						this.getSurface().drawLineVert(i * ui(49) + ui(8) + xr, yr + ui(30), 0, ui(69));
+						this.getSurface().drawLineVert(i * ui(49) + xr + ui(8), yr + ui(123), 0, ui(69));
 					}
 
-					this.getSurface().drawLineVert(i * 49 + xr + 216, yr + 30, 0, 205);
+					this.getSurface().drawLineVert(i * ui(49) + xr + ui(216), yr + ui(30), 0, ui(205));
 				}
 
-				this.getSurface().drawLineHoriz(xr + 8, 215 + yr, 197, 0);
-				this.getSurface().drawLineHoriz(xr + 8, yr + 257, 197, 0);
-				this.getSurface().drawLineVert(8 + xr, yr + 215, 0, 43);
-				this.getSurface().drawLineVert(xr + 204, yr + 215, 0, 43);
-				this.getSurface().drawString("Preparing to duel with: " + this.duelConfirmOpponentName, 1 + xr, yr + 10,
+				this.getSurface().drawLineHoriz(xr + ui(8), ui(215) + yr, ui(197), 0);
+				this.getSurface().drawLineHoriz(xr + ui(8), yr + ui(257), ui(197), 0);
+				this.getSurface().drawLineVert(ui(8) + xr, yr + ui(215), 0, ui(43));
+				this.getSurface().drawLineVert(xr + ui(204), yr + ui(215), 0, ui(43));
+				this.getSurface().drawString("Preparing to duel with: " + this.duelConfirmOpponentName, ui(1) + xr, yr + ui(10),
 					0xFFFFFF, 1);
-				this.getSurface().drawString("Your Stake", xr + 9, 27 + yr, 0xFFFFFF, 4);
-				this.getSurface().drawString("Opponent's Stake", 9 + xr, 120 + yr, 0xFFFFFF, 4);
-				this.getSurface().drawString("Duel Options", xr + 9, yr + 212, 0xFFFFFF, 4);
-				this.getSurface().drawString("Your Inventory", xr + 216, yr + 27, 0xFFFFFF, 4);
-				this.getSurface().drawString("No retreating", 1 + 8 + xr, 215 + yr + 16, 0xFFFF00, 3);
-				this.getSurface().drawString("No magic", 1 + 8 + xr, 250 + yr, 0xFFFF00, 3);
-				this.getSurface().drawString("No prayer", 8 + xr + 102, yr + 231, 0xFFFF00, 3);
-				this.getSurface().drawString("No weapons", 102 + 8 + xr, 35 + yr + 215, 0xFFFF00, 3);
+				this.getSurface().drawString("Your Stake", xr + ui(9), ui(27) + yr, 0xFFFFFF, 4);
+				this.getSurface().drawString("Opponent's Stake", ui(9) + xr, ui(120) + yr, 0xFFFFFF, 4);
+				this.getSurface().drawString("Duel Options", xr + ui(9), yr + ui(212), 0xFFFFFF, 4);
+				this.getSurface().drawString("Your Inventory", xr + ui(216), yr + ui(27), 0xFFFFFF, 4);
+				this.getSurface().drawString("No retreating", ui(1) + ui(8) + xr, ui(215) + yr + ui(16), 0xFFFF00, 3);
+				this.getSurface().drawString("No magic", ui(1) + ui(8) + xr, ui(250) + yr, 0xFFFF00, 3);
+				this.getSurface().drawString("No prayer", ui(8) + xr + ui(102), yr + ui(231), 0xFFFF00, 3);
+				this.getSurface().drawString("No weapons", ui(102) + ui(8) + xr, ui(35) + yr + ui(215), 0xFFFF00, 3);
 
 				if (S_WANT_EQUIPMENT_TAB) {
-					this.getSurface().drawBoxAlpha(xr + 320, 239 + yr, 28, 28, stakeOfferEquipMode ? clearBox : selectedBox, 160);
-					this.getSurface().drawBoxAlpha(xr + 348, 239 + yr, 28, 28, stakeOfferEquipMode ? selectedBox : clearBox, 160);
-					this.getSurface().drawSpriteClipping(spriteSelect(GUIPARTS.BANK_EQUIP_BAG.getDef()), xr + 320, 239 + yr, 28, 28, 0, 0, 0, false, 0, 0);
-					this.getSurface().drawSpriteClipping(spriteSelect(GUIPARTS.BANK_EQUIP_HELM.getDef()), xr + 348, 239 + yr, 28, 28, 0, 0, 0, false, 0, 0);
+					this.getSurface().drawBoxAlpha(xr + ui(320), ui(239) + yr, ui(28), ui(28), stakeOfferEquipMode ? clearBox : selectedBox, 160);
+					this.getSurface().drawBoxAlpha(xr + ui(348), ui(239) + yr, ui(28), ui(28), stakeOfferEquipMode ? selectedBox : clearBox, 160);
+					this.getSurface().drawSpriteClipping(spriteSelect(GUIPARTS.BANK_EQUIP_BAG.getDef()), xr + ui(320), ui(239) + yr, ui(28), ui(28), 0, 0, 0, false, 0, 0);
+					this.getSurface().drawSpriteClipping(spriteSelect(GUIPARTS.BANK_EQUIP_HELM.getDef()), xr + ui(348), ui(239) + yr, ui(28), ui(28), 0, 0, 0, false, 0, 0);
 				}
 				if (stakeOfferEquipMode) {
 					int count = 0;
 					for (ItemDef item : equippedItems) {
 						if (item == null)
 							continue;
-						int xI = 217 + xr + (count % 5) * 49;
-						int yI = yr + 31 + (count / 5) * 34;
+						int xI = ui(217) + xr + (count % 5) * ui(49);
+						int yI = yr + ui(31) + (count / 5) * ui(34);
 						this.getSurface().drawSpriteClipping(
 							spriteSelect(item), xI,
-							yI, 48, 32, item.getPictureMask(), 0,
+							yI, ui(48), ui(32), item.getPictureMask(), 0,
 							item.getBlueMask(), false,
 							0, 1);
 						if (item.isStackable()) {
-							this.getSurface().drawString("" + getInventoryItemSize(count), xI + 1,
-								10 + yI, 0xFFFF00, 1);
+							this.getSurface().drawString("" + getInventoryItemSize(count), xI + ui(1),
+								ui(10) + yI, 0xFFFF00, 1);
 						}
 						count++;
 					}
 				} else {
 					for (int itm = 0; this.inventoryItemCount > itm; ++itm) {
-						int xI = 217 + xr + (itm % 5) * 49;
-						int yI = yr + 31 + (itm / 5) * 34;
+						int xI = ui(217) + xr + (itm % 5) * ui(49);
+						int yI = yr + ui(31) + (itm / 5) * ui(34);
 
 						Item item = getInventoryItem(itm);
 						ItemDef def = item.getItemDef();
@@ -3321,70 +3395,70 @@ public final class mudclient implements Runnable {
 							if (S_WANT_CERT_AS_NOTES) {
 								this.getSurface().drawSpriteClipping(
 									spriteSelect(EntityHandler.noteDef), xI,
-									yI, 48, 32, EntityHandler.noteDef.getPictureMask(), 0,
+									yI, ui(48), ui(32), EntityHandler.noteDef.getPictureMask(), 0,
 									EntityHandler.noteDef.getBlueMask(), false,
 									0, 1);
 
-								getSurface().drawSpriteClipping(spriteSelect(def), xI + 7, yI + 4,
-									33, 23, def.getPictureMask(), 0,
+								getSurface().drawSpriteClipping(spriteSelect(def), xI + ui(7), yI + ui(4),
+									ui(33), ui(23), def.getPictureMask(), 0,
 									def.getBlueMask(), false, 0, 1);
 							} else {
 								this.getSurface().drawSpriteClipping(
 									spriteSelect(EntityHandler.certificateDef), xI,
-									yI, 48, 32, EntityHandler.certificateDef.getPictureMask(), 0,
+									yI, ui(48), ui(32), EntityHandler.certificateDef.getPictureMask(), 0,
 									EntityHandler.certificateDef.getBlueMask(), false,
 									0, 1);
 							}
 						} else {
 							this.getSurface().drawSpriteClipping(
 								spriteSelect(def), xI,
-								yI, 48, 32, def.getPictureMask(), 0,
+								yI, ui(48), ui(32), def.getPictureMask(), 0,
 								def.getBlueMask(), false,
 								0, 1);
 						}
 						if (def.isStackable()) {
-							this.getSurface().drawString("" + getInventoryItemSize(itm), xI + 1,
-								10 + yI, 0xFFFF00, 1);
+							this.getSurface().drawString("" + getInventoryItemSize(itm), xI + ui(1),
+								ui(10) + yI, 0xFFFF00, 1);
 						}
 					}
 				}
-				this.getSurface().drawBoxBorder(xr + 93, 11, 215 + yr + 6, 11, 0xFFFF00);
+				this.getSurface().drawBoxBorder(xr + ui(93), ui(11), ui(215) + yr + ui(6), ui(11), 0xFFFF00);
 				if (this.duelSettingsRetreat) {
-					this.getSurface().drawBox(xr + 95, 8 + 215 + yr, 7, 7, 0xFFFF00);
+					this.getSurface().drawBox(xr + ui(95), ui(8) + ui(215) + yr, ui(7), ui(7), 0xFFFF00);
 				}
 
-				this.getSurface().drawBoxBorder(93 + xr, 11, 25 + yr + 215, 11, 0xFFFF00);
+				this.getSurface().drawBoxBorder(ui(93) + xr, ui(11), ui(25) + yr + ui(215), ui(11), 0xFFFF00);
 				if (this.duelSettingsMagic) {
-					this.getSurface().drawBox(xr + 95, 215 + yr + 27, 7, 7, 0xFFFF00);
+					this.getSurface().drawBox(xr + ui(95), ui(215) + yr + ui(27), ui(7), ui(7), 0xFFFF00);
 				}
 
-				this.getSurface().drawBoxBorder(191 + xr, 11, 6 + 215 + yr, 11, 0xFFFF00);
+				this.getSurface().drawBoxBorder(ui(191) + xr, ui(11), ui(6) + ui(215) + yr, ui(11), 0xFFFF00);
 				if (this.duelSettingsPrayer) {
-					this.getSurface().drawBox(xr + 193, 8 + yr + 215, 7, 7, 0xFFFF00);
+					this.getSurface().drawBox(xr + ui(193), ui(8) + yr + ui(215), ui(7), ui(7), 0xFFFF00);
 				}
-				this.getSurface().drawBoxBorder(xr + 191, 11, yr + 215 + 25, 11, 0xFFFF00);
+				this.getSurface().drawBoxBorder(xr + ui(191), ui(11), yr + ui(215) + ui(25), ui(11), 0xFFFF00);
 				if (this.duelSettingsWeapons) {
-					this.getSurface().drawBox(193 + xr, 215 + yr + 27, 7, 7, 0xFFFF00);
+					this.getSurface().drawBox(ui(193) + xr, ui(215) + yr + ui(27), ui(7), ui(7), 0xFFFF00);
 				}
 
 				if (!this.duelOfferAccepted) {
-					this.getSurface().drawSprite(spriteSelect(GUIPARTS.ACCEPTBUTTON.getDef()), 217 + xr, yr + 238);
+					this.getSurface().drawSprite(spriteSelect(GUIPARTS.ACCEPTBUTTON.getDef()), ui(217) + xr, yr + ui(238));
 				}
 
-				this.getSurface().drawSprite(spriteSelect(GUIPARTS.DECLINEBUTTON.getDef()), xr + 394, yr + 238);
+				this.getSurface().drawSprite(spriteSelect(GUIPARTS.DECLINEBUTTON.getDef()), xr + ui(394), yr + ui(238));
 				if (this.duelOffsetOpponentAccepted) {
-					this.getSurface().drawColoredStringCentered(xr + 341, "Other player", 0xFFFFFF, 0, 1, 246 + yr);
-					this.getSurface().drawColoredStringCentered(341 + xr, "has accepted", 0xFFFFFF, 0, 1, 256 + yr);
+					this.getSurface().drawColoredStringCentered(xr + ui(341), "Other player", 0xFFFFFF, 0, 1, ui(246) + yr);
+					this.getSurface().drawColoredStringCentered(ui(341) + xr, "has accepted", 0xFFFFFF, 0, 1, ui(256) + yr);
 				}
 
 				if (this.duelOfferAccepted) {
-					this.getSurface().drawColoredStringCentered(35 + 217 + xr, "Waiting for", 0xFFFFFF, 0, 1, yr + 246);
-					this.getSurface().drawColoredStringCentered(252 + xr, "other player", 0xFFFFFF, 0, 1, 256 + yr);
+					this.getSurface().drawColoredStringCentered(ui(35) + ui(217) + xr, "Waiting for", 0xFFFFFF, 0, 1, yr + ui(246));
+					this.getSurface().drawColoredStringCentered(ui(252) + xr, "other player", 0xFFFFFF, 0, 1, ui(256) + yr);
 				}
 
 				for (int itmOffer = 0; this.duelOfferItemsCount > itmOffer; ++itmOffer) {
-					int xI = xr + 9 + itmOffer % 4 * 49;
-					int yI = yr + 31 + itmOffer / 4 * 34;
+					int xI = xr + ui(9) + itmOffer % 4 * ui(49);
+					int yI = yr + ui(31) + itmOffer / 4 * ui(34);
 					Item item = getDuelItem(itmOffer);
 					ItemDef def = item.getItemDef();
 
@@ -3393,44 +3467,44 @@ public final class mudclient implements Runnable {
 						if (S_WANT_CERT_AS_NOTES) {
 							this.getSurface().drawSpriteClipping(
 								spriteSelect(EntityHandler.noteDef), xI,
-								yI, 48, 32, EntityHandler.noteDef.getPictureMask(), 0,
+								yI, ui(48), ui(32), EntityHandler.noteDef.getPictureMask(), 0,
 								EntityHandler.noteDef.getBlueMask(), false,
 								0, 1);
 
-							getSurface().drawSpriteClipping(spriteSelect(def), xI + 7, yI + 4,
-								33, 23, def.getPictureMask(), 0,
+							getSurface().drawSpriteClipping(spriteSelect(def), xI + ui(7), yI + ui(4),
+								ui(33), ui(23), def.getPictureMask(), 0,
 								def.getBlueMask(), false, 0, 1);
 						} else {
 							this.getSurface().drawSpriteClipping(
 								spriteSelect(EntityHandler.certificateDef), xI,
-								yI, 48, 32, EntityHandler.certificateDef.getPictureMask(), 0,
+								yI, ui(48), ui(32), EntityHandler.certificateDef.getPictureMask(), 0,
 								EntityHandler.certificateDef.getBlueMask(), false,
 								0, 1);
 						}
 					} else {
 						this.getSurface().drawSpriteClipping(
 							spriteSelect(def), xI,
-							yI, 48, 32, def.getPictureMask(), 0,
+							yI, ui(48), ui(32), def.getPictureMask(), 0,
 							def.getBlueMask(), false,
 							0, 1);
 					}
 
 					if (def.isStackable()) {
-						this.getSurface().drawString("" + getDuelItemSize(itmOffer), 1 + xI,
-							10 + yI, 0xFFFF00, 1);
+						this.getSurface().drawString("" + getDuelItemSize(itmOffer), ui(1) + xI,
+							ui(10) + yI, 0xFFFF00, 1);
 					}
 
-					if (xI < this.mouseX && this.mouseX < 48 + xI && yI < this.mouseY && 32 + yI > this.mouseY) {
+					if (xI < this.mouseX && this.mouseX < ui(48) + xI && yI < this.mouseY && ui(32) + yI > this.mouseY) {
 						this.getSurface().drawString(
 							def.getName() + ": @whi@"
 								+ def.getDescription(),
-							8 + xr, yr + 273, 0xFFFF00, 1);
+							ui(8) + xr, yr + ui(273), 0xFFFF00, 1);
 					}
 				}
 
 				for (int itmOffer = 0; itmOffer < this.duelOpponentItemsCount; ++itmOffer) {
-					int xI = itmOffer % 4 * 49 + 9 + xr;
-					int yI = itmOffer / 4 * 34 + 124 + yr;
+					int xI = itmOffer % 4 * ui(49) + ui(9) + xr;
+					int yI = itmOffer / 4 * ui(34) + ui(124) + yr;
 					Item item = getDuelOpponentItem(itmOffer);
 					ItemDef def = item.getItemDef();
 
@@ -3439,38 +3513,38 @@ public final class mudclient implements Runnable {
 						if (S_WANT_CERT_AS_NOTES) {
 							this.getSurface().drawSpriteClipping(
 								spriteSelect(EntityHandler.noteDef), xI,
-								yI, 48, 32, EntityHandler.noteDef.getPictureMask(), 0,
+								yI, ui(48), ui(32), EntityHandler.noteDef.getPictureMask(), 0,
 								EntityHandler.noteDef.getBlueMask(), false,
 								0, 1);
 
-							getSurface().drawSpriteClipping(spriteSelect(def), xI + 7, yI + 4,
-								33, 23, def.getPictureMask(), 0,
+							getSurface().drawSpriteClipping(spriteSelect(def), xI + ui(7), yI + ui(4),
+								ui(33), ui(23), def.getPictureMask(), 0,
 								def.getBlueMask(), false, 0, 1);
 						} else {
 							this.getSurface().drawSpriteClipping(
 								spriteSelect(EntityHandler.certificateDef), xI,
-								yI, 48, 32, EntityHandler.certificateDef.getPictureMask(), 0,
+								yI, ui(48), ui(32), EntityHandler.certificateDef.getPictureMask(), 0,
 								EntityHandler.certificateDef.getBlueMask(), false,
 								0, 1);
 						}
 					} else {
 						this.getSurface().drawSpriteClipping(
 							spriteSelect(def), xI,
-							yI, 48, 32, def.getPictureMask(), 0,
+							yI, ui(48), ui(32), def.getPictureMask(), 0,
 							def.getBlueMask(), false,
 							0, 1);
 					}
 
 					if (def.isStackable()) {
-						this.getSurface().drawString("" + getDuelOpponentItemCount(itmOffer), 1 + xI,
-							10 + yI, 0xFFFF00, 1);
+						this.getSurface().drawString("" + getDuelOpponentItemCount(itmOffer), ui(1) + xI,
+							ui(10) + yI, 0xFFFF00, 1);
 					}
 
-					if (this.mouseX > xI && 48 + xI > this.mouseX && yI < this.mouseY && this.mouseY < yI + 32) {
+					if (this.mouseX > xI && ui(48) + xI > this.mouseX && yI < this.mouseY && this.mouseY < yI + ui(32)) {
 						this.getSurface().drawString(
 							def.getName() + ": @whi@"
 								+ def.getDescription(),
-							xr + 8, 273 + yr, 0xFFFF00, 1);
+							xr + ui(8), ui(273) + yr, 0xFFFF00, 1);
 					}
 				}
 
@@ -3487,14 +3561,14 @@ public final class mudclient implements Runnable {
 	private void drawDialogDuelConfirm() {
 		try {
 
-			byte xr = 22;
-			byte yr = 36;
-			this.getSurface().drawBox(xr, yr, 468, 16, 192);
+			int xr = ui(22);
+			int yr = ui(36);
+			this.getSurface().drawBox(xr, yr, ui(468), ui(16), 192);
 			int color = 10000536;
-			this.getSurface().drawBoxAlpha(xr, yr + 16, 468, 246, color, 160);
-			this.getSurface().drawColoredStringCentered(xr + 234,
-				"Please confirm your duel with @yel@" + this.duelOpponentName, 0xFFFFFF, 0, 1, yr + 12);
-			this.getSurface().drawColoredStringCentered(xr + 117, "Your stake:", 0xFFFF00, 0, 1, yr + 30);
+			this.getSurface().drawBoxAlpha(xr, yr + ui(16), ui(468), ui(246), color, 160);
+			this.getSurface().drawColoredStringCentered(xr + ui(234),
+				"Please confirm your duel with @yel@" + this.duelOpponentName, 0xFFFFFF, 0, 1, yr + ui(12));
+			this.getSurface().drawColoredStringCentered(xr + ui(117), "Your stake:", 0xFFFF00, 0, 1, yr + ui(30));
 
 			String var6;
 			Item item;
@@ -3507,14 +3581,14 @@ public final class mudclient implements Runnable {
 					var6 = var6 + (item.getNoted() ? " (Noted)" : "") + " x " + StringUtil.formatItemCount(this.getDuelConfirmItemCount(var5));
 				}
 
-				this.getSurface().drawColoredStringCentered(xr + 117, var6, 0xFFFFFF, 0, 1, 42 + yr + var5 * 12);
+				this.getSurface().drawColoredStringCentered(xr + ui(117), var6, 0xFFFFFF, 0, 1, ui(42) + yr + var5 * ui(12));
 			}
 
 			if (this.duelConfirmItemsCount == 0) {
-				this.getSurface().drawColoredStringCentered(xr + 117, "Nothing!", 0xFFFFFF, 0, 1, 42 + yr);
+				this.getSurface().drawColoredStringCentered(xr + ui(117), "Nothing!", 0xFFFFFF, 0, 1, ui(42) + yr);
 			}
 
-			this.getSurface().drawColoredStringCentered(351 + xr, "Your opponent's stake:", 0xFFFF00, 0, 1, 30 + yr);
+			this.getSurface().drawColoredStringCentered(ui(351) + xr, "Your opponent's stake:", 0xFFFF00, 0, 1, ui(30) + yr);
 
 			for (int var5 = 0; var5 < this.duelOpponentConfirmItemsCount; ++var5) {
 				item = this.getDuelOpponentConfirmItem(var5);
@@ -3524,67 +3598,67 @@ public final class mudclient implements Runnable {
 					var6 = var6 + (item.getNoted() ? " (Noted)" : "") + " x " + StringUtil.formatItemCount(this.getDuelOpponentConfirmItemCount(var5));
 				}
 
-				this.getSurface().drawColoredStringCentered(xr + 351, var6, 0xFFFFFF, 0, 1, var5 * 12 + 42 + yr);
+				this.getSurface().drawColoredStringCentered(xr + ui(351), var6, 0xFFFFFF, 0, 1, var5 * ui(12) + ui(42) + yr);
 			}
 
 			if (this.duelOpponentConfirmItemsCount == 0) {
-				this.getSurface().drawColoredStringCentered(351 + xr, "Nothing!", 0xFFFFFF, 0, 1, 42 + yr);
+				this.getSurface().drawColoredStringCentered(ui(351) + xr, "Nothing!", 0xFFFFFF, 0, 1, ui(42) + yr);
 			}
 
 			if (this.duelOptionRetreat == 0) {
-				this.getSurface().drawColoredStringCentered(xr + 234, "You can retreat from this duel", '\uff00', 0, 1,
-					yr + 180);
+				this.getSurface().drawColoredStringCentered(xr + ui(234), "You can retreat from this duel", '\uff00', 0, 1,
+					yr + ui(180));
 			} else {
-				this.getSurface().drawColoredStringCentered(234 + xr, "No retreat is possible!", 0xFF0000, 0, 1,
-					180 + yr);
+				this.getSurface().drawColoredStringCentered(ui(234) + xr, "No retreat is possible!", 0xFF0000, 0, 1,
+					ui(180) + yr);
 			}
 
 			if (this.duelOptionMagic == 0) {
-				this.getSurface().drawColoredStringCentered(234 + xr, "Magic may be used", '\uff00', 0, 1, yr + 192);
+				this.getSurface().drawColoredStringCentered(ui(234) + xr, "Magic may be used", '\uff00', 0, 1, yr + ui(192));
 			} else {
-				this.getSurface().drawColoredStringCentered(xr + 234, "Magic cannot be used", 0xFF0000, 0, 1, 192 + yr);
+				this.getSurface().drawColoredStringCentered(xr + ui(234), "Magic cannot be used", 0xFF0000, 0, 1, ui(192) + yr);
 			}
 
 			if (this.duelOptionPrayer == 0) {
-				this.getSurface().drawColoredStringCentered(xr + 234, "Prayer may be used", '\uff00', 0, 1, 204 + yr);
+				this.getSurface().drawColoredStringCentered(xr + ui(234), "Prayer may be used", '\uff00', 0, 1, ui(204) + yr);
 			} else {
-				this.getSurface().drawColoredStringCentered(xr + 234, "Prayer cannot be used", 0xFF0000, 0, 1,
-					yr + 204);
+				this.getSurface().drawColoredStringCentered(xr + ui(234), "Prayer cannot be used", 0xFF0000, 0, 1,
+					yr + ui(204));
 			}
 
 			if (this.duelOptionWeapons != 0) {
-				this.getSurface().drawColoredStringCentered(xr + 234, "Weapons cannot be used", 0xFF0000, 0, 1,
-					216 + yr);
+				this.getSurface().drawColoredStringCentered(xr + ui(234), "Weapons cannot be used", 0xFF0000, 0, 1,
+					ui(216) + yr);
 			} else {
-				this.getSurface().drawColoredStringCentered(xr + 234, "Weapons may be used", '\uff00', 0, 1, yr + 216);
+				this.getSurface().drawColoredStringCentered(xr + ui(234), "Weapons may be used", '\uff00', 0, 1, yr + ui(216));
 			}
 
-			this.getSurface().drawColoredStringCentered(xr + 234, "If you are sure click 'Accept' to begin the duel",
-				0xFFFFFF, 0, 1, yr + 230);
+			this.getSurface().drawColoredStringCentered(xr + ui(234), "If you are sure click 'Accept' to begin the duel",
+				0xFFFFFF, 0, 1, yr + ui(230));
 			if (!this.duelConfirmed) {
-				this.getSurface().drawSprite(spriteSelect(GUIPARTS.ACCEPTBUTTON.getDef()), 83 + xr, 238 + yr);
-				this.getSurface().drawSprite(spriteSelect(GUIPARTS.DECLINEBUTTON.getDef()), xr - 35 + 352, yr + 238);
+				this.getSurface().drawSprite(spriteSelect(GUIPARTS.ACCEPTBUTTON.getDef()), ui(83) + xr, ui(238) + yr);
+				this.getSurface().drawSprite(spriteSelect(GUIPARTS.DECLINEBUTTON.getDef()), xr - ui(35) + ui(352), yr + ui(238));
 			} else {
-				this.getSurface().drawColoredStringCentered(xr + 234, "Waiting for other player...", 0xFFFF00, 0, 1,
-					yr + 250);
+				this.getSurface().drawColoredStringCentered(xr + ui(234), "Waiting for other player...", 0xFFFF00, 0, 1,
+					yr + ui(250));
 			}
 
 			if (this.mouseButtonClick == 1) {
-				if (xr > this.mouseX || this.mouseY < yr || xr + 468 < this.mouseX || this.mouseY > 262 + yr) {
+				if (xr > this.mouseX || this.mouseY < yr || xr + ui(468) < this.mouseX || this.mouseY > ui(262) + yr) {
 					this.showDialogDuelConfirm = false;
 					this.packetHandler.getClientStream().newPacket(230);
 					this.packetHandler.getClientStream().finishPacket();
 				}
 
-				if (118 + xr - 35 <= this.mouseX && this.mouseX <= xr + 118 + 70 && yr + 238 <= this.mouseY
-					&& 238 + yr + 21 >= this.mouseY) {
+				if (ui(118) + xr - ui(35) <= this.mouseX && this.mouseX <= xr + ui(118) + ui(70) && yr + ui(238) <= this.mouseY
+					&& ui(238) + yr + ui(21) >= this.mouseY) {
 					this.duelConfirmed = true;
 					this.packetHandler.getClientStream().newPacket(77);
 					this.packetHandler.getClientStream().finishPacket();
 				}
 
-				if (352 + (xr - 35) <= this.mouseX && 353 + xr + 70 >= this.mouseX && yr + 238 <= this.mouseY
-					&& 259 + yr >= this.mouseY) {
+				if (ui(352) + (xr - ui(35)) <= this.mouseX && ui(353) + xr + ui(70) >= this.mouseX && yr + ui(238) <= this.mouseY
+					&& ui(259) + yr >= this.mouseY) {
 					this.showDialogDuelConfirm = false;
 					this.packetHandler.getClientStream().newPacket(197);
 					this.packetHandler.getClientStream().finishPacket();
@@ -3600,9 +3674,9 @@ public final class mudclient implements Runnable {
 	private void drawDialogLogout() {
 		try {
 
-			this.getSurface().drawBox((getGameWidth() - 260) / 2, (getGameHeight() - 60) / 2, 260, 60, 0);
-			this.getSurface().drawBoxBorder((getGameWidth() - 260) / 2, 260, (getGameHeight() - 60) / 2, 60, 0xFFFFFF);
-			this.getSurface().drawColoredStringCentered((getGameWidth() - 256) / 2 + 256 / 2, "Logging out...", 0xFFFFFF, 0, 5, (getGameHeight() - 60) / 2 + 36);
+			this.getSurface().drawBox((getGameWidth() - ui(260)) / 2, (getGameHeight() - ui(60)) / 2, ui(260), ui(60), 0);
+			this.getSurface().drawBoxBorder((getGameWidth() - ui(260)) / 2, ui(260), (getGameHeight() - ui(60)) / 2, ui(60), 0xFFFFFF);
+			this.getSurface().drawColoredStringCentered(halfGameWidth(), "Logging out...", 0xFFFFFF, 0, 5, (getGameHeight() - ui(60)) / 2 + ui(36));
 		} catch (RuntimeException var3) {
 			throw GenUtil.makeThrowable(var3, "client.SD(" + "dummy" + ')');
 		}
@@ -3613,24 +3687,24 @@ public final class mudclient implements Runnable {
 
 
 			if (isAndroid()) {
-				int startY = 25;
-				int startX = 5;
-				int spread = 20;
+				int startY = ui(25);
+				int startX = ui(5);
+				int spread = ui(20);
 				int highest = 0;
 				int boxEndY = 0;
 				for (int j = 0; j < optionsMenuCount; j++) {
-					int textWidth = getSurface().stringWidth(6, optionsMenuText[j]) + 15;
+					int textWidth = getSurface().stringWidth(6, optionsMenuText[j]) + ui(15);
 					if (highest < textWidth) {
 						highest = textWidth;
 					}
-					if (boxEndY < startY + j * spread + 20) {
-						boxEndY = startY + j * spread + 20;
+					if (boxEndY < startY + j * spread + ui(20)) {
+						boxEndY = startY + j * spread + ui(20);
 					}
 				}
 				if (mouseButtonClick != 0) {
 					boolean nullOption = true;
 					for (int i = 0; i < optionsMenuCount; i++) {
-						if (mouseX > startX && mouseX < startX + highest && mouseY > startY + i * spread - 15
+						if (mouseX > startX && mouseX < startX + highest && mouseY > startY + i * spread - ui(15)
 							&& mouseY < startY + i * spread) {
 							this.packetHandler.getClientStream().newPacket(116);
 							this.packetHandler.getClientStream().bufferBits.putByte(i);
@@ -3650,19 +3724,19 @@ public final class mudclient implements Runnable {
 				}
 				for (int j = 0; j < optionsMenuCount; j++) {
 					int k = 65535;
-					if (mouseX > startX && mouseX < startX + highest && mouseY > startY + j * spread - 15
+					if (mouseX > startX && mouseX < startX + highest && mouseY > startY + j * spread - ui(15)
 						&& mouseY < startY + j * spread)
 						k = 0xff0000;
 
 					this.getSurface().drawString(
 						(S_WANT_KEYBOARD_SHORTCUTS > 1 ? "(" + (j + 1) + ")" : "") + optionsMenuText[j],
-						startX + 10, startY + j * spread, k, 6);
+						startX + ui(10), startY + j * spread, k, 6);
 				}
 			} else {
 				int var2;
 				int startY = 0;
 				if (C_CUSTOM_UI) {
-					startY = getGameHeight() - 100;
+					startY = getGameHeight() - ui(100);
 				}
 				if (this.mouseButtonClick == 0) {
 					// Draw
@@ -3670,14 +3744,14 @@ public final class mudclient implements Runnable {
 					while (this.optionsMenuCount > var2) {
 						int var3 = '\uffff';
 						if (this.mouseX < this.getSurface().stringWidth(1, this.optionsMenuText[var2])
-							+ (S_WANT_KEYBOARD_SHORTCUTS > 1 ? 24 : 9)
-							&& this.mouseY > startY + 2 + var2 * 12 && this.mouseY < startY + 2 + var2 * 12 + 12) {
+							+ (S_WANT_KEYBOARD_SHORTCUTS > 1 ? ui(24) : ui(9))
+							&& this.mouseY > startY + ui(2) + var2 * ui(12) && this.mouseY < startY + ui(2) + var2 * ui(12) + ui(12)) {
 							var3 = 0xFF0000;
 						}
 
 						this.getSurface().drawString(
 							(S_WANT_KEYBOARD_SHORTCUTS > 1 ? "(" + (var2 + 1) + ") " : "") + this.optionsMenuText[var2],
-							6, var2 * 12 + 12 + startY, var3, 1);
+							ui(6), var2 * ui(12) + ui(12) + startY, var3, 1);
 						++var2;
 					}
 				} else {
@@ -3685,8 +3759,8 @@ public final class mudclient implements Runnable {
 					boolean nullOption = true;
 					for (var2 = 0; var2 < this.optionsMenuCount; ++var2) {
 						if (this.getSurface().stringWidth(1, this.optionsMenuText[var2])
-							+ (S_WANT_KEYBOARD_SHORTCUTS > 1 ? 24 : 9) > this.mouseX
-							&& startY + 2 + var2 * 12 < this.mouseY && startY + 2 + 12 + var2 * 12 > this.mouseY) {
+							+ (S_WANT_KEYBOARD_SHORTCUTS > 1 ? ui(24) : ui(9)) > this.mouseX
+							&& startY + ui(2) + var2 * ui(12) < this.mouseY && startY + ui(2) + ui(12) + var2 * ui(12) > this.mouseY) {
 							this.packetHandler.getClientStream().newPacket(116);
 							this.packetHandler.getClientStream().bufferBits.putByte(var2);
 							this.packetHandler.getClientStream().finishPacket();
@@ -3712,32 +3786,32 @@ public final class mudclient implements Runnable {
 	private void drawDialogServerMessage(byte var1) {
 		try {
 
-			short var2 = 400;
+			int var2 = ui(400);
 			if (var1 != -115) {
 				this.m_qd = 64;
 			}
 
-			short var3 = 100;
+			int var3 = ui(100);
 			if (this.serverMessageBoxTop) {
 				// boolean var7 = true;
-				var3 = 300;
+				var3 = ui(300);
 			}
 			int xr = (getGameWidth() - var2) / 2;
 			int yr = (getGameHeight() - var3) / 2;
 
 			this.getSurface().drawBox(xr, yr, var2, var3, 0);
 			this.getSurface().drawBoxBorder(xr, var2, yr, var3, 0xFFFFFF);
-			this.getSurface().drawWrappedCenteredString(this.serverMessage, xr + 256 - 56, yr + 17, var2 - 40, 1,
+			this.getSurface().drawWrappedCenteredString(this.serverMessage, xr + var2 / 2, yr + ui(17), var2 - ui(40), 1,
 				0xFFFFFF, true);
-			int var4 = (getGameHeight() + (var3) - 23) / 2;
+			int var4 = (getGameHeight() + (var3) - ui(23)) / 2;
 
 			int var5 = 0xFFFFFF;
-			if (var4 - 12 < this.mouseY && var4 >= this.mouseY && this.mouseX > xr + 50 && this.mouseX < xr + 350) {
+			if (var4 - ui(12) < this.mouseY && var4 >= this.mouseY && this.mouseX > xr + ui(50) && this.mouseX < xr + ui(350)) {
 				var5 = 0xFF0000;
 
 			}
 
-			this.getSurface().drawColoredStringCentered(xr + 256 - 56, "Click here to close window", var5, 0, 1, var4);
+			this.getSurface().drawColoredStringCentered(xr + var2 / 2, "Click here to close window", var5, 0, 1, var4);
 
 			if (this.mouseButtonClick == 1) {
 				if (var5 == 0xFF0000) {
@@ -3745,7 +3819,7 @@ public final class mudclient implements Runnable {
 
 				}
 
-				if (var4 - 12 < this.mouseY && var4 >= this.mouseY && this.mouseX > xr + 50 && this.mouseX < xr + 350) {
+				if (var4 - ui(12) < this.mouseY && var4 >= this.mouseY && this.mouseX > xr + ui(50) && this.mouseX < xr + ui(350)) {
 					this.showDialogServerMessage = false;
 				}
 			}
@@ -3761,9 +3835,9 @@ public final class mudclient implements Runnable {
 
 			if (this.mouseButtonClick != 0 && this.inputX_Action == InputXAction.ACT_0) {
 				this.mouseButtonClick = 0;
-				int mlx = this.mouseX - (getGameWidth() - 408) / 2;
-				int mly = this.mouseY - (getGameHeight() - 246) / 2;
-				if (mlx < 0 || mly < 12 || mlx >= 408 || mly >= 246) {
+				int mlx = this.mouseX - (getGameWidth() - ui(408)) / 2;
+				int mly = this.mouseY - (getGameHeight() - ui(246)) / 2;
+				if (mlx < 0 || mly < ui(12) || mlx >= ui(408) || mly >= ui(246)) {
 					this.packetHandler.getClientStream().newPacket(166);
 					this.packetHandler.getClientStream().finishPacket();
 					this.showDialogShop = false;
@@ -3774,9 +3848,9 @@ public final class mudclient implements Runnable {
 					int slot = 0;
 					for (int row = 0; row < 5; ++row) {
 						for (int column = 0; column < 8; ++column) {
-							int sx = column * 49 + 7;
-							int sy = row * 34 + 28;
-							if (mlx > sx && 49 + sx > mlx && mly > sy && sy + 34 > mly && this.shopCategoryID[slot] != -1) {
+							int sx = column * ui(49) + ui(7);
+							int sy = row * ui(34) + ui(28);
+							if (mlx > sx && ui(49) + sx > mlx && mly > sy && sy + ui(34) > mly && this.shopCategoryID[slot] != -1) {
 								this.shopSelectedItemIndex = slot;
 								this.shopSelectedItemType = this.shopCategoryID[slot];
 							}
@@ -3789,25 +3863,25 @@ public final class mudclient implements Runnable {
 					int id = this.shopCategoryID[this.shopSelectedItemIndex];
 					if (id != -1) {
 						int count = this.shopItemCount[this.shopSelectedItemIndex];
-						if (count > 0 && mly >= 204 && mly <= 215) {
+						if (count > 0 && mly >= ui(204) && mly <= ui(215)) {
 							byte btnCount = 0;
-							if (mlx > 318 && mlx < 330) {
+							if (mlx > ui(318) && mlx < ui(330)) {
 								btnCount = 1;
 							}
 
-							if (mlx > 333 && mlx < 345) {
+							if (mlx > ui(333) && mlx < ui(345)) {
 								btnCount = 5;
 							}
 
-							if (mlx > 348 && mlx < 365) {
+							if (mlx > ui(348) && mlx < ui(365)) {
 								btnCount = 10;
 							}
 
-							if (mlx > 368 && mlx < 385) {
+							if (mlx > ui(368) && mlx < ui(385)) {
 								btnCount = 50;
 							}
 
-							if (mlx > 388 && mlx < 400) {
+							if (mlx > ui(388) && mlx < ui(400)) {
 								this.showItemModX(InputXPrompt.shopBuyX, InputXAction.SHOP_BUY, true);
 							}
 
@@ -3822,25 +3896,25 @@ public final class mudclient implements Runnable {
 						}
 
 						int invCount = this.getInventoryCount(id);
-						if (invCount > 0 && mly >= 229 && mly <= 240) {
+						if (invCount > 0 && mly >= ui(229) && mly <= ui(240)) {
 							byte btnCount = 0;
-							if (mlx > 318 && mlx < 330) {
+							if (mlx > ui(318) && mlx < ui(330)) {
 								btnCount = 1;
 							}
 
-							if (mlx > 333 && mlx < 345) {
+							if (mlx > ui(333) && mlx < ui(345)) {
 								btnCount = 5;
 							}
 
-							if (mlx > 348 && mlx < 365) {
+							if (mlx > ui(348) && mlx < ui(365)) {
 								btnCount = 10;
 							}
 
-							if (mlx > 388 && mlx < 400) {
+							if (mlx > ui(388) && mlx < ui(400)) {
 								this.showItemModX(InputXPrompt.shopSellX, InputXAction.SHOP_SELL, true);
 							}
 
-							if (mlx > 368 && mlx < 385) {
+							if (mlx > ui(368) && mlx < ui(385)) {
 								btnCount = 50;
 							}
 
@@ -3856,68 +3930,68 @@ public final class mudclient implements Runnable {
 					}
 				}
 			}
-			int xr = (getGameWidth() - 408) / 2;
-			int yr = (getGameHeight() - 246) / 2;
+			int xr = (getGameWidth() - ui(408)) / 2;
+			int yr = (getGameHeight() - ui(246)) / 2;
 
-			this.getSurface().drawBox(xr, yr, 408, 12, 192);
+			this.getSurface().drawBox(xr, yr, ui(408), ui(12), 192);
 			int color = 10000536;
-			this.getSurface().drawBoxAlpha(xr, 12 + yr, 408, 17, color, 160);
-			this.getSurface().drawBoxAlpha(xr, yr + 29, 8, 170, color, 160);
-			this.getSurface().drawBoxAlpha(xr + 399, 29 + yr, 9, 170, color, 160);
-			this.getSurface().drawBoxAlpha(xr, 199 + yr, 408, 47, color, 160);
-			this.getSurface().drawString("Buying and selling items", xr + 1, yr + 10, 0xFFFFFF, 1);
+			this.getSurface().drawBoxAlpha(xr, ui(12) + yr, ui(408), ui(17), color, 160);
+			this.getSurface().drawBoxAlpha(xr, yr + ui(29), ui(8), ui(170), color, 160);
+			this.getSurface().drawBoxAlpha(xr + ui(399), ui(29) + yr, ui(9), ui(170), color, 160);
+			this.getSurface().drawBoxAlpha(xr, ui(199) + yr, ui(408), ui(47), color, 160);
+			this.getSurface().drawString("Buying and selling items", xr + ui(1), yr + ui(10), 0xFFFFFF, 1);
 
 			int color2 = 0xFFFFFF;
-			if (this.mouseX > 320 + xr && yr <= this.mouseY && this.mouseX < xr + 408 && this.mouseY < yr + 12) {
+			if (this.mouseX > ui(320) + xr && yr <= this.mouseY && this.mouseX < xr + ui(408) && this.mouseY < yr + ui(12)) {
 				color2 = 0xFF0000;
 			}
-			this.getSurface().b(xr + 406, "Close window", yr + 10, color2, -92, 1);
+			this.getSurface().b(xr + ui(406), "Close window", yr + ui(10), color2, -92, 1);
 
-			this.getSurface().drawString("Shops stock in green", 2 + xr, 24 + yr, '\uff00', 1);
-			this.getSurface().drawString("Number you own in blue", xr + 135, yr + 24, '\uffff', 1);
+			this.getSurface().drawString("Shops stock in green", ui(2) + xr, ui(24) + yr, '\uff00', 1);
+			this.getSurface().drawString("Number you own in blue", xr + ui(135), yr + ui(24), '\uffff', 1);
 			this.getSurface().drawString("Your money: " + this.getInventoryCount(10) + "gp",
-				280 + xr, 24 + yr, 0xFFFF00, 1);
+				ui(280) + xr, ui(24) + yr, 0xFFFF00, 1);
 			{
 				int slot = 0;
 				for (int row = 0; row < 5; ++row) {
 					for (int column = 0; column < 8; ++column) {
-						int sx = column * 49 + 7 + xr;
-						int sy = yr + 28 + row * 34;
+						int sx = column * ui(49) + ui(7) + xr;
+						int sy = yr + ui(28) + row * ui(34);
 						if (this.shopSelectedItemIndex == slot) {
-							this.getSurface().drawBoxAlpha(sx, sy, 49, 34, 0xFF0000, 160);
+							this.getSurface().drawBoxAlpha(sx, sy, ui(49), ui(34), 0xFF0000, 160);
 						} else {
-							this.getSurface().drawBoxAlpha(sx, sy, 49, 34, 13684944, 160);
+							this.getSurface().drawBoxAlpha(sx, sy, ui(49), ui(34), 13684944, 160);
 						}
 
-						this.getSurface().drawBoxBorder(sx, 50, sy, 35, 0);
+						this.getSurface().drawBoxBorder(sx, ui(50), sy, ui(35), 0);
 
 						if (this.shopCategoryID[slot] != -1) {
 							if (S_WANT_BANK_NOTES && this.getInventoryCount(this.shopCategoryID[slot], this.shopItemNoted[slot]) > 0
 								&& this.getShopItemNoted(slot)) {
 								if (S_WANT_CERT_AS_NOTES) {
 									this.getSurface().drawSpriteClipping(this.spriteSelect(EntityHandler.noteDef),
-										sx, sy, 48, 32, EntityHandler.noteDef.getPictureMask(), 0,
+										sx, sy, ui(48), ui(32), EntityHandler.noteDef.getPictureMask(), 0,
 										EntityHandler.noteDef.getBlueMask(), false, 0, 1);
-									this.getSurface().drawSpriteClipping(spriteSelect(EntityHandler.getItemDef(this.shopCategoryID[slot])), sx + 7, sy + 4,
-										33, 23, EntityHandler.getItemDef(this.shopCategoryID[slot]).getPictureMask(), 0,
+									this.getSurface().drawSpriteClipping(spriteSelect(EntityHandler.getItemDef(this.shopCategoryID[slot])), sx + ui(7), sy + ui(4),
+										ui(33), ui(23), EntityHandler.getItemDef(this.shopCategoryID[slot]).getPictureMask(), 0,
 										EntityHandler.getItemDef(this.shopCategoryID[slot]).getBlueMask(), false, 0, 1);
 								} else {
 									this.getSurface().drawSpriteClipping(this.spriteSelect(EntityHandler.certificateDef),
-										sx, sy, 48, 32, EntityHandler.certificateDef.getPictureMask(), 0,
+										sx, sy, ui(48), ui(32), EntityHandler.certificateDef.getPictureMask(), 0,
 										EntityHandler.certificateDef.getBlueMask(), false, 0, 1);
 								}
 							} else {
 								this.getSurface().drawSpriteClipping(
 									spriteSelect(EntityHandler.getItemDef(this.shopCategoryID[slot])),
-									sx, sy, 48, 32, EntityHandler.getItemDef(this.shopCategoryID[slot]).getPictureMask(), 0,
+									sx, sy, ui(48), ui(32), EntityHandler.getItemDef(this.shopCategoryID[slot]).getPictureMask(), 0,
 									EntityHandler.getItemDef(this.shopCategoryID[slot]).getBlueMask(), false, 0, 1);
 							}
 
 							ItemDef def = EntityHandler.getItemDef(this.shopCategoryID[slot]);
 
-							this.getSurface().drawString("" + this.shopItemCount[slot], 1 + sx, 10 + sy, '\uff00', 1);
-							this.getSurface().b(47 + sx, "" + this.getInventoryCount(this.shopCategoryID[slot], this.shopItemNoted[slot]),
-								10 + sy, '\uffff', -80, 1);
+							this.getSurface().drawString("" + this.shopItemCount[slot], ui(1) + sx, ui(10) + sy, '\uff00', 1);
+							this.getSurface().b(ui(47) + sx, "" + this.getInventoryCount(this.shopCategoryID[slot], this.shopItemNoted[slot]),
+								ui(10) + sy, '\uffff', -80, 1);
 						}
 
 						++slot;
@@ -3925,116 +3999,116 @@ public final class mudclient implements Runnable {
 				}
 			}
 
-			this.getSurface().drawLineHoriz(5 + xr, yr + 222, 398, 0);
+			this.getSurface().drawLineHoriz(ui(5) + xr, yr + ui(222), ui(398), 0);
 			if (this.shopSelectedItemIndex != -1) {
 				int id = this.shopCategoryID[this.shopSelectedItemIndex];
 				if (id != -1) {
 					int count = this.getShopItemCount(this.shopSelectedItemIndex);
 					if (count <= 0) {
-						this.getSurface().drawColoredStringCentered(204 + xr,
-							"This item is not currently available to buy", 0xFFFF00, 0, 3, 214 + yr);
+						this.getSurface().drawColoredStringCentered(ui(204) + xr,
+							"This item is not currently available to buy", 0xFFFF00, 0, 3, ui(214) + yr);
 					} else {
 						int cost = GenUtil.computeItemCost(EntityHandler.getItemDef(id).getBasePrice(),
 							this.shopItemPrice[this.shopSelectedItemIndex], this.shopBuyPriceMod, -30910, true, 1,
 							count, this.shopPriceMultiplier);
 						this.getSurface().drawString(
-							EntityHandler.getItemDef(id).getName() + ": buy for " + cost + "gp each", 2 + xr,
-							yr + 214, 0xFFFF00, 1);
-						boolean mouseInRow = 204 + yr <= this.mouseY && yr + 215 >= this.mouseY;
-						this.getSurface().drawString("Buy:", xr + 285, 214 + yr, 0xFFFFFF, 3);
+							EntityHandler.getItemDef(id).getName() + ": buy for " + cost + "gp each", ui(2) + xr,
+							yr + ui(214), 0xFFFF00, 1);
+						boolean mouseInRow = ui(204) + yr <= this.mouseY && yr + ui(215) >= this.mouseY;
+						this.getSurface().drawString("Buy:", xr + ui(285), ui(214) + yr, 0xFFFFFF, 3);
 
 						color2 = 0xFFFFFF;
-						if (mouseInRow && this.mouseX > 318 + xr && this.mouseX < xr + 330) {
+						if (mouseInRow && this.mouseX > ui(318) + xr && this.mouseX < xr + ui(330)) {
 							color2 = 0xFF0000;
 						}
-						this.getSurface().drawString("1", xr + 320, 214 + yr, color2, 3);
+						this.getSurface().drawString("1", xr + ui(320), ui(214) + yr, color2, 3);
 
 						if (count >= 5) {
 							color2 = 0xFFFFFF;
-							if (mouseInRow && this.mouseX > 333 + xr && this.mouseX < 345 + xr) {
+							if (mouseInRow && this.mouseX > ui(333) + xr && this.mouseX < ui(345) + xr) {
 								color2 = 0xFF0000;
 							}
-							this.getSurface().drawString("5", 335 + xr, 214 + yr, color2, 3);
+							this.getSurface().drawString("5", ui(335) + xr, ui(214) + yr, color2, 3);
 						}
 
 						if (count >= 10) {
 							color2 = 0xFFFFFF;
-							if (mouseInRow && 348 + xr < this.mouseX && this.mouseX < xr + 365) {
+							if (mouseInRow && ui(348) + xr < this.mouseX && this.mouseX < xr + ui(365)) {
 								color2 = 0xFF0000;
 							}
-							this.getSurface().drawString("10", 350 + xr, 214 + yr, color2, 3);
+							this.getSurface().drawString("10", ui(350) + xr, ui(214) + yr, color2, 3);
 						}
 
 						if (count >= 50) {
 							color2 = 0xFFFFFF;
-							if (mouseInRow && this.mouseX > 368 + xr && 385 + xr > this.mouseX) {
+							if (mouseInRow && this.mouseX > ui(368) + xr && ui(385) + xr > this.mouseX) {
 								color2 = 0xFF0000;
 							}
-							this.getSurface().drawString("50", xr + 370, 214 + yr, color2, 3);
+							this.getSurface().drawString("50", xr + ui(370), ui(214) + yr, color2, 3);
 						}
 
 						color2 = 0xFFFFFF;
-						if (mouseInRow && this.mouseX > xr + 388 && this.mouseX < 400 + xr) {
+						if (mouseInRow && this.mouseX > xr + ui(388) && this.mouseX < ui(400) + xr) {
 							color2 = 0xFF0000;
 						}
-						this.getSurface().drawString("X", 390 + xr, 214 + yr, color2, 3);
+						this.getSurface().drawString("X", ui(390) + xr, ui(214) + yr, color2, 3);
 					}
 
 					int invCount = this.getInventoryCount(id);
 					if (invCount <= 0) {
-						this.getSurface().drawColoredStringCentered(xr + 204,
-							"You do not have any of this item to sell", 0xFFFF00, 0, 3, 239 + yr);
+						this.getSurface().drawColoredStringCentered(xr + ui(204),
+							"You do not have any of this item to sell", 0xFFFF00, 0, 3, ui(239) + yr);
 					} else {
 
 						int sellCost = GenUtil.computeItemCost(EntityHandler.getItemDef(id).getBasePrice(),
 							this.shopItemPrice[this.shopSelectedItemIndex], this.shopSellPriceMod, -30910, false, 1,
 							count, this.shopPriceMultiplier);
 						this.getSurface().drawString(
-							EntityHandler.getItemDef(id, this.getShopItemNoted(this.shopSelectedItemIndex)).getName() + ": sell for " + sellCost + "gp each", 2 + xr,
-							yr + 239, 0xFFFF00, 1);
-						boolean mouseInRow = this.mouseY >= yr + 229 && yr + 240 >= this.mouseY;
+							EntityHandler.getItemDef(id, this.getShopItemNoted(this.shopSelectedItemIndex)).getName() + ": sell for " + sellCost + "gp each", ui(2) + xr,
+							yr + ui(239), 0xFFFF00, 1);
+						boolean mouseInRow = this.mouseY >= yr + ui(229) && yr + ui(240) >= this.mouseY;
 
 						color2 = 0xFFFFFF;
-						this.getSurface().drawString("Sell:", xr + 285, yr + 239, 0xFFFFFF, 3);
-						if (mouseInRow && xr + 318 < this.mouseX && this.mouseX < xr + 330) {
+						this.getSurface().drawString("Sell:", xr + ui(285), yr + ui(239), 0xFFFFFF, 3);
+						if (mouseInRow && xr + ui(318) < this.mouseX && this.mouseX < xr + ui(330)) {
 							color2 = 0xFF0000;
 						}
-						this.getSurface().drawString("1", xr + 320, 239 + yr, color2, 3);
+						this.getSurface().drawString("1", xr + ui(320), ui(239) + yr, color2, 3);
 
 						if (invCount >= 5) {
 							color2 = 0xFFFFFF;
-							if (mouseInRow && xr + 333 < this.mouseX && this.mouseX < xr + 345) {
+							if (mouseInRow && xr + ui(333) < this.mouseX && this.mouseX < xr + ui(345)) {
 								color2 = 0xFF0000;
 							}
-							this.getSurface().drawString("5", 335 + xr, 239 + yr, color2, 3);
+							this.getSurface().drawString("5", ui(335) + xr, ui(239) + yr, color2, 3);
 						}
 
 						if (invCount >= 10) {
 							color2 = 0xFFFFFF;
-							if (mouseInRow && 348 + xr < this.mouseX && 365 + xr > this.mouseX) {
+							if (mouseInRow && ui(348) + xr < this.mouseX && ui(365) + xr > this.mouseX) {
 								color2 = 0xFF0000;
 							}
-							this.getSurface().drawString("10", xr + 350, 239 + yr, color2, 3);
+							this.getSurface().drawString("10", xr + ui(350), ui(239) + yr, color2, 3);
 						}
 
 						if (invCount >= 50) {
 							color2 = 0xFFFFFF;
-							if (mouseInRow && this.mouseX > xr + 368 && 385 + xr > this.mouseX) {
+							if (mouseInRow && this.mouseX > xr + ui(368) && ui(385) + xr > this.mouseX) {
 								color2 = 0xFF0000;
 							}
-							this.getSurface().drawString("50", xr + 370, 239 + yr, color2, 3);
+							this.getSurface().drawString("50", xr + ui(370), ui(239) + yr, color2, 3);
 						}
 
 						color2 = 0xFFFFFF;
-						if (mouseInRow && this.mouseX > 388 + xr && xr + 400 > this.mouseX) {
+						if (mouseInRow && this.mouseX > ui(388) + xr && xr + ui(400) > this.mouseX) {
 							color2 = 0xFF0000;
 						}
-						this.getSurface().drawString("X", xr + 390, yr + 239, color2, 3);
+						this.getSurface().drawString("X", xr + ui(390), yr + ui(239), color2, 3);
 					}
 				}
 			} else {
-				this.getSurface().drawColoredStringCentered(204 + xr, "Select an object to buy or sell", 0xFFFF00, 0, 3,
-					214 + yr);
+				this.getSurface().drawColoredStringCentered(ui(204) + xr, "Select an object to buy or sell", 0xFFFF00, 0, 3,
+					ui(214) + yr);
 			}
 
 		} catch (RuntimeException var14) {
@@ -4072,31 +4146,31 @@ public final class mudclient implements Runnable {
 						this.mouseButtonItemCountIncrement = 1;
 					}
 
-					int mouseLX = this.mouseX - 22;
-					int mouseLY = this.mouseY - 36;
-					if (mouseLX >= 0 && mouseLY >= 0 && mouseLX < 468 && mouseLY < 262) {
+					int mouseLX = this.mouseX - ui(22);
+					int mouseLY = this.mouseY - ui(36);
+					if (mouseLX >= 0 && mouseLY >= 0 && mouseLX < ui(468) && mouseLY < ui(262)) {
 						if (this.mouseButtonItemCountIncrement > 0) {
-							if (mouseLX > 216 && mouseLY > 30 && mouseLX < 462 && mouseLY < 235) {
-								int slot = (mouseLY - 31) / 34 * 5 + (mouseLX - 217) / 49;
+							if (mouseLX > ui(216) && mouseLY > ui(30) && mouseLX < ui(462) && mouseLY < ui(235)) {
+								int slot = (mouseLY - ui(31)) / ui(34) * 5 + (mouseLX - ui(217)) / ui(49);
 								if (slot >= 0 && slot < this.inventoryItemCount) {
 									this.tradeOffer(-1, slot);
 								}
 							}
 
-							if (mouseLX > 8 && mouseLY > 30 && mouseLX < 205 && mouseLY < 133) {
-								int slot = (mouseLY - 31) / 34 * 4 + (mouseLX - 9) / 49;
+							if (mouseLX > ui(8) && mouseLY > ui(30) && mouseLX < ui(205) && mouseLY < ui(133)) {
+								int slot = (mouseLY - ui(31)) / ui(34) * 4 + (mouseLX - ui(9)) / ui(49);
 								if (slot >= 0 && this.tradeItemCount > slot) {
 									this.tradeRemove(-1, (byte) 125, slot);
 								}
 							}
 
-							if (mouseLX >= 217 && mouseLY >= 238 && mouseLX <= 286 && mouseLY <= 259) {
+							if (mouseLX >= ui(217) && mouseLY >= ui(238) && mouseLX <= ui(286) && mouseLY <= ui(259)) {
 								this.tradeAccepted = true;
 								this.packetHandler.getClientStream().newPacket(55);
 								this.packetHandler.getClientStream().finishPacket();
 							}
 
-							if (mouseLX >= 394 && mouseLY >= 238 && mouseLX < 463 && mouseLY < 259) {
+							if (mouseLX >= ui(394) && mouseLY >= ui(238) && mouseLX < ui(463) && mouseLY < ui(259)) {
 								this.showDialogTrade = false;
 								this.packetHandler.getClientStream().newPacket(230);
 								this.packetHandler.getClientStream().finishPacket();
@@ -4107,10 +4181,10 @@ public final class mudclient implements Runnable {
 						}
 
 						if (this.mouseButtonClick == 2) {
-							if (mouseLX > 216 && mouseLY > 30 && mouseLX < 462 && mouseLY < 235) {
+							if (mouseLX > ui(216) && mouseLY > ui(30) && mouseLX < ui(462) && mouseLY < ui(235)) {
 								int w = this.menuCommon.getWidth();
 								int h = this.menuCommon.getHeight();
-								this.menuY = this.mouseY - 7;
+								this.menuY = this.mouseY - ui(7);
 								this.menuX = this.mouseX - w / 2;
 								this.topMouseMenuVisible = true;
 								if (this.menuY < 0) {
@@ -4121,15 +4195,15 @@ public final class mudclient implements Runnable {
 									this.menuX = 0;
 								}
 
-								if (this.menuX + w > 510) {
-									this.menuX = 510 - w;
+								if (this.menuX + w > getGameWidth() - ui(2)) {
+									this.menuX = getGameWidth() - ui(2) - w;
 								}
 
-								if (h + this.menuY > 315) {
-									this.menuY = 315 - h;
+								if (h + this.menuY > getGameHeight() - ui(19)) {
+									this.menuY = getGameHeight() - ui(19) - h;
 								}
 
-								int slot = (mouseLY - 31) / 34 * 5 + (mouseLX - 217) / 49;
+								int slot = (mouseLY - ui(31)) / ui(34) * 5 + (mouseLX - ui(217)) / ui(49);
 								if (slot >= 0 && this.inventoryItemCount > slot) {
 									int id = getInventoryItemID(slot);
 									if (getInventoryItem(slot).getNoted()) {
@@ -4155,7 +4229,7 @@ public final class mudclient implements Runnable {
 									int wNew = this.menuTrade.getWidth();
 									int hNew = this.menuTrade.getHeight();
 									this.menuTradeX = this.mouseX - wNew / 2;
-									this.menuTradeY = this.mouseY - 7;
+									this.menuTradeY = this.mouseY - ui(7);
 									if (this.menuTradeX < 0) {
 										this.menuTradeX = 0;
 									}
@@ -4164,18 +4238,18 @@ public final class mudclient implements Runnable {
 										this.menuTradeY = 0;
 									}
 
-									if (hNew + this.menuTradeY > 315) {
-										this.menuTradeY = 315 - hNew;
+									if (hNew + this.menuTradeY > getGameHeight() - ui(19)) {
+										this.menuTradeY = getGameHeight() - ui(19) - hNew;
 									}
 
-									if (this.menuTradeX + wNew > 510) {
-										this.menuTradeX = 510 - wNew;
+									if (this.menuTradeX + wNew > getGameWidth() - ui(2)) {
+										this.menuTradeX = getGameWidth() - ui(2) - wNew;
 									}
 								}
 							}
 
-							if (mouseLX > 8 && mouseLY > 30 && mouseLX < 205 && mouseLY < 133) {
-								int slot = (mouseLX - 9) / 49 + (mouseLY - 31) / 34 * 4;
+							if (mouseLX > ui(8) && mouseLY > ui(30) && mouseLX < ui(205) && mouseLY < ui(133)) {
+								int slot = (mouseLX - ui(9)) / ui(49) + (mouseLY - ui(31)) / ui(34) * 4;
 								if (slot >= 0 && slot < this.tradeItemCount) {
 									int id = getTradeItemID(slot);
 									if (getTradeItem(slot).getNoted()) {
@@ -4201,7 +4275,7 @@ public final class mudclient implements Runnable {
 									int wNew = this.menuTrade.getWidth();
 									int hNew = this.menuTrade.getHeight();
 									this.menuTradeX = this.mouseX - wNew / 2;
-									this.menuTradeY = this.mouseY - 7;
+									this.menuTradeY = this.mouseY - ui(7);
 									if (this.menuTradeX < 0) {
 										this.menuTradeX = 0;
 									}
@@ -4210,12 +4284,12 @@ public final class mudclient implements Runnable {
 										this.menuTradeY = 0;
 									}
 
-									if (hNew + this.menuTradeY > 315) {
-										this.menuTradeY = 315 - hNew;
+									if (hNew + this.menuTradeY > getGameHeight() - ui(19)) {
+										this.menuTradeY = getGameHeight() - ui(19) - hNew;
 									}
 
-									if (wNew + this.menuTradeX > 510) {
-										this.menuTradeX = 510 - wNew;
+									if (wNew + this.menuTradeX > getGameWidth() - ui(2)) {
+										this.menuTradeX = getGameWidth() - ui(2) - wNew;
 									}
 								}
 							}
@@ -4226,9 +4300,9 @@ public final class mudclient implements Runnable {
 						if (this.menuTrade_Visible) {
 							int w = this.menuTrade.getWidth();
 							int h = this.menuTrade.getHeight();
-							if (this.mouseX < this.menuTradeX - 10 || this.menuTradeY - 10 > this.mouseY
-								|| this.mouseX > this.menuTradeX - (-w - 10)
-								|| this.menuTradeY - (-h - 10) < this.mouseY) {
+							if (this.mouseX < this.menuTradeX - ui(10) || this.menuTradeY - ui(10) > this.mouseY
+								|| this.mouseX > this.menuTradeX - (-w - ui(10))
+								|| this.menuTradeY - (-h - ui(10)) < this.mouseY) {
 								this.menuTrade_Visible = false;
 							}
 						}
@@ -4306,69 +4380,69 @@ public final class mudclient implements Runnable {
 			}
 
 			if (this.showDialogTrade) {
-				byte xr = 22;
-				byte yr = 36;
-				this.getSurface().drawBox(xr, yr, 468, 12, 192);
+				int xr = ui(22);
+				int yr = ui(36);
+				this.getSurface().drawBox(xr, yr, ui(468), ui(12), 192);
 				int color = 10000536;
-				this.getSurface().drawBoxAlpha(xr, yr + 12, 468, 18, color, 160);
-				this.getSurface().drawBoxAlpha(xr, yr + 30, 8, 248, color, 160);
+				this.getSurface().drawBoxAlpha(xr, yr + ui(12), ui(468), ui(18), color, 160);
+				this.getSurface().drawBoxAlpha(xr, yr + ui(30), ui(8), ui(248), color, 160);
 
-				this.getSurface().drawBoxAlpha(xr + 205, yr + 30, 11, 248, color, 160);
-				this.getSurface().drawBoxAlpha(xr + 462, 30 + yr, 6, 248, color, 160);
-				this.getSurface().drawBoxAlpha(xr + 8, yr + 133, 197, 22, color, 160);
-				this.getSurface().drawBoxAlpha(xr + 8, yr + 258, 197, 20, color, 160);
-				this.getSurface().drawBoxAlpha(xr + 216, yr + 235, 246, 43, color, 160);
+				this.getSurface().drawBoxAlpha(xr + ui(205), yr + ui(30), ui(11), ui(248), color, 160);
+				this.getSurface().drawBoxAlpha(xr + ui(462), ui(30) + yr, ui(6), ui(248), color, 160);
+				this.getSurface().drawBoxAlpha(xr + ui(8), yr + ui(133), ui(197), ui(22), color, 160);
+				this.getSurface().drawBoxAlpha(xr + ui(8), yr + ui(258), ui(197), ui(20), color, 160);
+				this.getSurface().drawBoxAlpha(xr + ui(216), yr + ui(235), ui(246), ui(43), color, 160);
 				int id = 13684944;
-				this.getSurface().drawBoxAlpha(xr + 8, yr + 30, 197, 103, id, 160);
-				this.getSurface().drawBoxAlpha(8 + xr, yr + 155, 197, 103, id, 160);
-				this.getSurface().drawBoxAlpha(216 + xr, 30 + yr, 246, 205, id, 160);
+				this.getSurface().drawBoxAlpha(xr + ui(8), yr + ui(30), ui(197), ui(103), id, 160);
+				this.getSurface().drawBoxAlpha(ui(8) + xr, yr + ui(155), ui(197), ui(103), id, 160);
+				this.getSurface().drawBoxAlpha(ui(216) + xr, ui(30) + yr, ui(246), ui(205), id, 160);
 
 				for (int var7 = 0; var7 < 4; ++var7) {
-					this.getSurface().drawLineHoriz(8 + xr, 30 + yr + var7 * 34, 197, 0);
+					this.getSurface().drawLineHoriz(ui(8) + xr, ui(30) + yr + var7 * ui(34), ui(197), 0);
 				}
 
 				for (int var7 = 0; var7 < 4; ++var7) {
-					this.getSurface().drawLineHoriz(xr + 8, var7 * 34 + 155 + yr, 197, 0);
+					this.getSurface().drawLineHoriz(xr + ui(8), var7 * ui(34) + ui(155) + yr, ui(197), 0);
 				}
 
 				for (int var7 = 0; var7 < 7; ++var7) {
-					this.getSurface().drawLineHoriz(216 + xr, yr + 30 + var7 * 34, 246, 0);
+					this.getSurface().drawLineHoriz(ui(216) + xr, yr + ui(30) + var7 * ui(34), ui(246), 0);
 				}
 
 				for (int var7 = 0; var7 < 6; ++var7) {
 					if (~var7 > -6) {
-						this.getSurface().drawLineVert(xr + 8 + var7 * 49, 30 + yr, 0, 103);
+						this.getSurface().drawLineVert(xr + ui(8) + var7 * ui(49), ui(30) + yr, 0, ui(103));
 					}
 
 					if (var7 < 5) {
-						this.getSurface().drawLineVert(var7 * 49 + 8 + xr, 155 + yr, 0, 103);
+						this.getSurface().drawLineVert(var7 * ui(49) + ui(8) + xr, ui(155) + yr, 0, ui(103));
 					}
 
-					this.getSurface().drawLineVert(216 + xr + var7 * 49, yr + 30, 0, 205);
+					this.getSurface().drawLineVert(ui(216) + xr + var7 * ui(49), yr + ui(30), 0, ui(205));
 				}
 
-				this.getSurface().drawString("Trading with: " + this.tradeRecipientName, xr + 1, 10 + yr, 0xFFFFFF, 1);
-				this.getSurface().drawString("Your Offer", xr + 9, yr + 27, 0xFFFFFF, 4);
-				this.getSurface().drawString("Opponent's Offer", xr + 9, yr + 152, 0xFFFFFF, 4);
-				this.getSurface().drawString("Your Inventory", xr + 216, yr + 27, 0xFFFFFF, 4);
+				this.getSurface().drawString("Trading with: " + this.tradeRecipientName, xr + ui(1), ui(10) + yr, 0xFFFFFF, 1);
+				this.getSurface().drawString("Your Offer", xr + ui(9), yr + ui(27), 0xFFFFFF, 4);
+				this.getSurface().drawString("Opponent's Offer", xr + ui(9), yr + ui(152), 0xFFFFFF, 4);
+				this.getSurface().drawString("Your Inventory", xr + ui(216), yr + ui(27), 0xFFFFFF, 4);
 				if (!this.tradeAccepted) {
-					this.getSurface().drawSprite(spriteSelect(GUIPARTS.ACCEPTBUTTON.getDef()), xr + 217, yr + 238);
+					this.getSurface().drawSprite(spriteSelect(GUIPARTS.ACCEPTBUTTON.getDef()), xr + ui(217), yr + ui(238));
 				}
 
-				this.getSurface().drawSprite(spriteSelect(GUIPARTS.DECLINEBUTTON.getDef()), xr + 394, yr + 238);
+				this.getSurface().drawSprite(spriteSelect(GUIPARTS.DECLINEBUTTON.getDef()), xr + ui(394), yr + ui(238));
 				if (this.tradeRecipientAccepted) {
-					this.getSurface().drawColoredStringCentered(xr + 341, "Other player", 0xFFFFFF, 0, 1, 246 + yr);
-					this.getSurface().drawColoredStringCentered(xr + 341, "has accepted", 0xFFFFFF, 0, 1, 256 + yr);
+					this.getSurface().drawColoredStringCentered(xr + ui(341), "Other player", 0xFFFFFF, 0, 1, ui(246) + yr);
+					this.getSurface().drawColoredStringCentered(xr + ui(341), "has accepted", 0xFFFFFF, 0, 1, ui(256) + yr);
 				}
 
 				if (this.tradeAccepted) {
-					this.getSurface().drawColoredStringCentered(xr + 217 + 35, "Waiting for", 0xFFFFFF, 0, 1, yr + 246);
-					this.getSurface().drawColoredStringCentered(xr + 252, "other player", 0xFFFFFF, 0, 1, 256 + yr);
+					this.getSurface().drawColoredStringCentered(xr + ui(217) + ui(35), "Waiting for", 0xFFFFFF, 0, 1, yr + ui(246));
+					this.getSurface().drawColoredStringCentered(xr + ui(252), "other player", 0xFFFFFF, 0, 1, ui(256) + yr);
 				}
 
 				for (int slot = 0; slot < this.inventoryItemCount; ++slot) {
-					int sX = xr + 217 + slot % 5 * 49;
-					int sY = 31 + yr + slot / 5 * 34;
+					int sX = xr + ui(217) + slot % 5 * ui(49);
+					int sY = ui(31) + yr + slot / 5 * ui(34);
 					Item item = getInventoryItem(slot);
 					ItemDef def = item.getItemDef();
 
@@ -4377,37 +4451,37 @@ public final class mudclient implements Runnable {
 						if (S_WANT_CERT_AS_NOTES) {
 							this.getSurface().drawSpriteClipping(
 								spriteSelect(EntityHandler.noteDef), sX,
-								sY, 48, 32, EntityHandler.noteDef.getPictureMask(), 0,
+								sY, ui(48), ui(32), EntityHandler.noteDef.getPictureMask(), 0,
 								EntityHandler.noteDef.getBlueMask(), false,
 								0, 1);
 
-							getSurface().drawSpriteClipping(spriteSelect(def), sX + 7, sY + 4,
-								33, 23, def.getPictureMask(), 0,
+							getSurface().drawSpriteClipping(spriteSelect(def), sX + ui(7), sY + ui(4),
+								ui(33), ui(23), def.getPictureMask(), 0,
 								def.getBlueMask(), false, 0, 1);
 						} else {
 							this.getSurface().drawSpriteClipping(
 								spriteSelect(EntityHandler.certificateDef), sX,
-								sY, 48, 32, EntityHandler.certificateDef.getPictureMask(), 0,
+								sY, ui(48), ui(32), EntityHandler.certificateDef.getPictureMask(), 0,
 								EntityHandler.certificateDef.getBlueMask(), false,
 								0, 1);
 						}
 					} else {
 						this.getSurface().drawSpriteClipping(
 							spriteSelect(def), sX,
-							sY, 48, 32, def.getPictureMask(), 0,
+							sY, ui(48), ui(32), def.getPictureMask(), 0,
 							def.getBlueMask(), false,
 							0, 1);
 					}
 
 					if (def.isStackable()) {
-						this.getSurface().drawString("" + getInventoryItemSize(slot), 1 + sX,
-							10 + sY, 0xFFFF00, 1);
+						this.getSurface().drawString("" + getInventoryItemSize(slot), ui(1) + sX,
+							ui(10) + sY, 0xFFFF00, 1);
 					}
 				}
 
 				for (int slot = 0; this.tradeItemCount > slot; ++slot) {
-					int sx = slot % 4 * 49 + 9 + xr;
-					int sy = slot / 4 * 34 + yr + 31;
+					int sx = slot % 4 * ui(49) + ui(9) + xr;
+					int sy = slot / 4 * ui(34) + yr + ui(31);
 					Item item = getTradeItem(slot);
 					ItemDef def = item.getItemDef();
 
@@ -4416,44 +4490,44 @@ public final class mudclient implements Runnable {
 						if (S_WANT_CERT_AS_NOTES) {
 							this.getSurface().drawSpriteClipping(
 								spriteSelect(EntityHandler.noteDef), sx,
-								sy, 48, 32, EntityHandler.noteDef.getPictureMask(), 0,
+								sy, ui(48), ui(32), EntityHandler.noteDef.getPictureMask(), 0,
 								EntityHandler.noteDef.getBlueMask(), false,
 								0, 1);
 
-							getSurface().drawSpriteClipping(spriteSelect(def), sx + 7, sy + 4,
-								33, 23, def.getPictureMask(), 0,
+							getSurface().drawSpriteClipping(spriteSelect(def), sx + ui(7), sy + ui(4),
+								ui(33), ui(23), def.getPictureMask(), 0,
 								def.getBlueMask(), false, 0, 1);
 						} else {
 							this.getSurface().drawSpriteClipping(
 								spriteSelect(EntityHandler.certificateDef), sx,
-								sy, 48, 32, EntityHandler.certificateDef.getPictureMask(), 0,
+								sy, ui(48), ui(32), EntityHandler.certificateDef.getPictureMask(), 0,
 								EntityHandler.certificateDef.getBlueMask(), false,
 								0, 1);
 						}
 					} else {
 						this.getSurface().drawSpriteClipping(
 							spriteSelect(def), sx,
-							sy, 48, 32, def.getPictureMask(), 0,
+							sy, ui(48), ui(32), def.getPictureMask(), 0,
 							def.getBlueMask(), false,
 							0, 1);
 					}
 
 					if (def.isStackable()) {
-						this.getSurface().drawString("" + getTradeItemSize(slot), 1 + sx,
-							10 + sy, 0xFFFF00, 1);
+						this.getSurface().drawString("" + getTradeItemSize(slot), ui(1) + sx,
+							ui(10) + sy, 0xFFFF00, 1);
 					}
 
 					if (sx < this.mouseX && 48 + sx > this.mouseX && sy < this.mouseY && this.mouseY < sy + 32) {
 						this.getSurface().drawString(
 							def.getName() + ": @whi@"
 								+ def.getDescription(),
-							8 + xr, 273 + yr, 0xFFFF00, 1);
+							ui(8) + xr, ui(273) + yr, 0xFFFF00, 1);
 					}
 				}
 
 				for (int slot = 0; this.tradeRecipientItemsCount > slot; ++slot) {
-					int sx = xr + 9 + slot % 4 * 49;
-					int sy = yr + 156 + slot / 4 * 34;
+					int sx = xr + ui(9) + slot % 4 * ui(49);
+					int sy = yr + ui(156) + slot / 4 * ui(34);
 					Item item = getTradeRecipientItem(slot);
 					ItemDef def = item.getItemDef();
 
@@ -4462,38 +4536,38 @@ public final class mudclient implements Runnable {
 						if (S_WANT_CERT_AS_NOTES) {
 							this.getSurface().drawSpriteClipping(
 								spriteSelect(EntityHandler.noteDef), sx,
-								sy, 48, 32, EntityHandler.noteDef.getPictureMask(), 0,
+								sy, ui(48), ui(32), EntityHandler.noteDef.getPictureMask(), 0,
 								EntityHandler.noteDef.getBlueMask(), false,
 								0, 1);
 
-							getSurface().drawSpriteClipping(spriteSelect(def), sx + 7, sy + 4,
-								33, 23, def.getPictureMask(), 0,
+							getSurface().drawSpriteClipping(spriteSelect(def), sx + ui(7), sy + ui(4),
+								ui(33), ui(23), def.getPictureMask(), 0,
 								def.getBlueMask(), false, 0, 1);
 						} else {
 							this.getSurface().drawSpriteClipping(
 								spriteSelect(EntityHandler.certificateDef), sx,
-								sy, 48, 32, EntityHandler.certificateDef.getPictureMask(), 0,
+								sy, ui(48), ui(32), EntityHandler.certificateDef.getPictureMask(), 0,
 								EntityHandler.certificateDef.getBlueMask(), false,
 								0, 1);
 						}
 					} else {
 						this.getSurface().drawSpriteClipping(
 							spriteSelect(def), sx,
-							sy, 48, 32, def.getPictureMask(), 0,
+							sy, ui(48), ui(32), def.getPictureMask(), 0,
 							def.getBlueMask(), false,
 							0, 1);
 					}
 
 					if (def.isStackable()) {
-						this.getSurface().drawString("" + getTradeRecipientItemCount(slot), 1 + sx,
-							10 + sy, 0xFFFF00, 1);
+						this.getSurface().drawString("" + getTradeRecipientItemCount(slot), ui(1) + sx,
+							ui(10) + sy, 0xFFFF00, 1);
 					}
 
 					if (sx < this.mouseX && this.mouseX < sx + 48 && this.mouseY > sy && sy + 32 > this.mouseY) {
 						this.getSurface().drawString(
 							def.getName() + ": @whi@"
 								+ def.getDescription(),
-							xr + 8, yr + 273, 0xFFFF00, 1);
+							xr + ui(8), yr + ui(273), 0xFFFF00, 1);
 					}
 				}
 
@@ -4511,24 +4585,24 @@ public final class mudclient implements Runnable {
 		try {
 
 			//int var2 = 65;
-			int var2 = 135;
+			int var2 = ui(135);
 				/*if (this.welcomeUnreadMessages > 0) {
 					var2 += 30;
 				}*/
 
 			if (!this.welcomeLastLoggedInIp.equalsIgnoreCase("0.0.0.0")) {
-				var2 += 45;
+				var2 += ui(45);
 			}
-			int welcomeWindowX = (getGameWidth() - 400) / 2;
+			int welcomeWindowX = (getGameWidth() - ui(400)) / 2;
 			int welcomeWindowY = (getGameHeight() - var2) / 2;
 
-			this.getSurface().drawBox(welcomeWindowX, welcomeWindowY, 400, var2, 0);
+			this.getSurface().drawBox(welcomeWindowX, welcomeWindowY, ui(400), var2, 0);
 			int var3 = welcomeWindowY;
-			this.getSurface().drawBoxBorder(welcomeWindowX, 400, welcomeWindowY, var2, 0xFFFFFF);
-			var3 += 20;
-			this.getSurface().drawColoredStringCentered(welcomeWindowX + 256 - 56, "Welcome to " + getServerName() + " " + this.localPlayer.accountName,
+			this.getSurface().drawBoxBorder(welcomeWindowX, ui(400), welcomeWindowY, var2, 0xFFFFFF);
+			var3 += ui(20);
+			this.getSurface().drawColoredStringCentered(welcomeWindowX + ui(200), "Welcome to " + getServerName() + " " + this.localPlayer.accountName,
 				0xFFFF00, 0, 4, var3);
-			var3 += 30;
+			var3 += ui(30);
 			String var4;
 			if (this.welcomeLastLoggedInDays == 0) {
 				var4 = "earlier today";
@@ -4539,18 +4613,18 @@ public final class mudclient implements Runnable {
 			}
 
 			if (!this.welcomeLastLoggedInIp.equalsIgnoreCase("0.0.0.0")) {
-				this.getSurface().drawColoredStringCentered(welcomeWindowX + 256 - 56, "You last logged in " + var4, 0xFFFFFF, 0, 1, var3);
-				var3 += 15;
+				this.getSurface().drawColoredStringCentered(welcomeWindowX + ui(200), "You last logged in " + var4, 0xFFFFFF, 0, 1, var3);
+				var3 += ui(15);
 				if (this.welcomeLastLoggedInHost == null) {
 					this.welcomeLastLoggedInHost = getHostnameFromIP();
 				}
 
 				if (this.settingsHideIP != null && this.settingsHideIP != 1) {
-					this.getSurface().drawColoredStringCentered(welcomeWindowX + 256 - 56, "from: " + this.welcomeLastLoggedInHost, 0xFFFFFF,
+					this.getSurface().drawColoredStringCentered(welcomeWindowX + ui(200), "from: " + this.welcomeLastLoggedInHost, 0xFFFFFF,
 						var1 ^ -4853, 1, var3);
 				}
-				var3 += 15;
-				var3 += 15;
+				var3 += ui(15);
+				var3 += ui(15);
 			}
 
 			int var5 = 0xFFFFFF;
@@ -4563,115 +4637,115 @@ public final class mudclient implements Runnable {
 					var4 = 14 - this.welcomeRecoverySetDays + " days ago";
 				}
 
-				this.getSurface().drawColoredStringCentered(welcomeWindowX + 256 - 56, var4 + " you requested new recovery questions", 0xFF8000, 0, 1, var3);
-				var3 += 15;
-				this.getSurface().drawColoredStringCentered(welcomeWindowX + 256 - 56, "If you do not remember making this request then", 0xFF8000, 0, 1, var3);
-				var3 += 15;
-				this.getSurface().drawColoredStringCentered(welcomeWindowX + 256 - 56, "cancel it and change your password immediately!", 0xFF8000, 0, 1, var3);
-				var3 += 15;
-				var3 += 15;
+				this.getSurface().drawColoredStringCentered(welcomeWindowX + ui(200), var4 + " you requested new recovery questions", 0xFF8000, 0, 1, var3);
+				var3 += ui(15);
+				this.getSurface().drawColoredStringCentered(welcomeWindowX + ui(200), "If you do not remember making this request then", 0xFF8000, 0, 1, var3);
+				var3 += ui(15);
+				this.getSurface().drawColoredStringCentered(welcomeWindowX + ui(200), "cancel it and change your password immediately!", 0xFF8000, 0, 1, var3);
+				var3 += ui(15);
+				var3 += ui(15);
 				var5 = 0xFFFFFF;
-				if (this.mouseY > var3 - 12 && this.mouseY <= var3 && this.mouseX > 106
-					&& this.mouseX < 406) {
+				if (this.mouseY > var3 - ui(12) && this.mouseY <= var3 && this.mouseX > welcomeWindowX + ui(50)
+					&& this.mouseX < welcomeWindowX + ui(350)) {
 					var5 = 0xFF0000;
 				}
 
-				this.getSurface().drawColoredStringCentered(welcomeWindowX + 256 - 56, "No that wasn't me - Cancel the request!", var5, 0, 1, var3);
+				this.getSurface().drawColoredStringCentered(welcomeWindowX + ui(200), "No that wasn't me - Cancel the request!", var5, 0, 1, var3);
 				if (var5 == 0xFF0000 && this.mouseButtonClick == 1) {
 					this.packetHandler.getClientStream().newPacket(196);
 					this.packetHandler.getClientStream().finishPacket();
 					this.showDialogMessage = false;
 				}
 
-				var3 += 15;
+				var3 += ui(15);
 				var5 = 0xFFFFFF;
-				if (this.mouseY > var3 - 12 && this.mouseY <= var3 && this.mouseX > 106
-					&& this.mouseX < 406) {
+				if (this.mouseY > var3 - ui(12) && this.mouseY <= var3 && this.mouseX > welcomeWindowX + ui(50)
+					&& this.mouseX < welcomeWindowX + ui(350)) {
 					var5 = 0xFF0000;
 				}
 
-				this.getSurface().drawColoredStringCentered(welcomeWindowX + 256 - 56, "That's ok, activate the new questions in " + this.welcomeRecoverySetDays + " days time", var5, 0, 1, var3);
+				this.getSurface().drawColoredStringCentered(welcomeWindowX + ui(200), "That's ok, activate the new questions in " + this.welcomeRecoverySetDays + " days time", var5, 0, 1, var3);
 				if (var5 == 0xFF0000 && this.mouseButtonClick == 1) {
 					this.showDialogMessage = false;
 				}
 			} else {
-				var3 += 7;
-				this.getSurface().drawColoredStringCentered(welcomeWindowX + 256 - 56, "Security tip of the day", 0xFF0000, 0, 1, var3);
-				var3 += 15;
+				var3 += ui(7);
+				this.getSurface().drawColoredStringCentered(welcomeWindowX + ui(200), "Security tip of the day", 0xFF0000, 0, 1, var3);
+				var3 += ui(15);
 				if (this.welcomeTipOfDay == 0) {
-					this.getSurface().drawColoredStringCentered(welcomeWindowX + 256 - 56, "Don't tell ANYONE your password or recovery questions!", 0xFFFFFF, 0, 1, var3);
-					var3 += 15;
-					this.getSurface().drawColoredStringCentered(welcomeWindowX + 256 - 56, "Not even people claiming to be Jagex staff.", 0xFFFFFF, 0, 1, var3);
-					var3 += 15;
+					this.getSurface().drawColoredStringCentered(welcomeWindowX + ui(200), "Don't tell ANYONE your password or recovery questions!", 0xFFFFFF, 0, 1, var3);
+					var3 += ui(15);
+					this.getSurface().drawColoredStringCentered(welcomeWindowX + ui(200), "Not even people claiming to be Jagex staff.", 0xFFFFFF, 0, 1, var3);
+					var3 += ui(15);
 				}
 
 				if (this.welcomeTipOfDay == 1) {
-					this.getSurface().drawColoredStringCentered(welcomeWindowX + 256 - 56, "Never enter your password or recovery questions into ANY", 0xFFFFFF, 0, 1, var3);
-					var3 += 15;
-					this.getSurface().drawColoredStringCentered(welcomeWindowX + 256 - 56, "website other than this one - Not even if it looks similar.", 0xFFFFFF, 0, 1, var3);
-					var3 += 15;
+					this.getSurface().drawColoredStringCentered(welcomeWindowX + ui(200), "Never enter your password or recovery questions into ANY", 0xFFFFFF, 0, 1, var3);
+					var3 += ui(15);
+					this.getSurface().drawColoredStringCentered(welcomeWindowX + ui(200), "website other than this one - Not even if it looks similar.", 0xFFFFFF, 0, 1, var3);
+					var3 += ui(15);
 				}
 
 				if (this.welcomeTipOfDay == 2) {
-					this.getSurface().drawColoredStringCentered(welcomeWindowX + 256 - 56, "Don't use RuneScape cheats, helpers, or automaters.", 0xFFFFFF, 0, 1, var3);
-					var3 += 15;
-					this.getSurface().drawColoredStringCentered(welcomeWindowX + 256 - 56, "These programs WILL steal your password.", 0xFFFFFF, 0, 1, var3);
-					var3 += 15;
+					this.getSurface().drawColoredStringCentered(welcomeWindowX + ui(200), "Don't use RuneWake cheats, helpers, or automaters.", 0xFFFFFF, 0, 1, var3);
+					var3 += ui(15);
+					this.getSurface().drawColoredStringCentered(welcomeWindowX + ui(200), "These programs WILL steal your password.", 0xFFFFFF, 0, 1, var3);
+					var3 += ui(15);
 				}
 
 				if (this.welcomeTipOfDay == 3) {
-					this.getSurface().drawColoredStringCentered(welcomeWindowX + 256 - 56, "Watch out for fake emails, and fake staff. Real staff", 0xFFFFFF, 0, 1, var3);
-					var3 += 15;
-					this.getSurface().drawColoredStringCentered(welcomeWindowX + 256 - 56, "will NEVER ask you for your password or recovery questions!", 0xFFFFFF, 0, 1, var3);
-					var3 += 15;
+					this.getSurface().drawColoredStringCentered(welcomeWindowX + ui(200), "Watch out for fake emails, and fake staff. Real staff", 0xFFFFFF, 0, 1, var3);
+					var3 += ui(15);
+					this.getSurface().drawColoredStringCentered(welcomeWindowX + ui(200), "will NEVER ask you for your password or recovery questions!", 0xFFFFFF, 0, 1, var3);
+					var3 += ui(15);
 				}
 
 				if (this.welcomeTipOfDay == 4) {
-					this.getSurface().drawColoredStringCentered(welcomeWindowX + 256 - 56, "Use a password your friends won't guess. Do NOT use your name!", 0xFFFFFF, 0, 1, var3);
-					var3 += 15;
-					this.getSurface().drawColoredStringCentered(welcomeWindowX + 256 - 56, "Choose a unique password which you haven't used anywhere else", 0xFFFFFF, 0, 1, var3);
-					var3 += 15;
+					this.getSurface().drawColoredStringCentered(welcomeWindowX + ui(200), "Use a password your friends won't guess. Do NOT use your name!", 0xFFFFFF, 0, 1, var3);
+					var3 += ui(15);
+					this.getSurface().drawColoredStringCentered(welcomeWindowX + ui(200), "Choose a unique password which you haven't used anywhere else", 0xFFFFFF, 0, 1, var3);
+					var3 += ui(15);
 				}
 
 				if (this.welcomeTipOfDay == 5) {
-					this.getSurface().drawColoredStringCentered(welcomeWindowX + 256 - 56, "If possible only play runescape from your own computer", 0xFFFFFF, 0, 1, var3);
-					var3 += 15;
-					this.getSurface().drawColoredStringCentered(welcomeWindowX + 256 - 56, "Other machines could have been tampered with to steal your pass", 0xFFFFFF, 0, 1, var3);
-					var3 += 15;
+					this.getSurface().drawColoredStringCentered(welcomeWindowX + ui(200), "If possible only play RuneWake from your own computer", 0xFFFFFF, 0, 1, var3);
+					var3 += ui(15);
+					this.getSurface().drawColoredStringCentered(welcomeWindowX + ui(200), "Other machines could have been tampered with to steal your pass", 0xFFFFFF, 0, 1, var3);
+					var3 += ui(15);
 				}
 
-				var3 += 22;
+				var3 += ui(22);
 
 				if (isAndroid()) {
 
-					this.getSurface().drawBoxAlpha(150, var3 - 20, (207), var3 - (var3 - 12) + 20, 3158064, 160);
-					this.getSurface().drawBoxBorder(150, (207), var3 - 20, var3 - (var3 - 12) + 20, 4210752);
-					if (this.mouseY >= var3 - 20 && this.mouseY <= (var3 - 20) + (var3 - (var3 - 12) + 20) && this.mouseX >= 150 && this.mouseX < 150 + 207) {
+					this.getSurface().drawBoxAlpha(ui(150), var3 - ui(20), ui(207), var3 - (var3 - ui(12)) + ui(20), 3158064, 160);
+					this.getSurface().drawBoxBorder(ui(150), ui(207), var3 - ui(20), var3 - (var3 - ui(12)) + ui(20), 4210752);
+					if (this.mouseY >= var3 - ui(20) && this.mouseY <= (var3 - ui(20)) + (var3 - (var3 - ui(12)) + ui(20)) && this.mouseX >= ui(150) && this.mouseX < ui(150) + ui(207)) {
 						var5 = 0xFF0000;
 					}
 
 				} else {
 
-					if (this.mouseY > var3 - 12 && this.mouseY <= var3 && this.mouseX > welcomeWindowX + 106 - 56 && this.mouseX < welcomeWindowX + 406 - 56) {
+					if (this.mouseY > var3 - ui(12) && this.mouseY <= var3 && this.mouseX > welcomeWindowX + ui(50) && this.mouseX < welcomeWindowX + ui(350)) {
 						var5 = 0xFF0000;
 					}
 				}
 
-				this.getSurface().drawColoredStringCentered(welcomeWindowX + 256 - 56, "Click here to close window", var5, var1 ^ var1, 1, var3);
+				this.getSurface().drawColoredStringCentered(welcomeWindowX + ui(200), "Click here to close window", var5, var1 ^ var1, 1, var3);
 				if (this.mouseButtonClick == 1) {
 					if (var5 == 0xFF0000) {
 						this.showDialogMessage = false;
 					}
 
 					// allows closing the window by clicking anywhere in the upper half of the screen outside of the window
-					if ((this.mouseX < welcomeWindowX + 86 - 56 || this.mouseX > welcomeWindowX + 426 - 56)
-						&& (this.mouseY > 167 - welcomeWindowY || welcomeWindowY + 167 > this.mouseY)) {
+					if ((this.mouseX < welcomeWindowX + ui(30) || this.mouseX > welcomeWindowX + ui(370))
+						&& (this.mouseY > ui(167) - welcomeWindowY || welcomeWindowY + ui(167) > this.mouseY)) {
 						this.showDialogMessage = false;
 					}
 
 					// allows closing the window by clicking anywhere in the lower half of the screen outside of the window
-					if ((this.mouseX < welcomeWindowX + 86 - 56 || this.mouseX > welcomeWindowX + 426 - 56)
-						&& (this.mouseY < 167 - welcomeWindowY || welcomeWindowY + 167 < this.mouseY)) {
+					if ((this.mouseX < welcomeWindowX + ui(30) || this.mouseX > welcomeWindowX + ui(370))
+						&& (this.mouseY < ui(167) - welcomeWindowY || welcomeWindowY + ui(167) < this.mouseY)) {
 						this.showDialogMessage = false;
 					}
 				}
@@ -4691,36 +4765,36 @@ public final class mudclient implements Runnable {
 	private void drawDialogWildWarn(int var1) {
 		try {
 
-			this.getSurface().drawBox(halfGameWidth() - 170, halfGameHeight() - 90, 340, 180, 0);
+			this.getSurface().drawBox(halfGameWidth() - ui(170), halfGameHeight() - ui(90), ui(340), ui(180), 0);
 			if (var1 <= 90) {
 				this.loadGameConfig(true);
 			}
-			this.getSurface().drawBoxBorder(halfGameWidth() - 170, 340, halfGameHeight() - 90, 180, 0xFFFFFF);
-			this.getSurface().drawColoredStringCentered(halfGameWidth(), "Warning! Proceed with caution", 0xFF0000, 0, 4, halfGameHeight() - 70);
-			this.getSurface().drawColoredStringCentered(halfGameWidth(), "If you go much further north you will enter the", 0xFFFFFF, 0, 1, halfGameHeight() - 44);
-			this.getSurface().drawColoredStringCentered(halfGameWidth(), "wilderness. This a very dangerous area where", 0xFFFFFF, 0, 1, halfGameHeight() - 31);
-			this.getSurface().drawColoredStringCentered(halfGameWidth(), "other players can attack you!", 0xFFFFFF, 0, 1, halfGameHeight() - 18);
-			this.getSurface().drawColoredStringCentered(halfGameWidth(), "The further north you go the more dangerous it", 0xFFFFFF, 0, 1, halfGameHeight() + 4);
-			this.getSurface().drawColoredStringCentered(halfGameWidth(), "becomes, but the more treasure you will find.", 0xFFFFFF, 0, 1, halfGameHeight() + 17);
-			this.getSurface().drawColoredStringCentered(halfGameWidth(), "In the wilderness an indicator at the bottom-right", 0xFFFFFF, 0, 1, halfGameHeight() + 39);
-			this.getSurface().drawColoredStringCentered(halfGameWidth(), "of the screen will show the current level of danger", 0xFFFFFF, 0, 1, halfGameHeight() + 52);
+			this.getSurface().drawBoxBorder(halfGameWidth() - ui(170), ui(340), halfGameHeight() - ui(90), ui(180), 0xFFFFFF);
+			this.getSurface().drawColoredStringCentered(halfGameWidth(), "Warning! Proceed with caution", 0xFF0000, 0, 4, halfGameHeight() - ui(70));
+			this.getSurface().drawColoredStringCentered(halfGameWidth(), "If you go much further north you will enter the", 0xFFFFFF, 0, 1, halfGameHeight() - ui(44));
+			this.getSurface().drawColoredStringCentered(halfGameWidth(), "wilderness. This a very dangerous area where", 0xFFFFFF, 0, 1, halfGameHeight() - ui(31));
+			this.getSurface().drawColoredStringCentered(halfGameWidth(), "other players can attack you!", 0xFFFFFF, 0, 1, halfGameHeight() - ui(18));
+			this.getSurface().drawColoredStringCentered(halfGameWidth(), "The further north you go the more dangerous it", 0xFFFFFF, 0, 1, halfGameHeight() + ui(4));
+			this.getSurface().drawColoredStringCentered(halfGameWidth(), "becomes, but the more treasure you will find.", 0xFFFFFF, 0, 1, halfGameHeight() + ui(17));
+			this.getSurface().drawColoredStringCentered(halfGameWidth(), "In the wilderness an indicator at the bottom-right", 0xFFFFFF, 0, 1, halfGameHeight() + ui(39));
+			this.getSurface().drawColoredStringCentered(halfGameWidth(), "of the screen will show the current level of danger", 0xFFFFFF, 0, 1, halfGameHeight() + ui(52));
 			int var3 = 0xFFFFFF;
-			if (this.mouseY > halfGameHeight() + 62 && this.mouseY <= halfGameHeight() + 74 && this.mouseX > halfGameWidth() - 75 && this.mouseX < halfGameWidth() + 75) {
+			if (this.mouseY > halfGameHeight() + ui(62) && this.mouseY <= halfGameHeight() + ui(74) && this.mouseX > halfGameWidth() - ui(75) && this.mouseX < halfGameWidth() + ui(75)) {
 				var3 = 0xFF0000;
 			}
-			this.getSurface().drawColoredStringCentered(halfGameWidth(), "Click here to close window", var3, 0, 1, halfGameHeight() + 74);
+			this.getSurface().drawColoredStringCentered(halfGameWidth(), "Click here to close window", var3, 0, 1, halfGameHeight() + ui(74));
 			if (this.mouseButtonClick != 0) {
-				if (halfGameHeight() + 62 < this.mouseY && halfGameHeight() + 74 >= this.mouseY && this.mouseX > halfGameWidth() - 75 && this.mouseX < halfGameWidth() + 75) {
+				if (halfGameHeight() + ui(62) < this.mouseY && halfGameHeight() + ui(74) >= this.mouseY && this.mouseX > halfGameWidth() - ui(75) && this.mouseX < halfGameWidth() + ui(75)) {
 					this.showUiWildWarn = 2;
 				}
 				this.mouseButtonClick = 0;
-				if (this.mouseX < halfGameWidth() - 170 || this.mouseX > halfGameWidth() + 170 || this.mouseY < halfGameHeight() - 90 || this.mouseY > halfGameHeight() + 90) {
+				if (this.mouseX < halfGameWidth() - ui(170) || this.mouseX > halfGameWidth() + ui(170) || this.mouseY < halfGameHeight() - ui(90) || this.mouseY > halfGameHeight() + ui(90)) {
 					this.showUiWildWarn = 2;
 				}
 			}
 
 			this.mouseButtonClick = 0;
-			if (this.mouseX < halfGameWidth() - 170 || this.mouseX > halfGameWidth() + 170 || this.mouseY < halfGameHeight() - 90 || this.mouseY > halfGameHeight() + 90) {
+			if (this.mouseX < halfGameWidth() - ui(170) || this.mouseX > halfGameWidth() + ui(170) || this.mouseY < halfGameHeight() - ui(90) || this.mouseY > halfGameHeight() + ui(90)) {
 				this.showUiWildWarn = 2;
 			}
 
@@ -4730,9 +4804,19 @@ public final class mudclient implements Runnable {
 	}
 
 	private void drawDialogueChangePassword() {
+		int boxWidth = ui(300);
+		int boxHeight = ui(60);
+		int boxX = (getGameWidth() - boxWidth) / 2;
+		int boxY;
+		if (isAndroid() && osConfig.F_SHOWING_KEYBOARD) {
+			boxY = (getGameHeight() - boxHeight) / 2 - ui(70);
+		} else {
+			boxY = (getGameHeight() - boxHeight) / 2;
+		}
+
 		if (this.mouseButtonClick != 0) {
 			this.mouseButtonClick = 0;
-			if (this.mouseX < 106 || this.mouseY < 150 || this.mouseX > 406 || this.mouseY > 210) {
+			if (this.mouseX < boxX || this.mouseY < boxY || this.mouseX > boxX + boxWidth || this.mouseY > boxY + boxHeight) {
 				this.panelPasswordChange_Mode = PasswordChangeMode.NONE;
 				if (isAndroid() && osConfig.F_SHOWING_KEYBOARD) {
 					clientPort.closeKeyboard();
@@ -4741,20 +4825,15 @@ public final class mudclient implements Runnable {
 			}
 		}
 
-		int y;
-		if (isAndroid() && osConfig.F_SHOWING_KEYBOARD) {
-			y = (getGameHeight() - 60) / 2 - 70;
-		} else {
-			y = (getGameHeight() - 60) / 2;
-		}
-		this.getSurface().drawBox((getGameWidth() - 300) / 2, y, 300, 60, 0);
-		this.getSurface().drawBoxBorder((getGameWidth() - 300) / 2, 300, y, 60, 0xFFFFFF);
-		y += 22;
+		int y = boxY;
+		this.getSurface().drawBox(boxX, y, boxWidth, boxHeight, 0);
+		this.getSurface().drawBoxBorder(boxX, boxWidth, y, boxHeight, 0xFFFFFF);
+		y += ui(22);
 		String var2;
 		int var3;
 		if (this.panelPasswordChange_Mode == PasswordChangeMode.OLD_PASSWORD) {
 			this.getSurface().drawColoredStringCentered(halfGameWidth(), "Please enter your current password", 0xFFFFFF, 0, 4, y);
-			y += 25;
+			y += ui(25);
 			var2 = "*";
 
 			for (var3 = 0; var3 < this.inputTextCurrent.length(); ++var3) {
@@ -4771,7 +4850,7 @@ public final class mudclient implements Runnable {
 			}
 		} else if (this.panelPasswordChange_Mode == PasswordChangeMode.NEW_PASSWORD) {
 			this.getSurface().drawColoredStringCentered(halfGameWidth(), "Please enter your new password", 0xFFFFFF, 0, 4, y);
-			y += 25;
+			y += ui(25);
 			var2 = "*";
 
 			for (var3 = 0; var3 < this.inputTextCurrent.length(); ++var3) {
@@ -4796,7 +4875,7 @@ public final class mudclient implements Runnable {
 			}
 		} else if (this.panelPasswordChange_Mode == PasswordChangeMode.CONFIRM_PASSWORD) {
 			this.getSurface().drawColoredStringCentered(halfGameWidth(), "Enter password again to confirm", 0xFFFFFF, 0, 4, y);
-			y += 25;
+			y += ui(25);
 			var2 = "*";
 
 			for (var3 = 0; var3 < this.inputTextCurrent.length(); ++var3) {
@@ -4817,27 +4896,27 @@ public final class mudclient implements Runnable {
 		} else {
 			if (this.panelPasswordChange_Mode == PasswordChangeMode.PASSWORD_MISMATCH) {
 				this.getSurface().drawColoredStringCentered(halfGameWidth(), "Passwords do not match!", 0xFFFFFF, 0, 4, y);
-				y += 25;
+				y += ui(25);
 				this.getSurface().drawColoredStringCentered(halfGameWidth(), "Press any key to close", 0xFFFFFF, 0, 4, y);
 				return;
 			}
 
 			if (this.panelPasswordChange_Mode == PasswordChangeMode.PASSWORD_REQ_SENT) {
 				this.getSurface().drawColoredStringCentered(halfGameWidth(), "Ok, your request has been sent", 0xFFFFFF, 0, 4, y);
-				y += 25;
+				y += ui(25);
 				this.getSurface().drawColoredStringCentered(halfGameWidth(), "Press any key to close", 0xFFFFFF, 0, 4, y);
 				return;
 			}
 
 			if (this.panelPasswordChange_Mode == PasswordChangeMode.NEED_LONGER_PASSWORD) {
 				this.getSurface().drawColoredStringCentered(halfGameWidth(), "Password must be at", 0xFFFFFF, 0, 4, y);
-				y += 25;
+				y += ui(25);
 				this.getSurface().drawColoredStringCentered(halfGameWidth(), "least 5 letters long", 0xFFFFFF, 0, 4, y);
 			}
 
 			if (this.panelPasswordChange_Mode == PasswordChangeMode.PASSWORD_NOT_EQ_USER) {
 				this.getSurface().drawColoredStringCentered(halfGameWidth(), "Your password must not be", 0xFFFFFF, 0, 4, y);
-				y += 25;
+				y += ui(25);
 				this.getSurface().drawColoredStringCentered(halfGameWidth(), "the same as your username", 0xFFFFFF, 0, 4, y);
 			}
 		}
@@ -4878,45 +4957,45 @@ public final class mudclient implements Runnable {
 				} else if (this.isSleeping) {
 					this.getSurface().fade2black(16316665);
 					if (Math.random() < 0.15D) {
-						this.getSurface().drawColoredStringCentered((int) (Math.random() * 80.0D), "ZZZ",
+						this.getSurface().drawColoredStringCentered((int) (Math.random() * ui(80)), "ZZZ",
 							(int) (1.6777215E7D * Math.random()), 0, 5, (int) ((double) getGameHeight() * Math.random()));
 					}
 
 					if (0.15D > Math.random()) {
-						this.getSurface().drawColoredStringCentered(getGameWidth() - (int) (80.0D * Math.random()),
+						this.getSurface().drawColoredStringCentered(getGameWidth() - (int) (ui(80) * Math.random()),
 							"ZZZ", (int) (Math.random() * 1.6777215E7D), var1 ^ 13, 5,
 							(int) ((double) getGameHeight() * Math.random()));
 					}
 					//"*"
-					this.getSurface().drawBox(this.halfGameWidth() - 100, 160 - (isAndroid() ? 80 : 0), 200, 40, 0);
+					this.getSurface().drawBox(this.halfGameWidth() - ui(100), ui(160) - (isAndroid() ? ui(80) : 0), ui(200), ui(40), 0);
 					if (isAndroid()) {
 						this.getSurface().drawColoredStringCentered(this.halfGameWidth(),
-							"You are sleeping - Fatigue: " + this.fatigueSleeping + "%", 0xFFFF00, var1 - 13, 7, 31);
+							"You are sleeping - Fatigue: " + this.fatigueSleeping + "%", 0xFFFF00, var1 - 13, 7, ui(31));
 					} else {
 						this.getSurface().drawColoredStringCentered(this.halfGameWidth(), "You are sleeping", 0xFFFF00,
-							var1 - 13, 7, 50);
+							var1 - 13, 7, ui(50));
 						this.getSurface().drawColoredStringCentered(this.halfGameWidth(),
-							"Fatigue: " + this.fatigueSleeping + "%", 0xFFFF00, var1 - 13, 7, 90);
+							"Fatigue: " + this.fatigueSleeping + "%", 0xFFFF00, var1 - 13, 7, ui(90));
 					}
 					this.getSurface().drawColoredStringCentered(this.halfGameWidth(),
-						"When you want to wake up just use your", 0xFFFFFF, 0, 5, 140 - (isAndroid() ? 80 : 0));
+						"When you want to wake up just use your", 0xFFFFFF, 0, 5, ui(140) - (isAndroid() ? ui(80) : 0));
 					this.getSurface().drawColoredStringCentered(this.halfGameWidth(),
-						"keyboard to type the word in the box below", 0xFFFFFF, var1 ^ 13, 5, 160 - (isAndroid() ? 80 : 0));
+						"keyboard to type the word in the box below", 0xFFFFFF, var1 ^ 13, 5, ui(160) - (isAndroid() ? ui(80) : 0));
 					this.getSurface().drawColoredStringCentered(this.halfGameWidth(), this.inputTextCurrent + "*",
-						'\uffff', var1 - 13, 5, 180 - (isAndroid() ? 80 : 0));
+						'\uffff', var1 - 13, 5, ui(180) - (isAndroid() ? ui(80) : 0));
 					if (null != this.sleepingStatusText) {
 						this.getSurface().drawColoredStringCentered(this.halfGameWidth(), this.sleepingStatusText,
-							0xFF0000, 0, 5, 260 - (isAndroid() ? 110 : 0));
+							0xFF0000, 0, 5, ui(260) - (isAndroid() ? ui(110) : 0));
 					} else {
-						this.getSurface().drawSprite(getSurface().spriteVerts[3], this.halfGameWidth() - 127, 230 - (isAndroid() ? 110 : 0));
+						this.getSurface().drawSprite(getSurface().spriteVerts[3], this.halfGameWidth() - ui(127), ui(230) - (isAndroid() ? ui(110) : 0));
 					}
 
-					this.getSurface().drawBoxBorder(this.halfGameWidth() - 128, 257, 229 - (isAndroid() ? 110 : 0), 42, 0xFFFFFF);
+					this.getSurface().drawBoxBorder(this.halfGameWidth() - ui(128), ui(257), ui(229) - (isAndroid() ? ui(110) : 0), ui(42), 0xFFFFFF);
 					this.drawChatMessageTabs(5);
 					this.getSurface().drawColoredStringCentered(this.halfGameWidth(), "If you can't read the word",
-						0xFFFFFF, var1 - 13, 1, 290 - (isAndroid() ? 110 : 0));
+						0xFFFFFF, var1 - 13, 1, ui(290) - (isAndroid() ? ui(110) : 0));
 					this.getSurface().drawColoredStringCentered(this.halfGameWidth(),
-						"@yel@click here@whi@ to get a different one", 0xFFFFFF, var1 ^ 13, 1, 305 - (isAndroid() ? 110 : 0));
+						"@yel@click here@whi@ to get a different one", 0xFFFFFF, var1 ^ 13, 1, ui(305) - (isAndroid() ? ui(110) : 0));
 					// this.getSurface().draw(this.graphics, this.screenOffsetX,
 					// 256, this.screenOffsetY);
 					clientPort.draw();
@@ -5223,28 +5302,46 @@ public final class mudclient implements Runnable {
 						}
 						if (C_HIDE_FOG) {
 							if (!this.interlace) {
-								this.scene.fogZFalloff = 1;
-								this.scene.fogLandscapeDistance = gameWidth * 2 + cameraZoom * 2 - 124;
-								this.scene.fogEntityDistance = gameWidth * 2 + cameraZoom * 2 - 124;
-								this.scene.fogSmoothingStartDistance = gameWidth * 2 + cameraZoom * 2 - 224;
+								int fogDistance = gameWidth * 2 + cameraZoom * 2 - 124;
+								// Smoothing zone scales with the draw distance (min 100, same as the
+								// original fixed baseline) so the fade-to-fog stays proportionally
+								// gradual instead of being squeezed into a near-instant "pop" once
+								// widescreen support pushes fogDistance far beyond the old ~200-400 baseline.
+								int smoothingZone = Math.max(100, fogDistance / 5);
+								// "/300" (was "/100"): raises the total darkening added by the time a face
+							// reaches the cutoff edge (Scene.java clamps shade at 255) - at /100 a
+							// brightly-lit face's shade often fell short of that clamp, so it was still
+							// visibly lit right up until it got culled, reading as a hard pop even with
+							// a wide smoothing zone.
+							this.scene.fogZFalloff = Math.max(1, smoothingZone / 300);
+								this.scene.fogLandscapeDistance = fogDistance;
+								this.scene.fogEntityDistance = fogDistance;
+								this.scene.fogSmoothingStartDistance = fogDistance - smoothingZone;
 							} else {
-								this.scene.fogZFalloff = 1;
-								this.scene.fogLandscapeDistance = gameWidth * 2 + cameraZoom * 2 - 324;
-								this.scene.fogEntityDistance = gameWidth * 2 + cameraZoom * 2 - 324;
-								this.scene.fogSmoothingStartDistance = gameWidth * 2 + cameraZoom * 2 - 424;
+								int fogDistance = gameWidth * 2 + cameraZoom * 2 - 324;
+								int smoothingZone = Math.max(100, fogDistance / 5);
+								// "/300" (was "/100"): raises the total darkening added by the time a face
+							// reaches the cutoff edge (Scene.java clamps shade at 255) - at /100 a
+							// brightly-lit face's shade often fell short of that clamp, so it was still
+							// visibly lit right up until it got culled, reading as a hard pop even with
+							// a wide smoothing zone.
+							this.scene.fogZFalloff = Math.max(1, smoothingZone / 300);
+								this.scene.fogLandscapeDistance = fogDistance;
+								this.scene.fogEntityDistance = fogDistance;
+								this.scene.fogSmoothingStartDistance = fogDistance - smoothingZone;
 							}
 						} else {
-							this.scene.fogZFalloff = 1;
-							this.scene.fogLandscapeDistance = cameraZoom * 6 + (gameWidth - 512) * 2;
-							this.scene.fogEntityDistance = cameraZoom * 6 + (gameWidth - 512) * 2;
-							this.scene.fogSmoothingStartDistance = cameraZoom * 6 + (gameWidth - 512) * 2 - 100;
-							if (this.frameCounter % 100 == 0) {
-								System.out.println("[FOG DEBUG] gameWidth=" + gameWidth + " cameraZoom=" + cameraZoom
-									+ " fogLandscapeDistance=" + this.scene.fogLandscapeDistance
-									+ " fogEntityDistance=" + this.scene.fogEntityDistance
-									+ " fogSmoothingStartDistance=" + this.scene.fogSmoothingStartDistance
-									+ " fogZFalloff=" + this.scene.fogZFalloff);
-							}
+							int fogDistance = cameraZoom * 6 + (gameWidth - 512) * 3;
+							int smoothingZone = Math.max(100, fogDistance / 5);
+							// "/300" (was "/100"): raises the total darkening added by the time a face
+							// reaches the cutoff edge (Scene.java clamps shade at 255) - at /100 a
+							// brightly-lit face's shade often fell short of that clamp, so it was still
+							// visibly lit right up until it got culled, reading as a hard pop even with
+							// a wide smoothing zone.
+							this.scene.fogZFalloff = Math.max(1, smoothingZone / 300);
+							this.scene.fogLandscapeDistance = fogDistance;
+							this.scene.fogEntityDistance = fogDistance;
+							this.scene.fogSmoothingStartDistance = fogDistance - smoothingZone;
 						}
 
 						centerX = this.cameraPositionX + this.cameraAutoMoveX;
@@ -5316,11 +5413,11 @@ public final class mudclient implements Runnable {
 						if (centerX < 10) {
 							this.getSurface().drawColoredStringCentered(halfGameWidth(),
 								"Automatic server restart in: " + centerZ + ":0" + centerX, 0xFFFF00, 0, 1,
-								this.getGameHeight() - 7);
+								this.getGameHeight() - ui(7));
 						} else {
 							this.getSurface().drawColoredStringCentered(halfGameWidth(),
 								"Automatic server restart in: " + centerZ + ":" + centerX, 0xFFFF00, 0, 1,
-								this.getGameHeight() - 7);
+								this.getGameHeight() - ui(7));
 						}
 					}
 
@@ -5330,23 +5427,23 @@ public final class mudclient implements Runnable {
 						centerX %= 60;
 						if (inWild) {
 							if (centerX < 10) {
-								this.getSurface().drawColoredStringCentered(this.getGameWidth() - 53,
+								this.getSurface().drawColoredStringCentered(this.getGameWidth() - ui(53),
 									"EXP Elixir: " + centerZ + ":0" + centerX, 0x9139e7, 0, 0,
-									this.getGameHeight() - 62);
+									this.getGameHeight() - ui(62));
 							} else {
-								this.getSurface().drawColoredStringCentered(this.getGameWidth() - 53,
+								this.getSurface().drawColoredStringCentered(this.getGameWidth() - ui(53),
 									"EXP Elixir: " + centerZ + ":" + centerX, 0x9139e7, 0, 0,
-									this.getGameHeight() - 62);
+									this.getGameHeight() - ui(62));
 							}
 						} else if (!inWild) {
 							if (centerX < 10) {
-								this.getSurface().drawColoredStringCentered(this.getGameWidth() - 53,
+								this.getSurface().drawColoredStringCentered(this.getGameWidth() - ui(53),
 									"EXP Elixir: " + centerZ + ":0" + centerX, 0x9139e7, 0, 1,
-									this.getGameHeight() - 7);
+									this.getGameHeight() - ui(7));
 							} else {
-								this.getSurface().drawColoredStringCentered(this.getGameWidth() - 53,
+								this.getSurface().drawColoredStringCentered(this.getGameWidth() - ui(53),
 									"EXP Elixir: " + centerZ + ":" + centerX, 0x9139e7, 0, 1,
-									this.getGameHeight() - 7);
+									this.getGameHeight() - ui(7));
 							}
 						}
 					}
@@ -5354,30 +5451,30 @@ public final class mudclient implements Runnable {
 						killQueue.clean();
 						int Offset = 0;
 						for (KillAnnouncer notify : killQueue.Kill) {
-							int picture_width = 20;
-							int killFeedRight = getGameWidth() - 5;
+							int picture_width = ui(20);
+							int killFeedRight = getGameWidth() - ui(5);
 							int width_killed = killFeedRight - this.getSurface().stringWidth(1, notify.killedString);
-							int width_icon = killFeedRight - this.getSurface().stringWidth(1, notify.killedString) - picture_width - 5;
-							int width_killer = killFeedRight - this.getSurface().stringWidth(1, notify.killedString) - picture_width - 8 - this.getSurface().stringWidth(1, notify.killerString);
+							int width_icon = killFeedRight - this.getSurface().stringWidth(1, notify.killedString) - picture_width - ui(5);
+							int width_killer = killFeedRight - this.getSurface().stringWidth(1, notify.killedString) - picture_width - ui(8) - this.getSurface().stringWidth(1, notify.killerString);
 
-							this.getSurface().drawString(notify.killerString, width_killer, 50 + Offset, 0xffffff, 1);
+							this.getSurface().drawString(notify.killerString, width_killer, ui(50) + Offset, 0xffffff, 1);
 							switch (notify.killPicture) {
 								case -1:
-									getSurface().drawSpriteClipping(spriteSelect(EntityHandler.projectiles.get(PROJECTILE_TYPES.RANGED.id())), width_icon, 36 + Offset, picture_width,
-										18, 0, 0, 0, false, 0, 1);
+									getSurface().drawSpriteClipping(spriteSelect(EntityHandler.projectiles.get(PROJECTILE_TYPES.RANGED.id())), width_icon, ui(36) + Offset, picture_width,
+										ui(18), 0, 0, 0, false, 0, 1);
 									break;
 								case -2:
-									getSurface().drawSpriteClipping(spriteSelect(EntityHandler.projectiles.get(PROJECTILE_TYPES.MAGIC.id())), width_icon, 36 + Offset, picture_width,
-										18, 0, 0, 0, false, 0, 1);
+									getSurface().drawSpriteClipping(spriteSelect(EntityHandler.projectiles.get(PROJECTILE_TYPES.MAGIC.id())), width_icon, ui(36) + Offset, picture_width,
+										ui(18), 0, 0, 0, false, 0, 1);
 									break;
 								default:
-									getSurface().drawSpriteClipping(spriteSelect(EntityHandler.getItemDef(notify.killPicture)), width_icon, 36 + Offset, picture_width,
-										18, EntityHandler.getItemDef(notify.killPicture).getPictureMask(), 0,
+									getSurface().drawSpriteClipping(spriteSelect(EntityHandler.getItemDef(notify.killPicture)), width_icon, ui(36) + Offset, picture_width,
+										ui(18), EntityHandler.getItemDef(notify.killPicture).getPictureMask(), 0,
 										EntityHandler.getItemDef(notify.killPicture).getBlueMask(), false, 0, 1);
 									break;
 							}
-							this.getSurface().drawString(notify.killedString, width_killed, 50 + Offset, 0xffffff, 1);
-							Offset += 16;
+							this.getSurface().drawString(notify.killedString, width_killed, ui(50) + Offset, 0xffffff, 1);
+							Offset += ui(16);
 						}
 					}
 					if (!this.loadingArea) {
@@ -5389,11 +5486,11 @@ public final class mudclient implements Runnable {
 						if (centerX > 0) {
 							inWild = true;
 							centerZ = centerX / 6 + 1;
-							this.getSurface().drawSprite(spriteSelect(GUIPARTS.SKULL.getDef()), this.getGameWidth() - 59, this.getGameHeight() - 56);
-							this.getSurface().drawColoredStringCentered(this.getGameWidth() - 47, "Wilderness", 0xFFFF00, 0, 1,
-								this.getGameHeight() - 20);
-							this.getSurface().drawColoredStringCentered(this.getGameWidth() - 47, "Level: " + centerZ, 0xFFFF00, 0, 1,
-								this.getGameHeight() - 7);
+							this.getSurface().drawSprite(spriteSelect(GUIPARTS.SKULL.getDef()), this.getGameWidth() - ui(59), this.getGameHeight() - ui(56));
+							this.getSurface().drawColoredStringCentered(this.getGameWidth() - ui(47), "Wilderness", 0xFFFF00, 0, 1,
+								this.getGameHeight() - ui(20));
+							this.getSurface().drawColoredStringCentered(this.getGameWidth() - ui(47), "Level: " + centerZ, 0xFFFF00, 0, 1,
+								this.getGameHeight() - ui(7));
 							if (this.showUiWildWarn == 0) {
 								this.showUiWildWarn = 2;
 							}
@@ -5581,9 +5678,9 @@ public final class mudclient implements Runnable {
 
 					if (isAndroid()) {
 						if (osConfig.F_SHOWING_KEYBOARD) {
-							panelMessageTabs.reposition(panelMessageEntry, 7, 130 + 10, getGameWidth() - 14, 14);
+							panelMessageTabs.reposition(panelMessageEntry, ui(7), ui(130) + ui(10), getGameWidth() - ui(14), ui(14));
 						} else {
-							panelMessageTabs.reposition(panelMessageEntry, 7, getGameHeight() - 10, getGameWidth() - 14, 14);
+							panelMessageTabs.reposition(panelMessageEntry, ui(7), getGameHeight() - ui(10), getGameWidth() - ui(14), ui(14));
 						}
 					}
 
@@ -5597,7 +5694,7 @@ public final class mudclient implements Runnable {
 								double boost = this.getGameHeight();
 								if (isAndroid() && osConfig.F_SHOWING_KEYBOARD)
 									boost = (boost / 2.5) + 8;
-								this.getSurface().drawColoredString(7, (int) boost - centerX * 12 - 18, var17,
+								this.getSurface().drawColoredString(ui(7), (int) boost - centerX * ui(12) - ui(18), var17,
 									1, 0xFFFF00, MessageHistory.messageHistoryCrownID[centerX]);
 							}
 						}
@@ -5626,31 +5723,39 @@ public final class mudclient implements Runnable {
 					//redstones below (temporary, can be done better with proper tab sprites for ui)
 					if (C_CUSTOM_UI) {
 						int maxY = getUITabsY();
-						int x = this.getSurface().width2 - 199 - 1;
+						int x = this.getSurface().width2 - ui(199) - ui(1);
 						if (this.showUiTab == Config.OPTIONS_TAB) {
-							this.getSurface().drawBox(x, maxY, 32, 32, GenUtil.buildColor(255, 0, 0));
+							this.getSurface().drawBox(x, maxY, ui(32), ui(32), GenUtil.buildColor(255, 0, 0));
 						}
-						x += 33;
+						x += ui(33);
 						if (this.showUiTab == Config.FRIENDS_TAB) {
-							this.getSurface().drawBox(x, maxY, 32, 32, GenUtil.buildColor(255, 0, 0));
+							this.getSurface().drawBox(x, maxY, ui(32), ui(32), GenUtil.buildColor(255, 0, 0));
 						}
-						x += 33;
+						x += ui(33);
 						if (this.showUiTab == Config.MAGIC_AND_PRAYER_TAB) {
-							this.getSurface().drawBox(x, maxY, 32, 32, GenUtil.buildColor(255, 0, 0));
+							this.getSurface().drawBox(x, maxY, ui(32), ui(32), GenUtil.buildColor(255, 0, 0));
 						}
-						x += 33;
+						x += ui(33);
 						if (this.showUiTab == Config.SKILLS_AND_QUESTS_TAB) {
-							this.getSurface().drawBox(x, maxY, 32, 32, GenUtil.buildColor(255, 0, 0));
+							this.getSurface().drawBox(x, maxY, ui(32), ui(32), GenUtil.buildColor(255, 0, 0));
 						}
-						x += 33;
-						x += 33;
+						x += ui(33);
+						x += ui(33);
 						if (this.showUiTab == Config.INVENTORY_TAB) {
-							this.getSurface().drawBox(x, maxY, 32, 32, GenUtil.buildColor(255, 0, 0));
+							this.getSurface().drawBox(x, maxY, ui(32), ui(32), GenUtil.buildColor(255, 0, 0));
 						}
 					}
 					//redstones above
 
-					this.getSurface().a(spriteSelect(GUIPARTS.MENUBAR.getDef()), 0, this.getSurface().width2 - 200, 128, getUITabsY());
+					// Scaled version of the previous fixed-size Surface.a() alpha blit.
+					// Earlier attempt wrote a brand new scaled+blended pixel routine from
+					// scratch and it produced corrupted colors - this uses drawSpriteClipping()
+					// instead, which already does scaling + opacity blending via colourTransform
+					// and has been proven correct all session (bank/equipment slot icons use the
+					// exact same 0xAARRGGBB convention, e.g. 0x80FFFFFF/0xC0FFFFFF).
+					this.getSurface().drawSpriteClipping(spriteSelect(GUIPARTS.MENUBAR.getDef()),
+						this.getSurface().width2 - ui(200), getUITabsY(), ui(200), ui(35),
+						0, 0, 0, false, 0, 0, 0x80FFFFFF);
 					this.drawUi(0);
 					this.getSurface().loggedIn = false;
 					this.drawChatMessageTabs(var1 - 8);
@@ -5688,22 +5793,23 @@ public final class mudclient implements Runnable {
 				this.getSurface().drawBoxBorder(xr, this.inputX_Width, yr, this.inputX_Height, 0xFFFFFF);
 				int lineHeightBase = this.getSurface().fontHeight(1);
 				int inputLineHeight = this.getSurface().fontHeight(4);
-				int lineHeight = lineHeightBase + 2;
+				int lineHeight = lineHeightBase + ui(2);
+				int halfWidth = this.inputX_Width / 2;
 
 				for (int i = 0; i < this.inputX_Lines.length; ++i) {
-					this.getSurface().drawColoredStringCentered(200 + xr, this.inputX_Lines[i], 0xFFFF00, 0, 1,
-						lineHeight * i + 5 + yr + lineHeightBase);
+					this.getSurface().drawColoredStringCentered(halfWidth + xr, this.inputX_Lines[i], 0xFFFF00, 0, 1,
+						lineHeight * i + ui(5) + yr + lineHeightBase);
 				}
 
 				if (this.inputX_Focused) {
-					this.getSurface().drawColoredStringCentered(200 + xr, this.inputTextCurrent + "*", 0xFFFFFF, 0, 4,
-						yr + 5 + lineHeight * this.inputX_Lines.length + 3 + inputLineHeight);
+					this.getSurface().drawColoredStringCentered(halfWidth + xr, this.inputTextCurrent + "*", 0xFFFFFF, 0, 4,
+						yr + ui(5) + lineHeight * this.inputX_Lines.length + ui(3) + inputLineHeight);
 				}
 
-				int okLineY = lineHeightBase + 8 + yr + inputLineHeight + 2 + this.inputX_Lines.length * lineHeight;
+				int okLineY = lineHeightBase + ui(8) + yr + inputLineHeight + ui(2) + this.inputX_Lines.length * lineHeight;
 
 				int color = 0xFFFFFF;
-				if (this.mouseX > xr + 200 - 26 && this.mouseX < xr + 200 - 8 && okLineY - lineHeightBase < this.mouseY
+				if (this.mouseX > xr + halfWidth - ui(26) && this.mouseX < xr + halfWidth - ui(8) && okLineY - lineHeightBase < this.mouseY
 					&& this.mouseY < okLineY) {
 					color = 0xFFFF00;
 					if (this.mouseButtonClick != 0) {
@@ -5712,10 +5818,10 @@ public final class mudclient implements Runnable {
 						this.inputTextFinal = this.inputTextCurrent;
 					}
 				}
-				this.getSurface().drawString("OK", 200 + xr - 26, okLineY, color, 1);
+				this.getSurface().drawString("OK", halfWidth + xr - ui(26), okLineY, color, 1);
 
 				color = 0xFFFFFF;
-				if (this.mouseX > xr + 208 && this.mouseX < xr + 208 + 40 && this.mouseY > okLineY - lineHeightBase
+				if (this.mouseX > xr + halfWidth + ui(8) && this.mouseX < xr + halfWidth + ui(8) + ui(40) && this.mouseY > okLineY - lineHeightBase
 					&& this.mouseY < okLineY) {
 					color = 0xFFFF00;
 					if (this.mouseButtonClick != 0) {
@@ -5723,7 +5829,7 @@ public final class mudclient implements Runnable {
 						this.inputX_Action = InputXAction.ACT_0;
 					}
 				}
-				this.getSurface().drawString("Cancel", 200 + xr + 8, okLineY, color, 1);
+				this.getSurface().drawString("Cancel", halfWidth + xr + ui(8), okLineY, color, 1);
 
 				if (this.mouseButtonClick == 1 && (this.mouseX < xr || this.inputX_Width + xr < this.mouseX
 					|| this.mouseY < yr || this.mouseY > this.inputX_Height + yr)) {
@@ -6191,21 +6297,35 @@ public final class mudclient implements Runnable {
 			this.welcomeScreenShown = false;
 			this.getSurface().blackScreen(true);
 			if (this.loginScreenNumber == 0 || this.loginScreenNumber == 2 || this.loginScreenNumber == 3) {
-				int var2 = this.getFrameCounter() * 2 % 3072;
-				if (var2 < 1024) {
-					this.getSurface().drawSprite(getSurface().spriteVerts[0], 0, isAndroid() ? 140 : 10);
-					if (var2 > 768) {
-						this.getSurface().a(getSurface().spriteVerts[1], 0, 0, var2 - 768, isAndroid() ? 140 : 10);
-					}
-				} else if (var2 < 2048) {
-					this.getSurface().drawSprite(getSurface().spriteVerts[1], 0, isAndroid() ? 140 : 10);
-					if (var2 > 1792) {
-						this.getSurface().a(getSurface().spriteVerts[2], 0, 0, var2 - 1792, isAndroid() ? 140 : 10); // Logo sprite
-					}
+				// Rebuild if the window size has changed since the last (or first) load -
+				// drawLogin() can run before the window reaches its final size, so caching
+				// on a simple "did we ever try" flag caught the wrong (too small) dimensions.
+				if (this.loginBackgroundSpriteWidth != getGameWidth() || this.loginBackgroundSpriteHeight != getGameHeight()) {
+					this.loginBackgroundSpriteWidth = getGameWidth();
+					this.loginBackgroundSpriteHeight = getGameHeight();
+					this.loginBackgroundSprite = clientPort.loadScaledImageSprite("login.png", getGameWidth(), getGameHeight());
+				}
+				if (this.loginBackgroundSprite != null) {
+					this.getSurface().drawSprite(this.loginBackgroundSprite, 0, 0);
 				} else {
-					this.getSurface().drawSprite(getSurface().spriteVerts[2], 0, isAndroid() ? 140 : 10); // Logo sprite
-					if (var2 > 2816) {
-						this.getSurface().a(getSurface().spriteVerts[0], 0, 0, var2 - 2816, isAndroid() ? 140 : 10);
+					// Fallback to the original rotating 3D backdrop if the static background
+					// couldn't be loaded (e.g. unsupported platform, missing resource).
+					int var2 = this.getFrameCounter() * 2 % 3072;
+					if (var2 < 1024) {
+						this.getSurface().drawSprite(getSurface().spriteVerts[0], 0, isAndroid() ? 140 : 10);
+						if (var2 > 768) {
+							this.getSurface().a(getSurface().spriteVerts[1], 0, 0, var2 - 768, isAndroid() ? 140 : 10);
+						}
+					} else if (var2 < 2048) {
+						this.getSurface().drawSprite(getSurface().spriteVerts[1], 0, isAndroid() ? 140 : 10);
+						if (var2 > 1792) {
+							this.getSurface().a(getSurface().spriteVerts[2], 0, 0, var2 - 1792, isAndroid() ? 140 : 10); // Logo sprite
+						}
+					} else {
+						this.getSurface().drawSprite(getSurface().spriteVerts[2], 0, isAndroid() ? 140 : 10); // Logo sprite
+						if (var2 > 2816) {
+							this.getSurface().a(getSurface().spriteVerts[0], 0, 0, var2 - 2816, isAndroid() ? 140 : 10);
+						}
 					}
 				}
 			}
@@ -6219,7 +6339,7 @@ public final class mudclient implements Runnable {
 			if (this.loginScreenNumber == 2) {
 				String var4 = this.panelLogin.getControlText(this.controlLoginStatus1);
 				if (null != var4 && var4.length() > 0) {
-					this.getSurface().drawBoxAlpha(0, halfGameHeight() + 18, this.getGameWidth(), 30, 0, 100);
+					this.getSurface().drawBoxAlpha(0, halfGameHeight() + ui(18), this.getGameWidth(), ui(30), 0, 100);
 				}
 
 				this.panelLogin.drawPanel();
@@ -6248,8 +6368,8 @@ public final class mudclient implements Runnable {
 				int width = this.menuCommon.getWidth();
 				int height = this.menuCommon.getHeight();
 
-				if (this.menuX - 10 <= this.mouseX && this.menuY - 10 <= this.mouseY
-					&& width + this.menuX + 10 >= this.mouseX && this.mouseY <= 10 + this.menuY + height) {
+				if (this.menuX - ui(10) <= this.mouseX && this.menuY - ui(10) <= this.mouseY
+					&& width + this.menuX + ui(10) >= this.mouseX && this.mouseY <= ui(10) + this.menuY + height) {
 					this.menuCommon.render(this.menuY, this.menuX, this.mouseY, (byte) -12, this.mouseX);
 				} else {
 					this.topMouseMenuVisible = false;
@@ -6571,6 +6691,7 @@ public final class mudclient implements Runnable {
 					/ 300 * this.getSurface().fontHeight(1);
 				this.characterDialogX[this.characterDialogCount] = width1 / 2 + x;
 				this.characterDialogY[this.characterDialogCount] = y;
+				this.characterDialogAlpha[this.characterDialogCount] = computeDistanceFadeAlpha(width1);
 				this.characterDialogString[this.characterDialogCount++] = npc.message;
 			}
 
@@ -6607,6 +6728,7 @@ public final class mudclient implements Runnable {
 					var16 = npc.healthCurrent * 30 / npc.healthMax;
 					this.characterHealthX[this.characterHealthCount] = width1 / 2 + var15;
 					this.characterHealthY[this.characterHealthCount] = y;
+					this.characterHealthAlpha[this.characterHealthCount] = computeDistanceFadeAlpha(width1);
 					this.characterHealthBar[this.characterHealthCount++] = var16;
 				}
 
@@ -6620,7 +6742,7 @@ public final class mudclient implements Runnable {
 
 					this.getSurface().drawSprite(spriteSelect(GUIPARTS.DAMAGETAKEN.getDef()), var15 - (12 - width1 / 2),
 						y + height / 2 - 12);
-					this.getSurface().drawColoredStringCentered(width1 / 2 - 1 + var15, "" + npc.damageTaken, 0xFFFFFF,
+					this.getSurface().drawColoredStringCentered(width1 / 2 - 1 + var15, "" + npc.damageTaken, fadeColorByDistance(0xFFFFFF, width1),
 						0, 3, 5 + y + height / 2);
 				}
 
@@ -6779,17 +6901,18 @@ public final class mudclient implements Runnable {
 						player.message) / 300 * this.getSurface().fontHeight(1);
 					this.characterDialogX[this.characterDialogCount] = width / 2 + x;
 					this.characterDialogY[this.characterDialogCount] = y;
+					this.characterDialogAlpha[this.characterDialogCount] = computeDistanceFadeAlpha(width);
 					this.characterDialogString[this.characterDialogCount++] = player.message;
 				}
 
 				if (S_SHOW_FLOATING_NAMETAGS) {
 					if ((C_NAME_CLAN_TAG_OVERLAY && this.showUiTab == 0 && !C_CUSTOM_UI) || (C_CUSTOM_UI && C_NAME_CLAN_TAG_OVERLAY)) {
 						if (player.displayName != null)
-							this.getSurface().drawShadowText(player.getStaffName(), (width - this.getSurface().stringWidth(0, player.getStaffName())) / 2 + x + 1, y - 14, 0xffff00, 0, false);
+							this.getSurface().drawShadowText(player.getStaffName(), (width - this.getSurface().stringWidth(0, player.getStaffName())) / 2 + x + 1, y - 14, fadeColorByDistance(0xffff00, width), 0, false);
 					}
 					if ((C_NAME_CLAN_TAG_OVERLAY && this.showUiTab == 0 && !C_CUSTOM_UI) || (C_CUSTOM_UI && C_NAME_CLAN_TAG_OVERLAY)) {
 						if (player.clanTag != null)
-							this.getSurface().drawColoredString((width - this.getSurface().stringWidth(0, "< " + player.clanTag + " >")) / 2 + x + 1, y - 5, "< " + player.clanTag + " >", 0, 0x7CADDA, 0);
+							this.getSurface().drawColoredString((width - this.getSurface().stringWidth(0, "< " + player.clanTag + " >")) / 2 + x + 1, y - 5, "< " + player.clanTag + " >", 0, fadeColorByDistance(0x7CADDA, width), 0);
 					}
 				}
 
@@ -6812,6 +6935,7 @@ public final class mudclient implements Runnable {
 						int healthStep = player.healthCurrent * 30 / player.healthMax;
 						this.characterHealthX[this.characterHealthCount] = width / 2 + var14;
 						this.characterHealthY[this.characterHealthCount] = y;
+						this.characterHealthAlpha[this.characterHealthCount] = computeDistanceFadeAlpha(width);
 						this.characterHealthBar[this.characterHealthCount++] = healthStep;
 					}
 					if (player.combatTimeout > 150) {
@@ -6825,7 +6949,7 @@ public final class mudclient implements Runnable {
 						this.getSurface().drawSprite(spriteSelect(GUIPARTS.DAMAGEGIVEN.getDef()), width / 2 + var14 - 12,
 							height / 2 + (y - 12));
 						this.getSurface().drawColoredStringCentered(width / 2 + (var14 - 1), "" + player.damageTaken,
-							0xFFFFFF, 0, 3, height / 2 + y + 5);
+							fadeColorByDistance(0xFFFFFF, width), 0, 3, height / 2 + y + 5);
 					}
 				}
 				if (player.skullVisible == 1 && player.bubbleTimeout == 0) {
@@ -6887,23 +7011,23 @@ public final class mudclient implements Runnable {
 
 				int var3 = this.getSurface().fontHeight(1);
 				int var4 = this.getSurface().fontHeight(4);
-				short var5 = 400;
-				int var6 = (var2 > 0 ? 5 + var3 : 0) + 70;
+				int var5 = ui(400);
+				int var6 = (var2 > 0 ? ui(5) + var3 : 0) + ui(70);
 				int var7 = (getGameWidth() - var5) / 2;
 				int y;
 				if (isAndroid() && osConfig.F_SHOWING_KEYBOARD) {
-					y = (getGameHeight() - var6) / 2 - 70;
+					y = (getGameHeight() - var6) / 2 - ui(70);
 				} else {
 					y = (getGameHeight() - var6) / 2;
 				}
 				this.getSurface().drawBox(var7, y, var5, var6, 0);
 				this.getSurface().drawBoxBorder(var7, var5, y, var6, 0xFFFFFF);
-				this.getSurface().drawColoredStringCentered((getGameWidth() - 256) / 2 + 256 / 2, "Enter the name of the player you wish to report:",
-					0xFFFF00, 0, 1, 5 + y + var3);
-				int var9 = var3 + 2;
-				this.getSurface().drawColoredStringCentered((getGameWidth() - 256) / 2 + 256 / 2, this.inputTextCurrent + "*", 0xFFFFFF, 0, 4,
-					var4 + y + 5 + var9 + 3);
-				int var10 = var3 + var4 + 8 + y + var9 + 2;
+				this.getSurface().drawColoredStringCentered((getGameWidth() - ui(256)) / 2 + ui(256) / 2, "Enter the name of the player you wish to report:",
+					0xFFFF00, 0, 1, ui(5) + y + var3);
+				int var9 = var3 + ui(2);
+				this.getSurface().drawColoredStringCentered((getGameWidth() - ui(256)) / 2 + ui(256) / 2, this.inputTextCurrent + "*", 0xFFFFFF, 0, 4,
+					var4 + y + ui(5) + var9 + ui(3));
+				int var10 = var3 + var4 + ui(8) + y + var9 + ui(2);
 				int var11 = 0xFFFFFF;
 				if (var2 > 0) {
 					String var12 = this.reportAbuse_isMute ? "[X]" : "[ ]";
@@ -6924,12 +7048,12 @@ public final class mudclient implements Runnable {
 						var11 = 0xFFFF00;
 					}
 
-					this.getSurface().drawColoredStringCentered((getGameWidth() - 256) / 2 + 256 / 2, var12, var11, 0, 1, var10);
-					var10 += 10 + var3;
+					this.getSurface().drawColoredStringCentered((getGameWidth() - ui(256)) / 2 + ui(256) / 2, var12, var11, 0, 1, var10);
+					var10 += ui(10) + var3;
 				}
 
 				var11 = 0xFFFFFF;
-				if (this.mouseX > getGameWidth() / 2 - 46 && this.mouseX < getGameWidth() / 2 - 28 && var10 - var3 < this.mouseY && var10 > this.mouseY) {
+				if (this.mouseX > getGameWidth() / 2 - ui(46) && this.mouseX < getGameWidth() / 2 - ui(28) && var10 - var3 < this.mouseY && var10 > this.mouseY) {
 					if (this.mouseButtonClick != 0) {
 						this.inputTextFinal = this.inputTextCurrent;
 						this.mouseButtonClick = 0;
@@ -6938,9 +7062,9 @@ public final class mudclient implements Runnable {
 					var11 = 0xFFFF00;
 				}
 
-				this.getSurface().drawString("OK", getGameWidth() / 2 - 46, var10, var11, 1);
+				this.getSurface().drawString("OK", getGameWidth() / 2 - ui(46), var10, var11, 1);
 				var11 = 0xFFFFFF;
-				if (this.mouseX > getGameWidth() / 2 + 8 && this.mouseX < getGameWidth() / 2 + 48 && this.mouseY > var10 - var3 && var10 > this.mouseY) {
+				if (this.mouseX > getGameWidth() / 2 + ui(8) && this.mouseX < getGameWidth() / 2 + ui(48) && this.mouseY > var10 - var3 && var10 > this.mouseY) {
 					var11 = 0xFFFF00;
 					if (this.mouseButtonClick != 0) {
 						this.mouseButtonClick = 0;
@@ -6951,7 +7075,7 @@ public final class mudclient implements Runnable {
 					}
 				}
 
-				this.getSurface().drawString("Cancel", getGameWidth() / 2 + 8, var10, var11, 1);
+				this.getSurface().drawString("Cancel", getGameWidth() / 2 + ui(8), var10, var11, 1);
 				if (this.mouseButtonClick == 1 && (this.mouseX < var7 || this.mouseX > var7 + var5 || y > this.mouseY
 					|| y + var6 < this.mouseY)) {
 					this.reportAbuse_State = 0;
@@ -6970,16 +7094,22 @@ public final class mudclient implements Runnable {
 	private void drawPopupSocial() {
 		try {
 
-			int x = 106;
-			int y = 145;
-
-			if (isAndroid())
-				y = 75;
+			int x = (getGameWidth() - ui(300)) / 2;
+			int xMsg = (getGameWidth() - ui(500)) / 2;
+			// Must match the y this function draws the popup box at below (previously this was
+			// a separate, different formula, so the outside-click-to-close check was testing
+			// against a box position that had nothing to do with where the box actually was).
+			int y;
+			if (isAndroid() && osConfig.F_SHOWING_KEYBOARD) {
+				y = (getGameHeight() - ui(70)) / 2 - ui(70);
+			} else {
+				y = (getGameHeight() - ui(70)) / 2;
+			}
 
 			if (this.mouseButtonClick != 0) {
 				this.mouseButtonClick = 0;
 				if (this.panelSocialPopup_Mode == SocialPopupMode.ADD_FRIEND
-					&& (this.mouseX < x || this.mouseY < y || this.mouseX > 406 || this.mouseY > +70)) {
+					&& (this.mouseX < x || this.mouseY < y || this.mouseX > x + ui(300) || this.mouseY > y + ui(70))) {
 					this.panelSocialPopup_Mode = SocialPopupMode.NONE;
 					if (isAndroid() && osConfig.F_SHOWING_KEYBOARD) {
 						clientPort.closeKeyboard();
@@ -6988,7 +7118,7 @@ public final class mudclient implements Runnable {
 				}
 
 				if (this.panelSocialPopup_Mode == SocialPopupMode.MESSAGE_FRIEND
-					&& (this.mouseX < 6 || this.mouseY < y || this.mouseX > 506 || this.mouseY > +70)) {
+					&& (this.mouseX < xMsg || this.mouseY < y || this.mouseX > xMsg + ui(500) || this.mouseY > y + ui(70))) {
 					this.panelSocialPopup_Mode = SocialPopupMode.NONE;
 					if (isAndroid() && osConfig.F_SHOWING_KEYBOARD) {
 						clientPort.closeKeyboard();
@@ -6997,7 +7127,7 @@ public final class mudclient implements Runnable {
 				}
 
 				if (this.panelSocialPopup_Mode == SocialPopupMode.ADD_IGNORE
-					&& (this.mouseX < x || this.mouseY < y || this.mouseX > 406 || this.mouseY > +70)) {
+					&& (this.mouseX < x || this.mouseY < y || this.mouseX > x + ui(300) || this.mouseY > y + ui(70))) {
 					this.panelSocialPopup_Mode = SocialPopupMode.NONE;
 					if (isAndroid() && osConfig.F_SHOWING_KEYBOARD) {
 						clientPort.closeKeyboard();
@@ -7005,7 +7135,7 @@ public final class mudclient implements Runnable {
 					return;
 				}
 
-				if (this.mouseX > x + 130 && this.mouseX < x + 270 && this.mouseY > y + 48 && this.mouseY < y + 68) {
+				if (this.mouseX > x + ui(130) && this.mouseX < x + ui(270) && this.mouseY > y + ui(48) && this.mouseY < y + ui(68)) {
 					this.panelSocialPopup_Mode = SocialPopupMode.NONE;
 					if (isAndroid() && osConfig.F_SHOWING_KEYBOARD) {
 						clientPort.closeKeyboard();
@@ -7013,19 +7143,14 @@ public final class mudclient implements Runnable {
 					return;
 				}
 			}
-			if (isAndroid() && osConfig.F_SHOWING_KEYBOARD) {
-				y = (getGameHeight() - 70) / 2 - 70;
-			} else {
-				y = (getGameHeight() - 70) / 2;
-			}
 			if (this.panelSocialPopup_Mode == SocialPopupMode.ADD_FRIEND) {
-				this.getSurface().drawBox((getGameWidth() - 300) / 2, y, 300, 70, 0);
-				this.getSurface().drawBoxBorder((getGameWidth() - 300) / 2, 300, y, 70, 0xFFFFFF);
-				y += 20;
-				this.getSurface().drawColoredStringCentered((getGameWidth() - 256) / 2 + 256 / 2, "Enter name to add to friends list", 0xFFFFFF, 0, 4,
+				this.getSurface().drawBox(x, y, ui(300), ui(70), 0);
+				this.getSurface().drawBoxBorder(x, ui(300), y, ui(70), 0xFFFFFF);
+				y += ui(20);
+				this.getSurface().drawColoredStringCentered(halfGameWidth(), "Enter name to add to friends list", 0xFFFFFF, 0, 4,
 					y);
-				y += 20;
-				this.getSurface().drawColoredStringCentered((getGameWidth() - 256) / 2 + 256 / 2, this.inputTextCurrent + "*", 0xFFFFFF, 0, 4, y);
+				y += ui(20);
+				this.getSurface().drawColoredStringCentered(halfGameWidth(), this.inputTextCurrent + "*", 0xFFFFFF, 0, 4, y);
 				String localKey = StringUtil.displayNameToKey(this.localPlayer.accountName);
 				if (null != localKey && this.inputTextFinal.length() > 0) {
 					String friend = this.inputTextFinal.trim();
@@ -7041,13 +7166,13 @@ public final class mudclient implements Runnable {
 				}
 			}
 			if (this.panelSocialPopup_Mode == SocialPopupMode.MESSAGE_FRIEND) {
-				this.getSurface().drawBox((getGameWidth() - 500) / 2, y, 500, 70, 0);
-				this.getSurface().drawBoxBorder((getGameWidth() - 500) / 2, 500, y, 70, 0xFFFFFF);
-				y += 20;
-				this.getSurface().drawColoredStringCentered((getGameWidth() - 256) / 2 + 256 / 2, "Enter message to send to " + this.chatMessageTarget,
+				this.getSurface().drawBox(xMsg, y, ui(500), ui(70), 0);
+				this.getSurface().drawBoxBorder(xMsg, ui(500), y, ui(70), 0xFFFFFF);
+				y += ui(20);
+				this.getSurface().drawColoredStringCentered(halfGameWidth(), "Enter message to send to " + this.chatMessageTarget,
 					0xFFFFFF, 0, 4, y);
-				y += 20;
-				this.getSurface().drawColoredStringCentered((getGameWidth() - 256) / 2 + 256 / 2, this.chatMessageInput + "*", 0xFFFFFF, 0, 4, y);
+				y += ui(20);
+				this.getSurface().drawColoredStringCentered(halfGameWidth(), this.chatMessageInput + "*", 0xFFFFFF, 0, 4, y);
 				if (this.chatMessageInputCommit.length() > 0) {
 					String var3 = this.chatMessageInputCommit;
 					this.chatMessageInput = "";
@@ -7061,12 +7186,12 @@ public final class mudclient implements Runnable {
 			}
 
 			if (this.panelSocialPopup_Mode == SocialPopupMode.ADD_IGNORE) {
-				this.getSurface().drawBox((getGameWidth() - 300) / 2, y, 300, 70, 0);
-				this.getSurface().drawBoxBorder((getGameWidth() - 300) / 2, 300, y, 70, 0xFFFFFF);
-				y += 20;
-				this.getSurface().drawColoredStringCentered((getGameWidth() - 256) / 2 + 256 / 2, "Enter name to add to ignore list", 0xFFFFFF, 0, 4, y);
-				y += 20;
-				this.getSurface().drawColoredStringCentered((getGameWidth() - 256) / 2 + 256 / 2, this.inputTextCurrent + "*", 0xFFFFFF, 0, 4, y);
+				this.getSurface().drawBox(x, y, ui(300), ui(70), 0);
+				this.getSurface().drawBoxBorder(x, ui(300), y, ui(70), 0xFFFFFF);
+				y += ui(20);
+				this.getSurface().drawColoredStringCentered(halfGameWidth(), "Enter name to add to ignore list", 0xFFFFFF, 0, 4, y);
+				y += ui(20);
+				this.getSurface().drawColoredStringCentered(halfGameWidth(), this.inputTextCurrent + "*", 0xFFFFFF, 0, 4, y);
 				String localKey = StringUtil.displayNameToKey(this.localPlayer.accountName);
 				if (localKey != null && this.inputTextFinal.length() > 0) {
 					String ignore = this.inputTextFinal.trim();
@@ -7083,10 +7208,10 @@ public final class mudclient implements Runnable {
 			}
 
 			int color = 0xFFFFFF;
-			if (this.mouseX > (getGameWidth() - 256) / 2 + 107 && this.mouseX < (getGameWidth() - 256) / 2 + 147 && this.mouseY > y + 10 && this.mouseY < y + 28) {
+			if (this.mouseX > halfGameWidth() + ui(107) && this.mouseX < halfGameWidth() + ui(147) && this.mouseY > y + ui(10) && this.mouseY < y + ui(28)) {
 				color = 0xFFFF00;
 			}
-			this.getSurface().drawColoredStringCentered((getGameWidth() - 256) / 2 + 256 / 2, "Cancel", color, 0, 1, y + 23);
+			this.getSurface().drawColoredStringCentered(halfGameWidth(), "Cancel", color, 0, 1, y + ui(23));
 		} catch (RuntimeException var5) {
 			throw GenUtil.makeThrowable(var5, "client.GB(" + "dummy" + ')');
 		}
@@ -7134,15 +7259,15 @@ public final class mudclient implements Runnable {
 	private void drawTradeConfirmDialog(int var1) {
 		try {
 
-			byte var2 = 22;
-			byte var3 = 36;
-			this.getSurface().drawBox(var2, var3, 468, 16, 192);
+			int var2 = ui(22);
+			int var3 = ui(36);
+			this.getSurface().drawBox(var2, var3, ui(468), ui(16), 192);
 			int var4 = 10000536;
-			this.getSurface().drawBoxAlpha(var2, var3 + 16, 468, 246, var4, 160);
-			this.getSurface().drawColoredStringCentered(234 + var2,
-				"Please confirm your trade with @yel@" + this.tradeRecipientConfirmName, 0xFFFFFF, 0, 1, var3 + 12);
-			this.getSurface().drawColoredStringCentered(var2 + 117, "You are about to give:", 0xFFFF00, 0, 1,
-				30 + var3);
+			this.getSurface().drawBoxAlpha(var2, var3 + ui(16), ui(468), ui(246), var4, 160);
+			this.getSurface().drawColoredStringCentered(ui(234) + var2,
+				"Please confirm your trade with @yel@" + this.tradeRecipientConfirmName, 0xFFFFFF, 0, 1, var3 + ui(12));
+			this.getSurface().drawColoredStringCentered(var2 + ui(117), "You are about to give:", 0xFFFF00, 0, 1,
+				ui(30) + var3);
 
 			int var5;
 			String var6;
@@ -7156,15 +7281,15 @@ public final class mudclient implements Runnable {
 					var6 = var6 + (item.getNoted() ? " (Noted)" : "") + " x " + StringUtil.formatItemCount(this.getTradeConfirmItemCount(var5));
 				}
 
-				this.getSurface().drawColoredStringCentered(var2 + 117, var6, 0xFFFFFF, 0, 1, var5 * 12 + 42 + var3);
+				this.getSurface().drawColoredStringCentered(var2 + ui(117), var6, 0xFFFFFF, 0, 1, var5 * ui(12) + ui(42) + var3);
 			}
 
 			if (this.tradeConfirmItemsCount == 0) {
-				this.getSurface().drawColoredStringCentered(var2 + 117, "Nothing!", 0xFFFFFF, 0, 1, 42 + var3);
+				this.getSurface().drawColoredStringCentered(var2 + ui(117), "Nothing!", 0xFFFFFF, 0, 1, ui(42) + var3);
 			}
 
-			this.getSurface().drawColoredStringCentered(351 + var2, "In return you will receive:", 0xFFFF00, 0, 1,
-				30 + var3);
+			this.getSurface().drawColoredStringCentered(ui(351) + var2, "In return you will receive:", 0xFFFF00, 0, 1,
+				ui(30) + var3);
 
 			for (var5 = 0; var5 < this.tradeRecipientConfirmItemsCount; ++var5) {
 				item = this.getTradeRecipientConfirmItem(var5);
@@ -7174,43 +7299,43 @@ public final class mudclient implements Runnable {
 					var6 = var6 + (item.getNoted() ? " (Noted)" : "") + " x " + StringUtil.formatItemCount(this.getTradeRecipientConfirmItemCount(var5));
 				}
 
-				this.getSurface().drawColoredStringCentered(351 + var2, var6, 0xFFFFFF, 0, 1, 42 + var3 + var5 * 12);
+				this.getSurface().drawColoredStringCentered(ui(351) + var2, var6, 0xFFFFFF, 0, 1, ui(42) + var3 + var5 * ui(12));
 			}
 
 			if (this.tradeRecipientConfirmItemsCount == 0) {
-				this.getSurface().drawColoredStringCentered(351 + var2, "Nothing!", 0xFFFFFF, 0, 1, var3 + 42);
+				this.getSurface().drawColoredStringCentered(ui(351) + var2, "Nothing!", 0xFFFFFF, 0, 1, var3 + ui(42));
 			}
 
-			this.getSurface().drawColoredStringCentered(var2 + 234, "Are you sure you want to do this?", '\uffff', 0, 4,
-				200 + var3);
-			this.getSurface().drawColoredStringCentered(var2 + 234,
-				"There is NO WAY to reverse a trade if you change your mind.", 0xFFFFFF, 0, 1, var3 + 215);
-			this.getSurface().drawColoredStringCentered(234 + var2, "Remember that not all players are trustworthy",
-				0xFFFFFF, 0, 1, var3 + 230);
+			this.getSurface().drawColoredStringCentered(var2 + ui(234), "Are you sure you want to do this?", '\uffff', 0, 4,
+				ui(200) + var3);
+			this.getSurface().drawColoredStringCentered(var2 + ui(234),
+				"There is NO WAY to reverse a trade if you change your mind.", 0xFFFFFF, 0, 1, var3 + ui(215));
+			this.getSurface().drawColoredStringCentered(ui(234) + var2, "Remember that not all players are trustworthy",
+				0xFFFFFF, 0, 1, var3 + ui(230));
 			if (this.tradeConfirmAccepted) {
-				this.getSurface().drawColoredStringCentered(234 + var2, "Waiting for other player...", 0xFFFF00, 0, 1,
-					250 + var3);
+				this.getSurface().drawColoredStringCentered(ui(234) + var2, "Waiting for other player...", 0xFFFF00, 0, 1,
+					ui(250) + var3);
 			} else {
-				this.getSurface().drawSprite(spriteSelect(GUIPARTS.ACCEPTBUTTON.getDef()), var2 - 35 + 118, 238 + var3);
-				this.getSurface().drawSprite(spriteSelect(GUIPARTS.DECLINEBUTTON.getDef()), var2 + 352 - 35, var3 + 238);
+				this.getSurface().drawSprite(spriteSelect(GUIPARTS.ACCEPTBUTTON.getDef()), var2 - ui(35) + ui(118), ui(238) + var3);
+				this.getSurface().drawSprite(spriteSelect(GUIPARTS.DECLINEBUTTON.getDef()), var2 + ui(352) - ui(35), var3 + ui(238));
 			}
 
 			if (this.mouseButtonClick == 1) {
-				if (this.mouseX < var2 || this.mouseY < var3 || this.mouseX > 468 + var2 || this.mouseY > var3 + 262) {
+				if (this.mouseX < var2 || this.mouseY < var3 || this.mouseX > ui(468) + var2 || this.mouseY > var3 + ui(262)) {
 					this.showDialogTradeConfirm = false;
 					this.packetHandler.getClientStream().newPacket(230);
 					this.packetHandler.getClientStream().finishPacket();
 				}
 
-				if (this.mouseX >= var2 + 118 - 35 && this.mouseX <= var2 + 118 + 70 && this.mouseY >= var3 + 238
-					&& this.mouseY <= 238 + var3 + 21) {
+				if (this.mouseX >= var2 + ui(118) - ui(35) && this.mouseX <= var2 + ui(118) + ui(70) && this.mouseY >= var3 + ui(238)
+					&& this.mouseY <= ui(238) + var3 + ui(21)) {
 					this.tradeConfirmAccepted = true;
 					this.packetHandler.getClientStream().newPacket(104);
 					this.packetHandler.getClientStream().finishPacket();
 				}
 
-				if (352 + var2 - 35 <= this.mouseX && this.mouseX <= var2 + 423 && this.mouseY >= var3 + 238
-					&& this.mouseY <= 238 + var3 + 21) {
+				if (ui(352) + var2 - ui(35) <= this.mouseX && this.mouseX <= var2 + ui(423) && this.mouseY >= var3 + ui(238)
+					&& this.mouseY <= ui(238) + var3 + ui(21)) {
 					this.showDialogTradeConfirm = false;
 					this.packetHandler.getClientStream().newPacket(230);
 					this.packetHandler.getClientStream().finishPacket();
@@ -7476,7 +7601,7 @@ public final class mudclient implements Runnable {
 						String var11 = this.panelMessageTabs.getControlText(this.panelMessageEntry);
 						int var3 = 45;
 						this.getSurface().drawBoxBorder(106, 300, var3, 50, 0xFFFFFF);
-						this.getSurface().drawBoxAlpha(106, var3, 300, 50, 0, 128);
+						this.getSurface().drawBoxAlpha(106, var3, 300, 50, 0, 210);
 						var3 += 20;
 						this.getSurface().drawColoredStringCentered(256, "Enter chat message", 0xFFFFFF, 0, 4, var3);
 						var3 += 20;
@@ -7548,7 +7673,7 @@ public final class mudclient implements Runnable {
 				}
 
 				if (S_INVENTORY_COUNT_TOGGLE && C_INV_COUNT) {
-					this.getSurface().drawShadowText(this.inventoryItemCount + "/30", this.getGameWidth() - 19, getUITabsY() + 14, (0x00FFFFFF << (int) Math.floor((this.inventoryItemCount / 15)) * 8) & 0x00FFFFFF, 1, true);
+					this.getSurface().drawShadowText(this.inventoryItemCount + "/30", this.getGameWidth() - ui(19), getUITabsY() + ui(14), (0x00FFFFFF << (int) Math.floor((this.inventoryItemCount / 15)) * 8) & 0x00FFFFFF, 1, true);
 				}
 
 				if (C_CUSTOM_UI && drawMinimap) {
@@ -7635,9 +7760,9 @@ public final class mudclient implements Runnable {
 						String msg = StringUtil.formatMessage(
 							MessageHistory.messageHistoryMessage[i], MessageHistory.messageHistorySender[i],
 							MessageHistory.messageHistoryType[i], MessageHistory.messageHistoryColor[i]);
-						if (this.mouseX > 7 && this.mouseX < this.getSurface().stringWidth(1, msg) + 7
-							&& this.mouseY > -(i * 12) - 30 + this.getGameHeight()
-							&& this.getGameHeight() - i * 12 - 18 > this.mouseY
+						if (this.mouseX > ui(7) && this.mouseX < this.getSurface().stringWidth(1, msg) + ui(7)
+							&& this.mouseY > -(i * ui(12)) - ui(30) + this.getGameHeight()
+							&& this.getGameHeight() - i * ui(12) - ui(18) > this.mouseY
 							&& (this.mouseButtonClick == 2
 							|| this.optionMouseButtonOne && this.mouseButtonClick == 1)
 							&& this.drawMenuMessage(MessageHistory.messageHistoryClan[i], 127,
@@ -8023,7 +8148,7 @@ public final class mudclient implements Runnable {
 			int var3 = this.getSurface().width2 - ui(248);
 			int xOffset = var3;
 			if (!C_CUSTOM_UI)
-				this.getSurface().drawSprite(spriteSelect(GUIPARTS.BAGTAB.getDef()), var3, 3);
+				this.getSurface().drawSprite(spriteSelect(GUIPARTS.BAGTAB.getDef()), var3, ui(3));
 
 			int var4;
 			int var5;
@@ -8038,9 +8163,9 @@ public final class mudclient implements Runnable {
 					var5 = var3 + var4 % 5 * ui(49);
 					id = var4 / 5 * ui(34) + yOffset;
 					if (!S_WANT_EQUIPMENT_TAB && this.inventoryItemCount > var4 && getInventoryItemEquippedID(var4) == 1) {
-						this.getSurface().drawBoxAlpha(var5, id, ui(49), ui(34), 0xFF0000, 128);
+						this.getSurface().drawBoxAlpha(var5, id, ui(49), ui(34), 0xFF0000, 210);
 					} else {
-						this.getSurface().drawBoxAlpha(var5, id, ui(49), ui(34), GenUtil.buildColor(181, 181, 181), 128);
+						this.getSurface().drawBoxAlpha(var5, id, ui(49), ui(34), GenUtil.buildColor(181, 181, 181), 210);
 					}
 
 					if (var4 < this.inventoryItemCount) {
@@ -8169,16 +8294,16 @@ public final class mudclient implements Runnable {
 			} else if (this.tabEquipmentIndex == 1) //equipment tab
 			{
 				if (C_CUSTOM_UI)
-					yOffset -= 45;
-				this.getSurface().drawBoxAlpha(xOffset, yOffset, 245, 204, this.clearBox, 128);
-				this.getSurface().drawBoxAlpha(xOffset, yOffset + 228, 245, 45, this.clearBox, 128);
+					yOffset -= ui(45);
+				this.getSurface().drawBoxAlpha(xOffset, yOffset, ui(245), ui(204), this.clearBox, 210);
+				this.getSurface().drawBoxAlpha(xOffset, yOffset + ui(228), ui(245), ui(45), this.clearBox, 210);
 				Sprite todraw = null;
 
 				if (S_ITEMS_ON_DEATH_MENU) {
 					todraw = spriteSelect(EntityHandler.GUIparts.get(GUIPARTS.KEPT_ON_DEATH.id()));
 					this.getSurface().drawSpriteClipping(todraw,
-						xOffset + 10,
-						yOffset + 10,
+						xOffset + ui(10),
+						yOffset + ui(10),
 						todraw.getWidth(), todraw.getHeight(),
 						0, 0, 0, false, 0,
 						var1 ^ -15251, 0x80FFFFFF
@@ -8189,47 +8314,47 @@ public final class mudclient implements Runnable {
 					if (this.equippedItems[i] == null) {
 						todraw = spriteSelect(EntityHandler.GUIparts.get(GUIPARTS.EQUIPSLOT_HELM.id() + i));
 						this.getSurface().drawSpriteClipping(todraw
-							, xOffset + equipIconXLocations[i]
-							, yOffset + equipIconYLocations[i],
+							, xOffset + ui(equipIconXLocations[i])
+							, yOffset + ui(equipIconYLocations[i]),
 							todraw.getWidth(), todraw.getHeight(),
 							0, 0, 0, false, 0, var1 ^ -15251, 0x80FFFFFF);
 					} else {
 						todraw = spriteSelect(GUIPARTS.EQUIPSLOT_HIGHLIGHT.getDef());
 						this.getSurface().drawSpriteClipping(
 							todraw,
-							xOffset + equipIconXLocations[i],
-							yOffset + equipIconYLocations[i],
+							xOffset + ui(equipIconXLocations[i]),
+							yOffset + ui(equipIconYLocations[i]),
 							todraw.getWidth(), todraw.getHeight(),
 							0, 0, 0, false, 0, var1 ^ -15251, 0xC0FFFFFF);
 						todraw = spriteSelect(equippedItems[i]);
 						this.getSurface().drawSpriteClipping(
 							todraw,
-							xOffset + equipIconXLocations[i],
-							yOffset + equipIconYLocations[i],
+							xOffset + ui(equipIconXLocations[i]),
+							yOffset + ui(equipIconYLocations[i]),
 							todraw.getSomething1(), todraw.getSomething2(),
 							equippedItems[i].getPictureMask(), 0,
 							equippedItems[i].getBlueMask(), false, 0, var1 ^ -15251);
 						if (equippedItems[i].isStackable())
 							this.getSurface().drawString("" + equippedItemAmount[i],
-								xOffset + equipIconXLocations[i] + 2,
-								yOffset + equipIconYLocations[i] + 11, 0xFFFF00, 1);
+								xOffset + ui(equipIconXLocations[i]) + ui(2),
+								yOffset + ui(equipIconYLocations[i]) + ui(11), 0xFFFF00, 1);
 					}
 				}
 				for (int currSkill = 0; currSkill < 3; ++currSkill) {
 					this.getSurface().drawString(this.equipmentStatNames[currSkill] + ":@yel@" + this.playerStatEquipment[currSkill],
-						xOffset + 42, yOffset + 243 + currSkill * 13, 0xFFFFFF, 1);
+						xOffset + ui(42), yOffset + ui(243) + currSkill * ui(13), 0xFFFFFF, 1);
 					if (2 > currSkill) {
 						this.getSurface().drawString(
 							this.equipmentStatNames[currSkill + 3] + ":@yel@" + this.playerStatEquipment[3 + currSkill],
-							244 / 2 + xOffset + 35, yOffset + 243 + currSkill * 13, 0xFFFFFF, 1);
+							ui(244) / 2 + xOffset + ui(35), yOffset + ui(243) + currSkill * ui(13), 0xFFFFFF, 1);
 					}
-					this.getSurface().drawLineHoriz(xOffset, yOffset + 228, 245, 0);
+					this.getSurface().drawLineHoriz(xOffset, yOffset + ui(228), ui(245), 0);
 				}
 				//handle equipment clicks
 				if ((this.mouseButtonClick == 1 || this.mouseButtonClick == 2) && this.mouseY > yOffset) {
 					for (int j = 0; j < S_PLAYER_SLOT_COUNT; j++) {
-						if (this.mouseX >= xOffset + equipIconXLocations[j] && this.mouseX < xOffset + equipIconXLocations[j] + 48) {
-							if (this.mouseY >= yOffset + equipIconYLocations[j] && this.mouseY < yOffset + equipIconYLocations[j] + 32) {
+						if (this.mouseX >= xOffset + ui(equipIconXLocations[j]) && this.mouseX < xOffset + ui(equipIconXLocations[j]) + ui(48)) {
+							if (this.mouseY >= yOffset + ui(equipIconYLocations[j]) && this.mouseY < yOffset + ui(equipIconYLocations[j]) + ui(32)) {
 								//Send a packet to the server to unequip the item.
 								if (equippedItems[j] != null) {
 									if (this.mouseButtonClick == 1 && !this.topMouseMenuVisible) {//unequip from equip menu
@@ -8263,8 +8388,8 @@ public final class mudclient implements Runnable {
 					}
 					// Click the Items kept on death button
 					if (S_ITEMS_ON_DEATH_MENU) {
-						if (xOffset + 10 < this.mouseX && xOffset + 50 > this.mouseX
-							&& yOffset + 10 < this.mouseY && this.mouseY < yOffset + 35) {
+						if (xOffset + ui(10) < this.mouseX && xOffset + ui(50) > this.mouseX
+							&& yOffset + ui(10) < this.mouseY && this.mouseY < yOffset + ui(35)) {
 							if (!C_CUSTOM_UI)
 								this.showUiTab = 0;
 							lostOnDeathInterface.setVisible(true);
@@ -8276,26 +8401,26 @@ public final class mudclient implements Runnable {
 
 			if (S_WANT_EQUIPMENT_TAB) {
 
-				yOffset += 228;
-				this.getSurface().drawBoxAlpha(xOffset, yOffset - 24, 122, 24, this.tabEquipmentIndex == 1 ? selectedBox : clearBox, 128);
-				this.getSurface().drawBoxAlpha(xOffset + 122, yOffset - 24, 123, 24, this.tabEquipmentIndex == 0 ? selectedBox : clearBox, 128);
-				this.getSurface().drawColoredStringCentered(xOffset + 60, "Equipment", 0, 0, 4, yOffset - 7);
-				this.getSurface().drawColoredStringCentered(xOffset + 183, "Inventory", 0, 0, 4, yOffset - 7);
+				yOffset += ui(228);
+				this.getSurface().drawBoxAlpha(xOffset, yOffset - ui(24), ui(122), ui(24), this.tabEquipmentIndex == 1 ? selectedBox : clearBox, 210);
+				this.getSurface().drawBoxAlpha(xOffset + ui(122), yOffset - ui(24), ui(123), ui(24), this.tabEquipmentIndex == 0 ? selectedBox : clearBox, 210);
+				this.getSurface().drawColoredStringCentered(xOffset + ui(60), "Equipment", 0, 0, 4, yOffset - ui(7));
+				this.getSurface().drawColoredStringCentered(xOffset + ui(183), "Inventory", 0, 0, 4, yOffset - ui(7));
 
-				this.getSurface().drawLineHoriz(xOffset, yOffset - 24, 245, 0);
-				this.getSurface().drawLineVert(xOffset + 122, yOffset - 24, 0, 24);
+				this.getSurface().drawLineHoriz(xOffset, yOffset - ui(24), ui(245), 0);
+				this.getSurface().drawLineVert(xOffset + ui(122), yOffset - ui(24), 0, ui(24));
 
 				//Handle ui clicks
 				if (this.mouseButtonClick == 1 && !this.topMouseMenuVisible) {
 					if (this.mouseX >= xOffset) {
 						if (this.mouseY <= yOffset) {
-							if (this.mouseY >= yOffset - 24) {
-								if (this.mouseX <= xOffset + 245) {
+							if (this.mouseY >= yOffset - ui(24)) {
+								if (this.mouseX <= xOffset + ui(245)) {
 									if (this.tabEquipmentIndex == 0) {
-										if (this.mouseX < xOffset + 122)
+										if (this.mouseX < xOffset + ui(122))
 											this.tabEquipmentIndex = 1;
 									} else if (this.tabEquipmentIndex == 1) {
-										if (this.mouseX >= xOffset + 122)
+										if (this.mouseX >= xOffset + ui(122))
 											this.tabEquipmentIndex = 0;
 									}
 								}
@@ -8316,16 +8441,16 @@ public final class mudclient implements Runnable {
 		int maxY = getUITabsY();
 
 		try {
-			int var3 = this.getSurface().width2 - 199;
-			int var4 = 36;
+			int var3 = this.getSurface().width2 - ui(199);
+			int var4 = ui(36);
 			if (!C_CUSTOM_UI)
-				this.getSurface().drawSprite(spriteSelect(GUIPARTS.MENUSOCIAL.getDef()), var3 - 49, 3);
+				this.getSurface().drawSprite(spriteSelect(GUIPARTS.MENUSOCIAL.getDef()), var3 - ui(49), ui(3));
 			if (C_CUSTOM_UI)
-				var4 = maxY - 182;
-			short var5 = 196;
-			short var6 = 182;
-			int maxWidth = getGameWidth() - 23;
-			int minWidth = getGameWidth() - 83;
+				var4 = maxY - ui(182);
+			int var5 = ui(196);
+			int var6 = ui(182);
+			int maxWidth = getGameWidth() - ui(23);
+			int minWidth = getGameWidth() - ui(83);
 			if (var2) {
 				this.cameraAutoMoveX = -88;
 			}
@@ -8338,13 +8463,13 @@ public final class mudclient implements Runnable {
 				if (this.panelSocialTab == 1) {
 					clanTab = GenUtil.buildColor(220, 220, 220);
 					if (C_CUSTOM_UI)
-						var4 -= 19;
+						var4 -= ui(19);
 					if (clan.inClan()) {
-						this.getSurface().drawBoxAlpha(var3, 24 + var4, var5, 49, GenUtil.buildColor(220, 220, 220), 192);
-						this.getSurface().drawLineHoriz(var3, var4 + 72, var5, 0);
-						this.getSurface().drawBoxAlpha(var3, var4 + var6 - 16 + 34, var5, 49, GenUtil.buildColor(220, 220, 220), 192);
+						this.getSurface().drawBoxAlpha(var3, ui(24) + var4, var5, ui(49), GenUtil.buildColor(220, 220, 220), 192);
+						this.getSurface().drawLineHoriz(var3, var4 + ui(72), var5, 0);
+						this.getSurface().drawBoxAlpha(var3, var4 + var6 - ui(16) + ui(34), var5, ui(49), GenUtil.buildColor(220, 220, 220), 192);
 					} else {
-						this.getSurface().drawBoxAlpha(var3, var4 + var6 - 30, var5, 49, GenUtil.buildColor(220, 220, 220), 192);
+						this.getSurface().drawBoxAlpha(var3, var4 + var6 - ui(30), var5, ui(49), GenUtil.buildColor(220, 220, 220), 192);
 					}
 				} else if (this.panelSocialTab == 0) {
 					colorA = GenUtil.buildColor(220, 220, 220);
@@ -8352,17 +8477,17 @@ public final class mudclient implements Runnable {
 					colorB = GenUtil.buildColor(220, 220, 220);
 				}
 
-				this.getSurface().drawBoxAlpha(var3, var4, 65, 24, colorA, 128);
-				this.getSurface().drawBoxAlpha(var3 + var5 / 2 - 32, var4, 65, 24, clanTab, 128);
-				this.getSurface().drawBoxAlpha(var3 + var5 / 2 + 33, var4, 65, 24, colorB, 128);
-				this.getSurface().drawBoxAlpha(var3, (this.panelSocialTab == 1 && clan.inClan() ? 49 : 0) + 24 + var4, var5, (this.panelSocialTab == 1 ? 127 : var6 - 24), GenUtil.buildColor(220, 220, 220), 128);
-				this.getSurface().drawLineHoriz(var3, var4 + 24, var5, 0);
-				this.getSurface().drawLineVert(var5 / 2 + var3 - 33, 0 + var4, 0, 24);
-				this.getSurface().drawLineVert(var5 / 2 + var3 + 33, 0 + var4, 0, 24);
-				this.getSurface().drawLineHoriz(var3, var4 + var6 - 16 + (this.panelSocialTab == 1 ? clan.inClan() ? 34 : -15 : 0), var5, 0);
-				this.getSurface().drawColoredStringCentered(var3 + var5 / 4 - 16, "Friends", 0, 0, 4, 16 + var4);
-				this.getSurface().drawColoredStringCentered(var5 / 4 + var3 + var5 / 2 - 33 - 16, "Clan", 0, 0, 4, var4 + 16);
-				this.getSurface().drawColoredStringCentered(var5 / 4 + var3 + var5 / 2 + 16, "Ignore", 0, 0, 4, var4 + 16);
+				this.getSurface().drawBoxAlpha(var3, var4, ui(65), ui(24), colorA, 210);
+				this.getSurface().drawBoxAlpha(var3 + var5 / 2 - ui(32), var4, ui(65), ui(24), clanTab, 210);
+				this.getSurface().drawBoxAlpha(var3 + var5 / 2 + ui(33), var4, ui(65), ui(24), colorB, 210);
+				this.getSurface().drawBoxAlpha(var3, (this.panelSocialTab == 1 && clan.inClan() ? ui(49) : 0) + ui(24) + var4, var5, (this.panelSocialTab == 1 ? ui(127) : var6 - ui(24)), GenUtil.buildColor(220, 220, 220), 210);
+				this.getSurface().drawLineHoriz(var3, var4 + ui(24), var5, 0);
+				this.getSurface().drawLineVert(var5 / 2 + var3 - ui(33), 0 + var4, 0, ui(24));
+				this.getSurface().drawLineVert(var5 / 2 + var3 + ui(33), 0 + var4, 0, ui(24));
+				this.getSurface().drawLineHoriz(var3, var4 + var6 - ui(16) + (this.panelSocialTab == 1 ? clan.inClan() ? ui(34) : -ui(15) : 0), var5, 0);
+				this.getSurface().drawColoredStringCentered(var3 + var5 / 4 - ui(16), "Friends", 0, 0, 4, ui(16) + var4);
+				this.getSurface().drawColoredStringCentered(var5 / 4 + var3 + var5 / 2 - ui(33) - ui(16), "Clan", 0, 0, 4, var4 + ui(16));
+				this.getSurface().drawColoredStringCentered(var5 / 4 + var3 + var5 / 2 + ui(16), "Ignore", 0, 0, 4, var4 + ui(16));
 				this.panelSocial.clearList(this.controlSocialPanel);
 				this.panelClan.clearList(this.controlClanPanel);
 			} else { // clans disabled
@@ -8372,14 +8497,14 @@ public final class mudclient implements Runnable {
 					k = GenUtil.buildColor(220, 220, 220);
 				else
 					l = GenUtil.buildColor(220, 220, 220);
-				this.getSurface().drawBoxAlpha(var3, var4, var5 / 2, 24, k, 128);
-				this.getSurface().drawBoxAlpha(var3 + var5 / 2, var4, var5 / 2, 24, l, 128);
-				this.getSurface().drawBoxAlpha(var3, var4 + 24, var5, var6 - 24, GenUtil.buildColor(220, 220, 220), 128);
-				this.getSurface().drawLineHoriz(var3, var4 + 24, var5, 0);
-				this.getSurface().drawLineVert(var3 + var5 / 2, var4, 0, 24);
-				this.getSurface().drawLineHoriz(var3, var4 + var6 - 16, var5, 0);
-				this.getSurface().drawColoredStringCentered(var3 + var5 / 4, "Friends", 0, 0, 4, var4 + 16);
-				this.getSurface().drawColoredStringCentered(var3 + var5 / 4 + var5 / 2, "Ignore", 0, 0, 4, var4 + 16);
+				this.getSurface().drawBoxAlpha(var3, var4, var5 / 2, ui(24), k, 210);
+				this.getSurface().drawBoxAlpha(var3 + var5 / 2, var4, var5 / 2, ui(24), l, 210);
+				this.getSurface().drawBoxAlpha(var3, var4 + ui(24), var5, var6 - ui(24), GenUtil.buildColor(220, 220, 220), 210);
+				this.getSurface().drawLineHoriz(var3, var4 + ui(24), var5, 0);
+				this.getSurface().drawLineVert(var3 + var5 / 2, var4, 0, ui(24));
+				this.getSurface().drawLineHoriz(var3, var4 + var6 - ui(16), var5, 0);
+				this.getSurface().drawColoredStringCentered(var3 + var5 / 4, "Friends", 0, 0, 4, var4 + ui(16));
+				this.getSurface().drawColoredStringCentered(var3 + var5 / 4 + var5 / 2, "Ignore", 0, 0, 4, var4 + ui(16));
 				this.panelSocial.clearList(this.controlSocialPanel);
 			}
 
@@ -8404,12 +8529,12 @@ public final class mudclient implements Runnable {
 					var12 = 0;
 
 					for (int var13 = SocialLists.friendList[index].length(); this.getSurface().stringWidth(1,
-						var11) > 120; var11 = SocialLists.friendList[index].substring(0, var13 - var12) + "...") {
+						var11) > ui(120); var11 = SocialLists.friendList[index].substring(0, var13 - var12) + "...") {
 						++var12;
 					}
 
 					this.panelSocial.setListEntry(this.controlSocialPanel, index,
-						colorKey + var11 + "~" + (getGameWidth() - 73) + "~" + "@whi@Remove         WWWWWWWWWW", 0,
+						colorKey + var11 + "~" + (getGameWidth() - ui(73)) + "~" + "@whi@Remove         WWWWWWWWWW", 0,
 						null, null);
 				}
 				this.panelSocial.drawPanel();
@@ -8422,13 +8547,13 @@ public final class mudclient implements Runnable {
 					int var16 = 0;
 
 					for (var12 = SocialLists.ignoreListArg0[index].length(); this.getSurface().stringWidth(1,
-						colorKey) > 120; colorKey = SocialLists.ignoreListArg0[index].substring(0, var12 - var16)
+						colorKey) > ui(120); colorKey = SocialLists.ignoreListArg0[index].substring(0, var12 - var16)
 						+ "...") {
 						++var16;
 					}
 
 					this.panelSocial.setListEntry(this.controlSocialPanel, index,
-						"@yel@" + colorKey + "~" + (getGameWidth() - 73) + "~" + "@whi@Remove         WWWWWWWWWW",
+						"@yel@" + colorKey + "~" + (getGameWidth() - ui(73)) + "~" + "@whi@Remove         WWWWWWWWWW",
 						0, null, null);
 				}
 
@@ -8437,19 +8562,19 @@ public final class mudclient implements Runnable {
 
 			// clan tab
 			if (this.panelSocialTab == 1) {
-				int listX = var3 + 3;
-				int listY = 75;
+				int listX = var3 + ui(3);
+				int listY = ui(75);
 
 				if (C_CUSTOM_UI)
-					listY = var4 + 39;
+					listY = var4 + ui(39);
 
 				int buttonColorA = 0x0A2B56, buttonColorB = 0x0A2B56;
 
 				if (clan.inClan()) {
 					this.getSurface().drawString("Clan: @cla@" + clan.getClanName(), listX, listY, 0xFFFFFF, 1);
-					listY += 14;
+					listY += ui(14);
 					this.getSurface().drawString("Tag: @cla@< " + clan.getClanTag() + " >", listX, listY, 0xFFFFFF, 1);
-					listY += 14;
+					listY += ui(14);
 					this.getSurface().drawString("Leader: @yel@" + clan.getClanLeaderUsername(), listX, listY, 0xFFFFFF, 1);
 					for (index = 0; index < SocialLists.clanListCount; ++index) {
 
@@ -8463,14 +8588,14 @@ public final class mudclient implements Runnable {
 						var12 = 0;
 
 						for (int var13 = clan.username[index].length(); this.getSurface().stringWidth(1,
-							clanIsh) > 120; clanIsh = clan.username[index].substring(0, var13 - var12) + "...") {
+							clanIsh) > ui(120); clanIsh = clan.username[index].substring(0, var13 - var12) + "...") {
 							++var12;
 						}
 						this.panelClan.setListEntry(this.controlClanPanel, index, (clan.clanRank[index] == 0 ? "     " : "") + colorKey + clanIsh + "          ", 0,
 							null, null);
 					}
-					if (this.mouseX > var3 + 20 && this.mouseX < var3 + 94 && this.mouseY > var6 + (var4 + 26)
-						&& this.mouseY < var6 + var4 + 60) {
+					if (this.mouseX > var3 + ui(20) && this.mouseX < var3 + ui(94) && this.mouseY > var6 + (var4 + ui(26))
+						&& this.mouseY < var6 + var4 + ui(60)) {
 						buttonColorA = 0x263751;
 						if (getMouseClick() == 1) {
 							if (!C_CUSTOM_UI)
@@ -8480,13 +8605,13 @@ public final class mudclient implements Runnable {
 							setMouseClick(0);
 						}
 					}
-					this.getSurface().drawBoxAlpha(listX + 17, listY + 141, 74, 34, buttonColorA, 192);
-					this.getSurface().drawBoxBorder(listX + 17, 74, listY + 141, 34, 0xBFA086);
-					this.getSurface().drawString("Leave Clan", listX + 17 + (74 / 2 - this.getSurface().stringWidth(0, "Leave Clan") / 2), listY + 141 + 34 / 2 + 4, 0xffffff, 0);
+					this.getSurface().drawBoxAlpha(listX + ui(17), listY + ui(141), ui(74), ui(34), buttonColorA, 192);
+					this.getSurface().drawBoxBorder(listX + ui(17), ui(74), listY + ui(141), ui(34), 0xBFA086);
+					this.getSurface().drawString("Leave Clan", listX + ui(17) + (ui(74) / 2 - this.getSurface().stringWidth(0, "Leave Clan") / 2), listY + ui(141) + ui(34) / 2 + ui(4), 0xffffff, 0);
 
 
-					if (this.mouseX > var3 + 88 + 13 && this.mouseX < var3 + 88 + 88 && this.mouseY > var6 + (var4 + 26)
-						&& this.mouseY < var6 + var4 + 60) {
+					if (this.mouseX > var3 + ui(88) + ui(13) && this.mouseX < var3 + ui(88) + ui(88) && this.mouseY > var6 + (var4 + ui(26))
+						&& this.mouseY < var6 + var4 + ui(60)) {
 						buttonColorB = 0x263751;
 						if (getMouseClick() == 1) {
 							clan.showClanSetupInterface(clan.inClan());
@@ -8495,16 +8620,16 @@ public final class mudclient implements Runnable {
 							setMouseClick(0);
 						}
 					}
-					this.getSurface().drawBoxAlpha(listX + 17 + 82, listY + 141, 74, 34, buttonColorB, 192);
-					this.getSurface().drawBoxBorder(listX + 17 + 82, 74, listY + 141, 34, 0xBFA086);
-					this.getSurface().drawString("Clan Setup", listX + 14 + 85 + (74 / 2 - this.getSurface().stringWidth(0, "Clan Setup") / 2), listY + 141 + 34 / 2 + 4, 0xffffff, 0);
+					this.getSurface().drawBoxAlpha(listX + ui(17) + ui(82), listY + ui(141), ui(74), ui(34), buttonColorB, 192);
+					this.getSurface().drawBoxBorder(listX + ui(17) + ui(82), ui(74), listY + ui(141), ui(34), 0xBFA086);
+					this.getSurface().drawString("Clan Setup", listX + ui(14) + ui(85) + (ui(74) / 2 - this.getSurface().stringWidth(0, "Clan Setup") / 2), listY + ui(141) + ui(34) / 2 + ui(4), 0xffffff, 0);
 
 				} else {
-					this.getSurface().drawString("You are not currently in a Clan", listX + 10, listY, 0xFFFFFF, 1);
-					listY += 28;
-					this.getSurface().drawWrappedCenteredString("Click on Clan Setup to create your own clan.% %If you are looking to join an existing Clan, click on Clan Search.", listX + 94, listY, 196 - 12, 1, 0xF38F30, true);
-					if (this.mouseX > var3 + 20 && this.mouseX < var3 + 94 && this.mouseY > var6 + (var4 - 23)
-						&& this.mouseY < var6 + var4 + 12) {
+					this.getSurface().drawString("You are not currently in a Clan", listX + ui(10), listY, 0xFFFFFF, 1);
+					listY += ui(28);
+					this.getSurface().drawWrappedCenteredString("Click on Clan Setup to create your own clan.% %If you are looking to join an existing Clan, click on Clan Search.", listX + ui(94), listY, ui(196) - ui(12), 1, 0xF38F30, true);
+					if (this.mouseX > var3 + ui(20) && this.mouseX < var3 + ui(94) && this.mouseY > var6 + (var4 - ui(23))
+						&& this.mouseY < var6 + var4 + ui(12)) {
 						buttonColorA = 0x263751;
 						if (getMouseClick() == 1) {
 							clan.showClanSetupInterface(clan.inClan());
@@ -8516,12 +8641,12 @@ public final class mudclient implements Runnable {
 							setMouseClick(0);
 						}
 					}
-					this.getSurface().drawBoxAlpha(listX + 17, listY + 93, 74, 34, buttonColorA, 192);
-					this.getSurface().drawBoxBorder(listX + 17, 74, listY + 93, 34, 0xBFA086);
-					this.getSurface().drawString("Clan Search", listX + 17 + (74 / 2 - this.getSurface().stringWidth(0, "Clan Search") / 2), listY + 93 + 34 / 2 + 4, 0xffffff, 0);
+					this.getSurface().drawBoxAlpha(listX + ui(17), listY + ui(93), ui(74), ui(34), buttonColorA, 192);
+					this.getSurface().drawBoxBorder(listX + ui(17), ui(74), listY + ui(93), ui(34), 0xBFA086);
+					this.getSurface().drawString("Clan Search", listX + ui(17) + (ui(74) / 2 - this.getSurface().stringWidth(0, "Clan Search") / 2), listY + ui(93) + ui(34) / 2 + ui(4), 0xffffff, 0);
 
-					if (this.mouseX > var3 + 88 + 13 && this.mouseX < var3 + 88 + 88 && this.mouseY > var6 + (var4 - 23)
-						&& this.mouseY < var6 + var4 + 12) {
+					if (this.mouseX > var3 + ui(88) + ui(13) && this.mouseX < var3 + ui(88) + ui(88) && this.mouseY > var6 + (var4 - ui(23))
+						&& this.mouseY < var6 + var4 + ui(12)) {
 						buttonColorB = 0x263751;
 						if (getMouseClick() == 1) {
 							clan.showClanSetupInterface(clan.inClan());
@@ -8530,9 +8655,9 @@ public final class mudclient implements Runnable {
 							setMouseClick(0);
 						}
 					}
-					this.getSurface().drawBoxAlpha(listX + 17 + 82, listY + 93, 74, 34, buttonColorB, 192);
-					this.getSurface().drawBoxBorder(listX + 17 + 82, 74, listY + 93, 34, 0xBFA086);
-					this.getSurface().drawString("Clan Setup", listX + 14 + 85 + (74 / 2 - this.getSurface().stringWidth(0, "Clan Setup") / 2), listY + 93 + 34 / 2 + 4, 0xffffff, 0);
+					this.getSurface().drawBoxAlpha(listX + ui(17) + ui(82), listY + ui(93), ui(74), ui(34), buttonColorB, 192);
+					this.getSurface().drawBoxBorder(listX + ui(17) + ui(82), ui(74), listY + ui(93), ui(34), 0xBFA086);
+					this.getSurface().drawString("Clan Setup", listX + ui(14) + ui(85) + (ui(74) / 2 - this.getSurface().stringWidth(0, "Clan Setup") / 2), listY + ui(93) + ui(34) / 2 + ui(4), 0xffffff, 0);
 				}
 
 				this.panelClan.drawPanel();
@@ -8552,8 +8677,8 @@ public final class mudclient implements Runnable {
 				}
 
 				this.getSurface().drawColoredStringCentered(var5 / 2 + var3, "Click a name to send a message", 0xFFFFFF,
-					0, 1, 35 + var4);
-				if (var3 < this.mouseX && this.mouseX < var3 + var5 && this.mouseY > var6 + (var4 - 16)
+					0, 1, ui(35) + var4);
+				if (var3 < this.mouseX && this.mouseX < var3 + var5 && this.mouseY > var6 + (var4 - ui(16))
 					&& this.mouseY < var6 + var4) {
 					var17 = 0xFFFF00;
 				} else {
@@ -8561,7 +8686,7 @@ public final class mudclient implements Runnable {
 				}
 
 				this.getSurface().drawColoredStringCentered(var5 / 2 + var3, "Click here to add a friend", var17, 0, 1,
-					var6 + var4 - 3);
+					var6 + var4 - ui(3));
 			}
 
 			if (this.panelSocialTab == 2) {
@@ -8575,8 +8700,8 @@ public final class mudclient implements Runnable {
 				}
 
 				this.getSurface().drawColoredStringCentered(var3 + var5 / 2, "Blocking messages from:", 0xFFFFFF, 0, 1,
-					35 + var4);
-				if (this.mouseX > var3 && var3 + var5 > this.mouseX && var6 + var4 - 16 < this.mouseY
+					ui(35) + var4);
+				if (this.mouseX > var3 && var3 + var5 > this.mouseX && var6 + var4 - ui(16) < this.mouseY
 					&& var6 + var4 > this.mouseY) {
 					var17 = 0xFFFF00;
 				} else {
@@ -8584,7 +8709,7 @@ public final class mudclient implements Runnable {
 				}
 
 				this.getSurface().drawColoredStringCentered(var5 / 2 + var3, "Click here to add a name", var17, 0, 1,
-					var4 + (var6 - 3));
+					var4 + (var6 - ui(3)));
 			}
 
 			/*
@@ -8598,28 +8723,28 @@ public final class mudclient implements Runnable {
 			 */
 
 			if (var1) {
-				int var15 = this.mouseY - 36;
+				int var15 = this.mouseY - ui(36);
 				if (C_CUSTOM_UI)
 					var15 = this.mouseY - var4;
-				var3 = 199 + this.mouseX - this.getSurface().width2;
+				var3 = ui(199) + this.mouseX - this.getSurface().width2;
 				// handle friends and ignores tab
-				if (var3 >= 0 && var15 >= 0 && var3 < 196 && var15 < 26) {
-					this.panelSocial.handleMouse(var3 - 199 + this.getSurface().width2, var15 + 36,
+				if (var3 >= 0 && var15 >= 0 && var3 < ui(196) && var15 < ui(26)) {
+					this.panelSocial.handleMouse(var3 - ui(199) + this.getSurface().width2, var15 + ui(36),
 						this.currentMouseButtonDown, this.lastMouseButtonDown);
-					if (var15 <= 24 && this.mouseButtonClick == 1) {
+					if (var15 <= ui(24) && this.mouseButtonClick == 1) {
 						if (S_WANT_CLANS) {
-							if (var3 < 65 && (this.panelSocialTab == 2 || this.panelSocialTab == 1)) {
+							if (var3 < ui(65) && (this.panelSocialTab == 2 || this.panelSocialTab == 1)) {
 								this.panelSocialTab = 0; // Show Friends Tab (Clicked)
 								this.panelSocial.resetList(this.controlSocialPanel);
-							} else if (var3 > 132 && var3 < 196 && (this.panelSocialTab == 1 || this.panelSocialTab == 0)) {
+							} else if (var3 > ui(132) && var3 < ui(196) && (this.panelSocialTab == 1 || this.panelSocialTab == 0)) {
 								this.panelSocialTab = 2; // Show Ignore Tab (Clicked)
 								this.panelSocial.resetList(this.controlSocialPanel);
 							}
 						} else {
-							if (var3 < 98 && (this.panelSocialTab == 2 || this.panelSocialTab == 1)) {
+							if (var3 < ui(98) && (this.panelSocialTab == 2 || this.panelSocialTab == 1)) {
 								this.panelSocialTab = 0; // Show Friends Tab (Clicked)
 								this.panelSocial.resetList(this.controlSocialPanel);
-							} else if (var3 > 98 && (this.panelSocialTab == 1 || this.panelSocialTab == 0)) {
+							} else if (var3 > ui(98) && (this.panelSocialTab == 1 || this.panelSocialTab == 0)) {
 								this.panelSocialTab = 2; // Show Ignore Tab (Clicked)
 								this.panelSocial.resetList(this.controlSocialPanel);
 							}
@@ -8628,11 +8753,11 @@ public final class mudclient implements Runnable {
 				}
 				// handle clan tab
 				if (S_WANT_CLANS) {
-					if (var3 >= 65 && var15 >= 0 && var3 < 132 && var15 < 26) {
-						this.panelClan.handleMouse(var3 - 199 + this.getSurface().width2, var15 + 36,
+					if (var3 >= ui(65) && var15 >= 0 && var3 < ui(132) && var15 < ui(26)) {
+						this.panelClan.handleMouse(var3 - ui(199) + this.getSurface().width2, var15 + ui(36),
 							this.currentMouseButtonDown, this.lastMouseButtonDown);
-						if (var15 <= 24 && this.mouseButtonClick == 1) {
-							if (var3 > 65 && var3 < 132 && (this.panelSocialTab == 2 || this.panelSocialTab == 0)) {
+						if (var15 <= ui(24) && this.mouseButtonClick == 1) {
+							if (var3 > ui(65) && var3 < ui(132) && (this.panelSocialTab == 2 || this.panelSocialTab == 0)) {
 								this.panelSocialTab = 1; // Show Clan Tab (Clicked)
 								this.panelClan.resetList(this.controlClanPanel);
 							}
@@ -8641,11 +8766,11 @@ public final class mudclient implements Runnable {
 				}
 
 				// interactions within the panels
-				if (var3 >= 0 && var15 >= 0 && var3 < 196 && var15 < 225 && (this.panelSocialTab == 0 || this.panelSocialTab == 2)) {
+				if (var3 >= 0 && var15 >= 0 && var3 < ui(196) && var15 < ui(225) && (this.panelSocialTab == 0 || this.panelSocialTab == 2)) {
 					if (C_CUSTOM_UI)
 						this.panelSocial.handleMouse(this.getMouseX(), this.getMouseY(), this.getMouseButtonDown(), this.getLastMouseDown());
 					else
-						this.panelSocial.handleMouse(var3 - 199 + this.getSurface().width2, var15 + 36,
+						this.panelSocial.handleMouse(var3 - ui(199) + this.getSurface().width2, var15 + ui(36),
 							this.currentMouseButtonDown, this.lastMouseButtonDown);
 					if (this.mouseButtonClick == 1 && this.panelSocialTab == 0) {
 						index = this.panelSocial.getControlSelectedListIndex(this.controlSocialPanel);
@@ -8672,7 +8797,7 @@ public final class mudclient implements Runnable {
 					}
 
 					// add friend
-					if (var15 > 166 && this.mouseButtonClick == 1 && this.panelSocialTab == 0) {
+					if (var15 > ui(166) && this.mouseButtonClick == 1 && this.panelSocialTab == 0) {
 						this.inputTextFinal = "";
 						this.inputTextCurrent = "";
 						this.panelSocialPopup_Mode = SocialPopupMode.ADD_FRIEND;
@@ -8682,7 +8807,7 @@ public final class mudclient implements Runnable {
 					}
 
 					// add ignore
-					if (var15 > 166 && this.mouseButtonClick == 1 && this.panelSocialTab == 2) {
+					if (var15 > ui(166) && this.mouseButtonClick == 1 && this.panelSocialTab == 2) {
 						this.panelSocialPopup_Mode = SocialPopupMode.ADD_IGNORE;
 						this.inputTextCurrent = "";
 						this.inputTextFinal = "";
@@ -8695,8 +8820,8 @@ public final class mudclient implements Runnable {
 				}
 
 				// clan interactions
-				else if (var3 >= 0 && var15 >= 0 && var3 < 196 && var15 < 295 && this.panelSocialTab == 1 && S_WANT_CLANS) {
-					this.panelClan.handleMouse(var3 - 199 + this.getSurface().width2, var15 + 36,
+				else if (var3 >= 0 && var15 >= 0 && var3 < ui(196) && var15 < ui(295) && this.panelSocialTab == 1 && S_WANT_CLANS) {
+					this.panelClan.handleMouse(var3 - ui(199) + this.getSurface().width2, var15 + ui(36),
 						this.currentMouseButtonDown, this.lastMouseButtonDown);
 					if (this.mouseButtonClick >= 1 && this.panelSocialTab == 1) {
 						index = this.panelClan.getControlSelectedListIndex(this.controlClanPanel);
@@ -8748,13 +8873,13 @@ public final class mudclient implements Runnable {
 		int maxY = getUITabsY();
 
 		try {
-			int magicPanelX = this.getSurface().width2 - 199;
-			int magicPanelYStart = 36;
+			int magicPanelX = this.getSurface().width2 - ui(199);
+			int magicPanelYStart = ui(36);
 			if (!C_CUSTOM_UI)
-				this.getSurface().drawSprite(spriteSelect(GUIPARTS.MENUSPELLS.getDef()), magicPanelX - 49, 3);
+				this.getSurface().drawSprite(spriteSelect(GUIPARTS.MENUSPELLS.getDef()), magicPanelX - ui(49), ui(3));
 			if (C_CUSTOM_UI)
-				magicPanelYStart = maxY - 182;
-			short magicPanelWidth = 196;
+				magicPanelYStart = maxY - ui(182);
+			int magicPanelWidth = ui(196);
 			int var8;
 			int var7 = var8 = GenUtil.buildColor(160, 160, 160);
 			if (this.magicOrPrayerList != 0) {
@@ -8763,17 +8888,17 @@ public final class mudclient implements Runnable {
 				var7 = GenUtil.buildColor(220, 220, 220);
 			}
 
-			this.getSurface().drawBoxAlpha(magicPanelX, magicPanelYStart, magicPanelWidth / 2, 24, var7, 128);
-			this.getSurface().drawBoxAlpha(magicPanelWidth / 2 + magicPanelX, magicPanelYStart, magicPanelWidth / 2, 24, var8, 128);
-			this.getSurface().drawBoxAlpha(magicPanelX, magicPanelYStart + 24, magicPanelWidth, 90, GenUtil.buildColor(220, 220, 220), 128);
-			this.getSurface().drawBoxAlpha(magicPanelX, 114 + magicPanelYStart, magicPanelWidth, 68, GenUtil.buildColor(160, 160, 160),
+			this.getSurface().drawBoxAlpha(magicPanelX, magicPanelYStart, magicPanelWidth / 2, ui(24), var7, 210);
+			this.getSurface().drawBoxAlpha(magicPanelWidth / 2 + magicPanelX, magicPanelYStart, magicPanelWidth / 2, ui(24), var8, 210);
+			this.getSurface().drawBoxAlpha(magicPanelX, magicPanelYStart + ui(24), magicPanelWidth, ui(90), GenUtil.buildColor(220, 220, 220), 210);
+			this.getSurface().drawBoxAlpha(magicPanelX, ui(114) + magicPanelYStart, magicPanelWidth, ui(68), GenUtil.buildColor(160, 160, 160),
 				128);
-			this.getSurface().drawLineHoriz(magicPanelX, 24 + magicPanelYStart, magicPanelWidth, 0);
-			this.getSurface().drawLineVert(magicPanelX + magicPanelWidth / 2, 0 + magicPanelYStart, 0, 24);
-			this.getSurface().drawLineHoriz(magicPanelX, magicPanelYStart + 113, magicPanelWidth, 0);
+			this.getSurface().drawLineHoriz(magicPanelX, ui(24) + magicPanelYStart, magicPanelWidth, 0);
+			this.getSurface().drawLineVert(magicPanelX + magicPanelWidth / 2, 0 + magicPanelYStart, 0, ui(24));
+			this.getSurface().drawLineHoriz(magicPanelX, magicPanelYStart + ui(113), magicPanelWidth, 0);
 			if (var2 == -74) {
-				this.getSurface().drawColoredStringCentered(magicPanelWidth / 4 + magicPanelX, "Magic", 0, var2 + 74, 4, 16 + magicPanelYStart);
-				this.getSurface().drawColoredStringCentered(magicPanelX + magicPanelWidth / 4 + magicPanelWidth / 2, "Prayers", 0, 0, 4, 16 + magicPanelYStart);
+				this.getSurface().drawColoredStringCentered(magicPanelWidth / 4 + magicPanelX, "Magic", 0, var2 + 74, 4, ui(16) + magicPanelYStart);
+				this.getSurface().drawColoredStringCentered(magicPanelX + magicPanelWidth / 4 + magicPanelWidth / 2, "Prayers", 0, 0, 4, ui(16) + magicPanelYStart);
 				int spellIndex;
 				int magicLevel;
 				String var11;
@@ -8782,9 +8907,9 @@ public final class mudclient implements Runnable {
 
 				// Variables for last "cast last spell" box for Android
 				int lastSpellWidth = magicPanelWidth;
-				int lastSpellHeight = 50;
+				int lastSpellHeight = ui(50);
 				int lastSpellX = magicPanelX;
-				int lastSpellY = magicPanelYStart + 182;
+				int lastSpellY = magicPanelYStart + ui(182);
 				String lastSpellNameColor = "@yel@";
 
 				// 0 is magic list
@@ -8822,43 +8947,43 @@ public final class mudclient implements Runnable {
 						this.getSurface().drawString(
 							"Level " + EntityHandler.getSpellDef(magicLevel).getReqLevel() + ": "
 								+ EntityHandler.getSpellDef(magicLevel).getName(),
-							2 + magicPanelX, magicPanelYStart + 124, 0xFFFF00, 1);
-						this.getSurface().drawString(EntityHandler.getSpellDef(magicLevel).getDescription(), 2 + magicPanelX,
-							136 + magicPanelYStart, 0xFFFFFF, 0);
+							ui(2) + magicPanelX, magicPanelYStart + ui(124), 0xFFFF00, 1);
+						this.getSurface().drawString(EntityHandler.getSpellDef(magicLevel).getDescription(), ui(2) + magicPanelX,
+							ui(136) + magicPanelYStart, 0xFFFFFF, 0);
 						var18 = 0;
 						for (Entry<Integer, Integer> e : EntityHandler.getSpellDef(magicLevel).getRunesRequired()) {
 							var12 = e.getKey();
 							this.getSurface().drawSprite(
 								spriteSelect(EntityHandler.getItemDef(var12)),
-								2 + magicPanelX + var18 * 44, magicPanelYStart + 150);
+								ui(2) + magicPanelX + var18 * ui(44), magicPanelYStart + ui(150));
 							var13 = this.getInventoryCount(var12);
 							int var14 = e.getValue();
 							String var15 = "@red@";
 							if (this.hasRunes(var12, var14)) {
 								var15 = "@gre@";
 							}
-							this.getSurface().drawString(var15 + var13 + "/" + var14, 2 + magicPanelX + var18 * 44, magicPanelYStart + 150,
+							this.getSurface().drawString(var15 + var13 + "/" + var14, ui(2) + magicPanelX + var18 * ui(44), magicPanelYStart + ui(150),
 								0xFFFFFF, 1);
 							var18++;
 						}
 					} else {
-						this.getSurface().drawString("Point at a spell for a description", magicPanelX + 2, magicPanelYStart + 124, 0, 1);
+						this.getSurface().drawString("Point at a spell for a description", magicPanelX + ui(2), magicPanelYStart + ui(124), 0, 1);
 					}
 
 					// Android "cast last spell" box
 					if (lastSelectedSpell != -1 && isAndroid()) {
-						getSurface().drawBoxAlpha(lastSpellX, lastSpellY, lastSpellWidth, lastSpellHeight, 0x989898, 128);
+						getSurface().drawBoxAlpha(lastSpellX, lastSpellY, lastSpellWidth, lastSpellHeight, 0x989898, 210);
 						getSurface().drawBoxBorder(lastSpellX, lastSpellWidth, lastSpellY, lastSpellHeight, 0);
 
 						SpellDef spellDef = EntityHandler.getSpellDef(lastSelectedSpell);
 						if (spellDef != null) {
-							getSurface().drawBoxAlpha(lastSpellX, lastSpellY, lastSpellWidth, 16, 0x6b8e23, 128);
-							getSurface().drawBoxBorder(lastSpellX, lastSpellWidth, lastSpellY, 16, 0);
+							getSurface().drawBoxAlpha(lastSpellX, lastSpellY, lastSpellWidth, ui(16), 0x6b8e23, 210);
+							getSurface().drawBoxBorder(lastSpellX, lastSpellWidth, lastSpellY, ui(16), 0);
 
-							getSurface().drawBoxAlpha(lastSpellX, lastSpellY + 49, lastSpellWidth, 20, GenUtil.buildColor(255, 0, 0), 128);
-							getSurface().drawBoxBorder(lastSpellX, lastSpellWidth, lastSpellY + 49, 20, 0);
+							getSurface().drawBoxAlpha(lastSpellX, lastSpellY + ui(49), lastSpellWidth, ui(20), GenUtil.buildColor(255, 0, 0), 210);
+							getSurface().drawBoxBorder(lastSpellX, lastSpellWidth, lastSpellY + ui(49), ui(20), 0);
 
-							getSurface().drawColoredStringCentered(lastSpellX + (lastSpellWidth / 2), "@whi@Remove", 0, 0, 1, lastSpellY + 63);
+							getSurface().drawColoredStringCentered(lastSpellX + (lastSpellWidth / 2), "@whi@Remove", 0, 0, 1, lastSpellY + ui(63));
 
 							String[] spellName = spellDef.getName().split(" ");
 							for (Entry<?, ?> e : EntityHandler.getSpellDef(lastSelectedSpell).getRunesRequired()) {
@@ -8868,14 +8993,14 @@ public final class mudclient implements Runnable {
 								lastSpellNameColor = "@whi@";
 								break;
 							}
-							int textHeightOffset = 25;
+							int textHeightOffset = ui(25);
 							getSurface().drawColoredStringCentered(lastSpellX + (lastSpellWidth / 2), "@whi@" + "Tap to Cast", 0, 0, 1,
-								lastSpellY + 12);
+								lastSpellY + ui(12));
 
 							for (String s : spellName) {
 								getSurface().drawColoredStringCentered(lastSpellX + (lastSpellWidth / 2), lastSpellNameColor + s, 0, 0, 1,
 									lastSpellY + textHeightOffset + 1);
-								textHeightOffset += 10;
+								textHeightOffset += ui(10);
 							}
 						}
 					}
@@ -8906,40 +9031,40 @@ public final class mudclient implements Runnable {
 					this.panelMagic.drawPanel();
 					magicLevel = this.panelMagic.getControlSelectedListIndex(this.controlMagicPanel);
 					if (magicLevel == -1) {
-						this.getSurface().drawString("Point at a prayer for a description", magicPanelX + 2, magicPanelYStart + 124, 0, 1);
+						this.getSurface().drawString("Point at a prayer for a description", magicPanelX + ui(2), magicPanelYStart + ui(124), 0, 1);
 					} else {
 						this.getSurface()
 							.drawColoredStringCentered(magicPanelX + magicPanelWidth / 2,
 								"Level " + EntityHandler.getPrayerDef(magicLevel).getReqLevel() + ": "
 									+ EntityHandler.getPrayerDef(magicLevel).getName(),
-								0xFFFF00, 0, 1, magicPanelYStart + 130);
+								0xFFFF00, 0, 1, magicPanelYStart + ui(130));
 						this.getSurface().drawColoredStringCentered(magicPanelX + magicPanelWidth / 2,
-							EntityHandler.getPrayerDef(magicLevel).getDescription(), 0xFFFFFF, 0, 0, 145 + magicPanelYStart);
+							EntityHandler.getPrayerDef(magicLevel).getDescription(), 0xFFFFFF, 0, 0, ui(145) + magicPanelYStart);
 						this.getSurface().drawColoredStringCentered(magicPanelX + magicPanelWidth / 2,
-							"Drain rate: " + EntityHandler.getPrayerDef(magicLevel).getDrainRate(), 0, 0, 1, 160 + magicPanelYStart);
+							"Drain rate: " + EntityHandler.getPrayerDef(magicLevel).getDrainRate(), 0, 0, 1, ui(160) + magicPanelYStart);
 					}
 					// this.getSurface().drawColoredStringCentered(var3 + var5 / 2,
 					//		"Prayer points: " + this.playerStatCurrent[5] + "/" + this.playerStatBase[5], 0, 0, 1, 175 + var4);
 				}
 
 				if (var1) {
-					magicPanelX = 199 - this.getSurface().width2 + this.mouseX;
-					int relativeMouseY = this.mouseY - 36;
-					int maxClickableY = isAndroid() ? 250 : 182;
+					magicPanelX = ui(199) - this.getSurface().width2 + this.mouseX;
+					int relativeMouseY = this.mouseY - ui(36);
+					int maxClickableY = isAndroid() ? ui(250) : ui(182);
 					if (C_CUSTOM_UI)
 						relativeMouseY = this.mouseY - magicPanelYStart;
-					if (magicPanelX >= 0 && relativeMouseY >= 0 && magicPanelX < 196 && relativeMouseY < maxClickableY) {
+					if (magicPanelX >= 0 && relativeMouseY >= 0 && magicPanelX < ui(196) && relativeMouseY < maxClickableY) {
 						if (C_CUSTOM_UI)
 							this.panelMagic.handleMouse(this.getMouseX(), this.getMouseY(), this.getMouseButtonDown(), this.getLastMouseDown());
 						else
-							this.panelMagic.handleMouse(magicPanelX + (this.getSurface().width2 - 199), relativeMouseY + 36,
+							this.panelMagic.handleMouse(magicPanelX + (this.getSurface().width2 - ui(199)), relativeMouseY + ui(36),
 								this.currentMouseButtonDown, this.lastMouseButtonDown);
-						if (relativeMouseY <= 24 && this.mouseButtonClick == 1) {
-							if (magicPanelX < 98 && this.magicOrPrayerList == 1) {
+						if (relativeMouseY <= ui(24) && this.mouseButtonClick == 1) {
+							if (magicPanelX < ui(98) && this.magicOrPrayerList == 1) {
 								this.magicOrPrayerList = 0;
 								prayerMenuIndex = this.panelMagic.getScrollPosition(this.controlMagicPanel);
 								this.panelMagic.resetListToIndex(this.controlMagicPanel, magicMenuIndex);
-							} else if (magicPanelX > 98 && this.magicOrPrayerList == 0) {
+							} else if (magicPanelX > ui(98) && this.magicOrPrayerList == 0) {
 								this.magicOrPrayerList = 1;
 								magicMenuIndex = this.panelMagic.getScrollPosition(this.controlMagicPanel);
 								this.panelMagic.resetListToIndex(this.controlMagicPanel, prayerMenuIndex);
@@ -8994,7 +9119,7 @@ public final class mudclient implements Runnable {
 								mouseButtonClick = 0;
 							}
 
-							if (mouseX > lastSpellX && mouseX < lastSpellX + lastSpellWidth && mouseY > lastSpellY + 49 && mouseY < lastSpellY + 69
+							if (mouseX > lastSpellX && mouseX < lastSpellX + lastSpellWidth && mouseY > lastSpellY + ui(49) && mouseY < lastSpellY + ui(69)
 								&& mouseButtonClick > 0) {
 								selectedSpell = -1;
 								lastSelectedSpell = -1;
@@ -9048,20 +9173,24 @@ public final class mudclient implements Runnable {
 	// mini map menu
 	private void drawUiTabMinimap(boolean var1, byte var2) {
 		try {
-			int offX = C_CUSTOM_UI ? 170 : 199;
+			// Minimap terrain is a fixed-resolution rotating sprite (drawMinimapSprite has
+			// no scale factor of its own), so the viewport box stays at its native pixel
+			// size rather than growing with the window - otherwise the map renders as a
+			// small diamond adrift in an oversized square.
+			int offX = C_CUSTOM_UI ? ui(170) : ui(199);
 			int posX = this.getSurface().width2 - offX;
-			int posY = 36;
-			short var4 = 156;
-			short var5 = 152;
+			int posY = ui(36);
+			int var4 = 156;
+			int var5 = 152;
 			if (C_CUSTOM_UI) {
-				int borderSize = 2;
-				posY = 10;
+				int borderSize = ui(2);
+				posY = ui(10);
 				posX += borderSize;
 				posY += borderSize;
 				this.getSurface().drawBox(posX - borderSize, posY - borderSize, var4 + (borderSize * 2), var5 + (borderSize * 2), 0);
 			} else {
-				this.getSurface().drawSprite(spriteSelect(GUIPARTS.MINIMAPTAB.getDef()), posX - 49, 3);
-				posX += 40;
+				this.getSurface().drawSprite(spriteSelect(GUIPARTS.MINIMAPTAB.getDef()), posX - ui(49), ui(3));
+				posX += ui(40);
 			}
 			this.getSurface().drawBox(posX, posY, var4, var5, 0);
 			this.getSurface().setClip(posX, var4 + posX, posY + var5, posY);
@@ -9129,7 +9258,7 @@ public final class mudclient implements Runnable {
 						if (var16.equals(StringUtil.displayNameToKey(clan.username[var17]))
 							&& (clan.onlineClanMember[var17]) == 1) {
 							var15 = 0xFF00FF;
-							surface.drawCircle(var12 + posX + var4 / 2, posY - mZ + var5 / 2, 2, var15, 255, 0);
+							surface.drawCircle(var12 + posX + var4 / 2, posY - mZ + var5 / 2, ui(2), var15, 255, 0);
 						}
 					}
 					for (int var17 = 0; var17 < SocialLists.partyListCount; ++var17) {
@@ -9137,7 +9266,7 @@ public final class mudclient implements Runnable {
 							&& (party.onlinePartyMember[var17]) == 1) {
 							if (party.inParty()) {
 								var15 = 0x0B5394;
-								surface.drawCircle(var12 + posX + var4 / 2, posY - mZ + var5 / 2, 2, var15, 255, 0);
+								surface.drawCircle(var12 + posX + var4 / 2, posY - mZ + var5 / 2, ui(2), var15, 255, 0);
 							}
 						}
 					}
@@ -9146,21 +9275,21 @@ public final class mudclient implements Runnable {
 				this.drawMinimapEntity(var15, var12 + posX + var4 / 2, (byte) -67, posY - mZ + var5 / 2);
 			}
 
-			this.getSurface().drawCircle(posX + var4 / 2, var5 / 2 + posY, 2, 0xFFFFFF, 255, -1057205208);
-			this.getSurface().drawMinimapSprite(spriteSelect(GUIPARTS.COMPASS.getDef()), posY + 19, posX + 19, 842218000, 128,
+			this.getSurface().drawCircle(posX + var4 / 2, var5 / 2 + posY, ui(2), 0xFFFFFF, 255, -1057205208);
+			this.getSurface().drawMinimapSprite(spriteSelect(GUIPARTS.COMPASS.getDef()), posY + ui(19), posX + ui(19), 842218000, 128,
 				255 & this.cameraRotation + 128);
-			this.getSurface().setClip(0, this.getGameWidth(), this.getGameHeight() + 12, 0);
+			this.getSurface().setClip(0, this.getGameWidth(), this.getGameHeight() + ui(12), 0);
 			if (var1) {
 				posX = offX - this.getSurface().width2 + this.mouseX;
 				var13 = this.mouseY - posY;
-				if (posX >= 40 && var13 >= 0 && posX < 196 && var13 < 152) {
+				if (posX >= ui(40) && var13 >= 0 && posX < ui(196) && var13 < 152) {
 					var5 = 152;
 					posX = this.getSurface().width2 - offX;
 					var4 = 156;
 					var6 = 192 + this.minimapRandom_2;
 					var7 = 255 & this.cameraRotation + this.minimapRandom_1;
 					if (!C_CUSTOM_UI)
-						posX += 40;
+						posX += ui(40);
 					mZ = (this.mouseY - var5 / 2 - posY) * 16384 / (var6 * 3);
 					mX = (this.mouseX + (-(var4 / 2) - posX)) * 16384 / (var6 * 3);
 					var10 = FastMath.trigTable_1024[1024 - var7 * 4 & 1023];
@@ -9192,13 +9321,13 @@ public final class mudclient implements Runnable {
 		int maxY = getUITabsY();
 
 		try {
-			int var3 = this.getSurface().width2 - 199;
+			int var3 = this.getSurface().width2 - ui(199);
 			if (!C_CUSTOM_UI)
-				this.getSurface().drawSprite(spriteSelect(GUIPARTS.SETTINGSTAB.getDef()), var3 - 49, 3);
-			int var4 = 36 + 25;
+				this.getSurface().drawSprite(spriteSelect(GUIPARTS.SETTINGSTAB.getDef()), var3 - ui(49), ui(3));
+			int var4 = ui(36) + ui(25);
 			if (C_CUSTOM_UI)
-				var4 = maxY - 240;
-			short var5 = 196;
+				var4 = maxY - ui(240);
+			int var5 = ui(196);
 
 			int chosenColor = GenUtil.buildColor(220, 220, 220);
 			int unchosenColor = GenUtil.buildColor(160, 160, 160);
@@ -9213,11 +9342,11 @@ public final class mudclient implements Runnable {
 
 				// authentic settings GUI
 				if (this.authenticSettings) {
-					var4 = 36;
-					this.getSurface().drawBoxAlpha(var3, 36, var5, 65, GenUtil.buildColor(181, 181, 181), 160);
-					this.getSurface().drawBoxAlpha(var3, 101, var5, 65, GenUtil.buildColor(201, 201, 201), 160);
-					this.getSurface().drawBoxAlpha(var3, 166, var5, 95, GenUtil.buildColor(181, 181, 181), 160);
-					this.getSurface().drawBoxAlpha(var3, 261, var5, (this.insideTutorial || this.insideBlackHole) ? 55 : 40, GenUtil.buildColor(201, 201, 201), 160);
+					var4 = ui(36);
+					this.getSurface().drawBoxAlpha(var3, ui(36), var5, ui(65), GenUtil.buildColor(181, 181, 181), 160);
+					this.getSurface().drawBoxAlpha(var3, ui(101), var5, ui(65), GenUtil.buildColor(201, 201, 201), 160);
+					this.getSurface().drawBoxAlpha(var3, ui(166), var5, ui(95), GenUtil.buildColor(181, 181, 181), 160);
+					this.getSurface().drawBoxAlpha(var3, ui(261), var5, (this.insideTutorial || this.insideBlackHole) ? ui(55) : ui(40), GenUtil.buildColor(201, 201, 201), 160);
 				}
 
 				// custom settings GUI
@@ -9226,8 +9355,8 @@ public final class mudclient implements Runnable {
 				}
 			}
 
-			int var6 = 3 + var3;
-			int var7 = var4 + 15;
+			int var6 = ui(3) + var3;
+			int var7 = var4 + ui(15);
 
 			// adds options to settings tabs
 			if (this.authenticSettings)
@@ -9251,32 +9380,32 @@ public final class mudclient implements Runnable {
 
 			// mouse tracking for option buttons
 			if (mustTrackMouse) {
-				var3 = 199 - this.getSurface().width2 + this.mouseX; // relative X
-				int var13 = this.mouseY - 36; // relative Y
+				var3 = ui(199) - this.getSurface().width2 + this.mouseX; // relative X
+				int var13 = this.mouseY - ui(36); // relative Y
 				if (C_CUSTOM_UI)
-					var13 = this.mouseY - var4 + 25; // relative Y
+					var13 = this.mouseY - var4 + ui(25); // relative Y
 				// within panel
-				if (var3 >= 0 && var13 >= 0 && var3 < 196 && var13 < 295) {
+				if (var3 >= 0 && var13 >= 0 && var3 < ui(196) && var13 < ui(295)) {
 					// tab switching
 					if (!this.authenticSettings) {
 						this.panelSettings.handleMouse(this.getMouseX(), this.getMouseY(), this.getMouseButtonDown(), this.getLastMouseDown());
-						if (isAndroid() && var13 <= 24 && this.mouseButtonClick == 1) {
-							if (var3 < 66 && (this.settingTab == 1 || this.settingTab == 2)) {
+						if (isAndroid() && var13 <= ui(24) && this.mouseButtonClick == 1) {
+							if (var3 < ui(66) && (this.settingTab == 1 || this.settingTab == 2)) {
 								this.settingTab = 0; // Social Settings Tab
 								this.panelSettings.resetList(this.controlSettingPanel);
-							} else if (var3 >= 66 && var3 <= 131
+							} else if (var3 >= ui(66) && var3 <= ui(131)
 								&& (this.settingTab == 0 || this.settingTab == 2)) {
 								this.settingTab = 1; // General Settings Tab
 								this.panelSettings.resetList(this.controlSettingPanel);
-							} else if (var3 > 131 && (this.settingTab == 0 || this.settingTab == 1)) {
+							} else if (var3 > ui(131) && (this.settingTab == 0 || this.settingTab == 1)) {
 								this.settingTab = 2; // Android Settings Tab
 								this.panelSettings.resetList(this.controlSettingPanel);
 							}
 						} else if (!isAndroid()) {
-							if (var13 <= 24 && this.mouseButtonClick == 1) {
-								if (var3 < 98 && this.settingTab == 1) {
+							if (var13 <= ui(24) && this.mouseButtonClick == 1) {
+								if (var3 < ui(98) && this.settingTab == 1) {
 									this.settingTab = 0; // Social Settings Tab
-								} else if (var3 >= 98 && this.settingTab == 0) {
+								} else if (var3 >= ui(98) && this.settingTab == 0) {
 									this.settingTab = 1; // General Settings Tab
 								}
 								this.panelSettings.resetList(this.controlSettingPanel);
@@ -9284,15 +9413,15 @@ public final class mudclient implements Runnable {
 						}
 					}
 
-					int var9 = this.getSurface().width2 - 199;
-					var6 = var9 + 3;
-					int var10 = 36;
+					int var9 = this.getSurface().width2 - ui(199);
+					var6 = var9 + ui(3);
+					int var10 = ui(36);
 					if (C_CUSTOM_UI)
-						var10 = var4 - 24;
-					var5 = 184;
+						var10 = var4 - ui(24);
+					var5 = ui(184);
 
 					if (!this.authenticSettings) {
-						var7 = 30 + var10;
+						var7 = ui(30) + var10;
 
 						/* general tab option clicks */
 						if (this.settingTab == 1) {
@@ -9309,7 +9438,7 @@ public final class mudclient implements Runnable {
 							this.handleAndroidSettingsClicks(var5, var6, var7);
 						}
 					} else {
-						var7 = var10 + 15;
+						var7 = var10 + ui(15);
 						this.handleAuthenticSettingsClicks(var5, var6, var7);
 					}
 
@@ -9322,219 +9451,219 @@ public final class mudclient implements Runnable {
 	}
 
 	// custom settings menu with android tab
-	private void drawAndroidSettingsBox(int var3, int var4, short var5, int unchosenColor, int chosenColor) {
+	private void drawAndroidSettingsBox(int var3, int var4, int var5, int unchosenColor, int chosenColor) {
 		if (this.settingTab == 0) {
-			this.getSurface().drawBoxAlpha(var3, 36, var5, 25, GenUtil.buildColor(181, 181, 181), 160);
-			this.getSurface().drawBoxAlpha(var3, 61, var5, 105, GenUtil.buildColor(201, 201, 201), 160);
-			this.getSurface().drawBoxAlpha(var3, 166, var5, 95, GenUtil.buildColor(181, 181, 181), 160);
-			this.getSurface().drawBoxAlpha(var3, 261, var5, (this.insideTutorial || this.insideBlackHole) ? 55 : 40, GenUtil.buildColor(201, 201, 201), 160);
+			this.getSurface().drawBoxAlpha(var3, ui(36), var5, ui(25), GenUtil.buildColor(181, 181, 181), 160);
+			this.getSurface().drawBoxAlpha(var3, ui(61), var5, ui(105), GenUtil.buildColor(201, 201, 201), 160);
+			this.getSurface().drawBoxAlpha(var3, ui(166), var5, ui(95), GenUtil.buildColor(181, 181, 181), 160);
+			this.getSurface().drawBoxAlpha(var3, ui(261), var5, (this.insideTutorial || this.insideBlackHole) ? ui(55) : ui(40), GenUtil.buildColor(201, 201, 201), 160);
 		} else if (this.settingTab == 1) {
-			this.getSurface().drawBoxAlpha(var3, 36, var5, 25, GenUtil.buildColor(181, 181, 181), 160);
-			this.getSurface().drawBoxAlpha(var3, 61, var5, 105, GenUtil.buildColor(201, 201, 201), 160);
-			this.getSurface().drawBoxAlpha(var3, 166, var5, 95, GenUtil.buildColor(181, 181, 181), 160);
-			this.getSurface().drawBoxAlpha(var3, 261, var5, (this.insideTutorial || this.insideBlackHole) ? 55 : 40, GenUtil.buildColor(201, 201, 201), 160);
+			this.getSurface().drawBoxAlpha(var3, ui(36), var5, ui(25), GenUtil.buildColor(181, 181, 181), 160);
+			this.getSurface().drawBoxAlpha(var3, ui(61), var5, ui(105), GenUtil.buildColor(201, 201, 201), 160);
+			this.getSurface().drawBoxAlpha(var3, ui(166), var5, ui(95), GenUtil.buildColor(181, 181, 181), 160);
+			this.getSurface().drawBoxAlpha(var3, ui(261), var5, (this.insideTutorial || this.insideBlackHole) ? ui(55) : ui(40), GenUtil.buildColor(201, 201, 201), 160);
 		} else if (this.settingTab == 2) {
-			this.getSurface().drawBoxAlpha(var3, 36, var5, 25, GenUtil.buildColor(181, 181, 181), 160);
-			this.getSurface().drawBoxAlpha(var3, 61, var5, 105, GenUtil.buildColor(201, 201, 201), 160);
-			this.getSurface().drawBoxAlpha(var3, 166, var5, 95, GenUtil.buildColor(181, 181, 181), 160);
-			this.getSurface().drawBoxAlpha(var3, 261, var5, (this.insideTutorial || this.insideBlackHole) ? 55 : 40, GenUtil.buildColor(201, 201, 201), 160);
+			this.getSurface().drawBoxAlpha(var3, ui(36), var5, ui(25), GenUtil.buildColor(181, 181, 181), 160);
+			this.getSurface().drawBoxAlpha(var3, ui(61), var5, ui(105), GenUtil.buildColor(201, 201, 201), 160);
+			this.getSurface().drawBoxAlpha(var3, ui(166), var5, ui(95), GenUtil.buildColor(181, 181, 181), 160);
+			this.getSurface().drawBoxAlpha(var3, ui(261), var5, (this.insideTutorial || this.insideBlackHole) ? ui(55) : ui(40), GenUtil.buildColor(201, 201, 201), 160);
 		}
 
-		this.getSurface().drawLineHoriz(var3, 24 + var4 - 25, var5, 0);
-		this.getSurface().drawLineVert(var3 + var5 / 3, 0 + var4 - 25, 0, 24);
-		this.getSurface().drawLineVert(var3 + 2 * (var5 / 3) + 1, 0 + var4 - 25, 0, 24);
+		this.getSurface().drawLineHoriz(var3, ui(24) + var4 - ui(25), var5, 0);
+		this.getSurface().drawLineVert(var3 + var5 / 3, 0 + var4 - ui(25), 0, ui(24));
+		this.getSurface().drawLineVert(var3 + 2 * (var5 / 3) + 1, 0 + var4 - ui(25), 0, ui(24));
 
-		this.getSurface().drawColoredStringCentered(var5 / 4 + var3 - 16, "Social", 0, 0, 4, 16 + var4 - 25);
-		this.getSurface().drawColoredStringCentered(var3 + var5 / 4 + var5 / 3 - 16, "General", 0, 0, 4, 16 + var4 - 25);
-		this.getSurface().drawColoredStringCentered(var3 + var5 / 4 + 2 * var5 / 3 - 15, "Android", 0, 0, 4, 16 + var4 - 25);
+		this.getSurface().drawColoredStringCentered(var5 / 4 + var3 - ui(16), "Social", 0, 0, 4, ui(16) + var4 - ui(25));
+		this.getSurface().drawColoredStringCentered(var3 + var5 / 4 + var5 / 3 - ui(16), "General", 0, 0, 4, ui(16) + var4 - ui(25));
+		this.getSurface().drawColoredStringCentered(var3 + var5 / 4 + 2 * var5 / 3 - ui(15), "Android", 0, 0, 4, ui(16) + var4 - ui(25));
 	}
 
 	// custom settings menu
-	private void drawCustomSettingsBox(int var3, int var4, short var5, int chosenColor, int unchosenColor) {
+	private void drawCustomSettingsBox(int var3, int var4, int var5, int chosenColor, int unchosenColor) {
 		if (this.settingTab == 0) {
-			this.getSurface().drawBoxAlpha(var3, var4 - 25, var5 / 2, 24, chosenColor, 128);
-			this.getSurface().drawBoxAlpha(var5 / 2 + var3, var4 - 25, var5 / 2, 24, unchosenColor, 128);
+			this.getSurface().drawBoxAlpha(var3, var4 - ui(25), var5 / 2, ui(24), chosenColor, 210);
+			this.getSurface().drawBoxAlpha(var5 / 2 + var3, var4 - ui(25), var5 / 2, ui(24), unchosenColor, 210);
 		} else if (this.settingTab == 1) {
-			this.getSurface().drawBoxAlpha(var3, var4 - 25, var5 / 2, 24, unchosenColor, 128);
-			this.getSurface().drawBoxAlpha(var5 / 2 + var3, var4 - 25, var5 / 2, 24, chosenColor, 128);
+			this.getSurface().drawBoxAlpha(var3, var4 - ui(25), var5 / 2, ui(24), unchosenColor, 210);
+			this.getSurface().drawBoxAlpha(var5 / 2 + var3, var4 - ui(25), var5 / 2, ui(24), chosenColor, 210);
 		}
 
-		this.getSurface().drawLineHoriz(var3, 24 + var4 - 25, var5, 0);
-		this.getSurface().drawLineVert(var3 + var5 / 2, 0 + var4 - 25, 0, 24);
+		this.getSurface().drawLineHoriz(var3, ui(24) + var4 - ui(25), var5, 0);
+		this.getSurface().drawLineVert(var3 + var5 / 2, 0 + var4 - ui(25), 0, ui(24));
 
-		this.getSurface().drawColoredStringCentered(var5 / 4 + var3, "Social", 0, 0, 4, 16 + var4 - 25);
-		this.getSurface().drawColoredStringCentered(var3 + var5 / 4 + var5 / 2, "General", 0, 0, 4, 16 + var4 - 25);
+		this.getSurface().drawColoredStringCentered(var5 / 4 + var3, "Social", 0, 0, 4, ui(16) + var4 - ui(25));
+		this.getSurface().drawColoredStringCentered(var3 + var5 / 4 + var5 / 2, "General", 0, 0, 4, ui(16) + var4 - ui(25));
 
-		this.getSurface().drawBoxAlpha(var3, var4, var5, 200, GenUtil.buildColor(181, 181, 181), 160);
-		this.getSurface().drawBoxAlpha(var3, var4 + 200, var5, 40, GenUtil.buildColor(201, 201, 201), 160);
+		this.getSurface().drawBoxAlpha(var3, var4, var5, ui(200), GenUtil.buildColor(181, 181, 181), 160);
+		this.getSurface().drawBoxAlpha(var3, var4 + ui(200), var5, ui(40), GenUtil.buildColor(201, 201, 201), 160);
 	}
 
 	// custom social settings tab
-	private void drawSocialSettingsOptions(int baseX, short boxWidth, int x, int y) {
-		int var4 = y - 15;
+	private void drawSocialSettingsOptions(int baseX, int boxWidth, int x, int y) {
+		int var4 = y - ui(15);
 		// security settings text
-		y += 5;
-		this.getSurface().drawString("Security settings", 3 + baseX, y, 0, 1);
+		y += ui(5);
+		this.getSurface().drawString("Security settings", ui(3) + baseX, y, 0, 1);
 
 		// change password
-		y += 15;
+		y += ui(15);
 		int securityColor = 0xFFFFFF;
-		if (this.mouseX > x && this.mouseX < x + boxWidth && this.mouseY > y - 12
-			&& this.mouseY < y + 4) {
+		if (this.mouseX > x && this.mouseX < x + boxWidth && this.mouseY > y - ui(12)
+			&& this.mouseY < y + ui(4)) {
 			securityColor = 0xFFFF00;
 		}
-		this.getSurface().drawString("Change password", 3 + baseX, y, securityColor, 1);
+		this.getSurface().drawString("Change password", ui(3) + baseX, y, securityColor, 1);
 
 		// change recovery questions
-		y += 15;
+		y += ui(15);
 		securityColor = 0xFFFFFF;
-		if (this.mouseX > x && this.mouseX < x + boxWidth && this.mouseY > y - 12
-			&& this.mouseY < y + 4) {
+		if (this.mouseX > x && this.mouseX < x + boxWidth && this.mouseY > y - ui(12)
+			&& this.mouseY < y + ui(4)) {
 			securityColor = 0xFFFF00;
 		}
-		this.getSurface().drawString("Change recovery questions", 3 + baseX, y, securityColor, 1);
+		this.getSurface().drawString("Change recovery questions", ui(3) + baseX, y, securityColor, 1);
 
 		// change contact details
-		y += 15;
+		y += ui(15);
 		securityColor = 0xFFFFFF;
-		if (this.mouseX > x && this.mouseX < x + boxWidth && this.mouseY > y - 12 && this.mouseY < y + 4) {
+		if (this.mouseX > x && this.mouseX < x + boxWidth && this.mouseY > y - ui(12) && this.mouseY < y + ui(4)) {
 			securityColor = 0xFFFF00;
 		}
-		this.getSurface().drawString("Change contact details", 3 + baseX, y, securityColor, 1);
+		this.getSurface().drawString("Change contact details", ui(3) + baseX, y, securityColor, 1);
 
 		// privacy settings text
-		y += 20;
-		this.getSurface().drawString("Privacy settings", 3 + baseX, y, 0, 1);
+		y += ui(20);
+		this.getSurface().drawString("Privacy settings", ui(3) + baseX, y, 0, 1);
 
 		// block chat
-		y += 15;
+		y += ui(15);
 		if (this.settingsBlockChat == 2) {
-			this.getSurface().drawString("Allow chat messages: @red@<off>", 3 + baseX, y, 0xFFFFFF, 1);
+			this.getSurface().drawString("Allow chat messages: @red@<off>", ui(3) + baseX, y, 0xFFFFFF, 1);
 		} else if (this.settingsBlockChat == 1) {
-			this.getSurface().drawString("Allow chat messages: @yel@<friends>", 3 + baseX, y, 0xFFFFFF, 1);
+			this.getSurface().drawString("Allow chat messages: @yel@<friends>", ui(3) + baseX, y, 0xFFFFFF, 1);
 		} else {
-			this.getSurface().drawString("Allow chat messages: @gre@<on>", 3 + baseX, y, 0xFFFFFF, 1);
+			this.getSurface().drawString("Allow chat messages: @gre@<on>", ui(3) + baseX, y, 0xFFFFFF, 1);
 		}
 
 		// block private
-		y += 15;
+		y += ui(15);
 		if (this.settingsBlockPrivate == 0) {
-			this.getSurface().drawString("Allow private messages: @gre@<on>", 3 + baseX, y, 0xFFFFFF, 1);
+			this.getSurface().drawString("Allow private messages: @gre@<on>", ui(3) + baseX, y, 0xFFFFFF, 1);
 		} else if (this.settingsBlockPrivate == 1) {
-			this.getSurface().drawString("Allow private messages: @yel@<friends>", 3 + baseX, y, 0xFFFFFF, 1);
+			this.getSurface().drawString("Allow private messages: @yel@<friends>", ui(3) + baseX, y, 0xFFFFFF, 1);
 		} else {
-			this.getSurface().drawString("Allow private messages: @red@<off>", baseX + 3, y, 0xFFFFFF, 1);
+			this.getSurface().drawString("Allow private messages: @red@<off>", baseX + ui(3), y, 0xFFFFFF, 1);
 		}
 
 		// if global chat enabled, block global friend as only one should be toggled on at a time
 		if (S_WANT_GLOBAL_FRIEND && !S_WANT_GLOBAL_CHAT) {
-			y += 15;
+			y += ui(15);
 			if (!C_BLOCK_GLOBAL_FRIEND) {
-				this.getSurface().drawString("Allow global messages: @gre@<on>", 3 + baseX, y, 0xFFFFFF, 1);
+				this.getSurface().drawString("Allow global messages: @gre@<on>", ui(3) + baseX, y, 0xFFFFFF, 1);
 			} else {
-				this.getSurface().drawString("Allow global messages: @red@<off>", 3 + baseX, y, 0xFFFFFF, 1);
+				this.getSurface().drawString("Allow global messages: @red@<off>", ui(3) + baseX, y, 0xFFFFFF, 1);
 			}
 		} else if (S_WANT_GLOBAL_CHAT && !S_WANT_GLOBAL_FRIEND) {
-			y += 15;
+			y += ui(15);
 			if (this.settingsBlockGlobal == 1) {
-				this.getSurface().drawString("Hide global messages: @gre@None", 3 + baseX, y, 0xFFFFFF, 1);
+				this.getSurface().drawString("Hide global messages: @gre@None", ui(3) + baseX, y, 0xFFFFFF, 1);
 			} else if (this.settingsBlockGlobal == 2) {
-				this.getSurface().drawString("Hide global messages: @red@All", baseX + 3, y, 0xFFFFFF, 1);
+				this.getSurface().drawString("Hide global messages: @red@All", baseX + ui(3), y, 0xFFFFFF, 1);
 			} else if (this.settingsBlockGlobal == 3) {
-				this.getSurface().drawString("Hide global messages: @or1@Pking", baseX + 3, y, 0xFFFFFF, 1);
+				this.getSurface().drawString("Hide global messages: @or1@Pking", baseX + ui(3), y, 0xFFFFFF, 1);
 			} else if (this.settingsBlockGlobal == 4) {
-				this.getSurface().drawString("Hide global messages: @ora@General", baseX + 3, y, 0xFFFFFF, 1);
+				this.getSurface().drawString("Hide global messages: @ora@General", baseX + ui(3), y, 0xFFFFFF, 1);
 			}
 		}
 
 		// block trade
-		y += 15;
+		y += ui(15);
 		if (this.settingsBlockTrade == 2) {
-			this.getSurface().drawString("Allow trade requests: @red@<off>", baseX + 3, y, 0xFFFFFF, 1);
+			this.getSurface().drawString("Allow trade requests: @red@<off>", baseX + ui(3), y, 0xFFFFFF, 1);
 		} else if (this.settingsBlockTrade == 1) {
-			this.getSurface().drawString("Allow trade requests: @yel@<friends>", baseX + 3, y, 0xFFFFFF, 1);
+			this.getSurface().drawString("Allow trade requests: @yel@<friends>", baseX + ui(3), y, 0xFFFFFF, 1);
 		} else {
-			this.getSurface().drawString("Allow trade requests: @gre@<on>", 3 + baseX, y, 0xFFFFFF, 1);
+			this.getSurface().drawString("Allow trade requests: @gre@<on>", ui(3) + baseX, y, 0xFFFFFF, 1);
 		}
 
 		// block duel
-		y += 15;
+		y += ui(15);
 		if (wantMembers()) {
 			if (this.settingsBlockDuel == 2) {
-				this.getSurface().drawString("Allow duel requests: @red@<off>", baseX + 3, y, 0xFFFFFF, 1);
+				this.getSurface().drawString("Allow duel requests: @red@<off>", baseX + ui(3), y, 0xFFFFFF, 1);
 			} else if (this.settingsBlockDuel == 1) {
-				this.getSurface().drawString("Allow duel requests: @yel@<friends>", baseX + 3, y, 0xFFFFFF, 1);
+				this.getSurface().drawString("Allow duel requests: @yel@<friends>", baseX + ui(3), y, 0xFFFFFF, 1);
 			} else {
-				this.getSurface().drawString("Allow duel requests: @gre@<on>", 3 + baseX, y, 0xFFFFFF, 1);
+				this.getSurface().drawString("Allow duel requests: @gre@<on>", ui(3) + baseX, y, 0xFFFFFF, 1);
 			}
 		}
 
 		//Display Online List
 		if (!this.insideTutorial) {
-			y += 25;
+			y += ui(25);
 			int textColor = 0xFFFFFF;
-			if (this.mouseX > x && this.mouseX < x + boxWidth && this.mouseY > y - 12
-				&& this.mouseY < y + 4) {
+			if (this.mouseX > x && this.mouseX < x + boxWidth && this.mouseY > y - ui(12)
+				&& this.mouseY < y + ui(4)) {
 				textColor = 0xFFFF00;
 			}
 			if (S_WANT_PLAYER_COMMANDS)
-				this.getSurface().drawString("Display online list", (baseX + 3), y, textColor, 1);
+				this.getSurface().drawString("Display online list", (baseX + ui(3)), y, textColor, 1);
 		}
 		if (party.inParty()) {
-			y += 14;
+			y += ui(14);
 			int textColor = 0xFFFFFF;
-			if (this.mouseX > x && this.mouseX < x + boxWidth && this.mouseY > y - 12
-				&& this.mouseY < y + 4) {
+			if (this.mouseX > x && this.mouseX < x + boxWidth && this.mouseY > y - ui(12)
+				&& this.mouseY < y + ui(4)) {
 				textColor = 0xFFFF00;
 			}
-			this.getSurface().drawString("Leave Party", (baseX + 3), y, textColor, 1);
+			this.getSurface().drawString("Leave Party", (baseX + ui(3)), y, textColor, 1);
 		}
 
 		// skip tutorial or exit the black hole menu option
 		int logoutColor;
 		if (this.insideTutorial) {
-			y = 256;
+			y = ui(256);
 			if (C_CUSTOM_UI)
-				y = var4 + 195;
+				y = var4 + ui(195);
 			logoutColor = 0xFFFFFF;
-			if (x < this.mouseX && this.mouseX < x + boxWidth && y - 12 < this.mouseY
-				&& this.mouseY < 4 + y) {
+			if (x < this.mouseX && this.mouseX < x + boxWidth && y - ui(12) < this.mouseY
+				&& this.mouseY < ui(4) + y) {
 				logoutColor = 0xFFFF00;
 			}
 			this.getSurface().drawString("Skip the tutorial", x, y, logoutColor, 1);
 		} else if (this.insideBlackHole) {
-			y = 256;
+			y = ui(256);
 			if (C_CUSTOM_UI)
-				y = var4 + 195;
+				y = var4 + ui(195);
 			logoutColor = 0xFFFFFF;
-			if (x < this.mouseX && this.mouseX < x + boxWidth && y - 12 < this.mouseY
-				&& this.mouseY < 4 + y) {
+			if (x < this.mouseX && this.mouseX < x + boxWidth && y - ui(12) < this.mouseY
+				&& this.mouseY < ui(4) + y) {
 				logoutColor = 0xFFFF00;
 			}
 			this.getSurface().drawString("Exit the black hole", x, y, logoutColor, 1);
 		}
 
 		// logout text
-		y = 275;
+		y = ui(275);
 		if (C_CUSTOM_UI)
-			y = var4 + 214;
+			y = var4 + ui(214);
 		this.getSurface().drawString("Always logout when you finish", x, y, 0, 1);
 		logoutColor = 0xFFFFFF;
 
 		// logout menu option
-		y += 15;
-		if (x < this.mouseX && x + boxWidth > this.mouseX && y - 12 < this.mouseY && this.mouseY < 4 + y) {
+		y += ui(15);
+		if (x < this.mouseX && x + boxWidth > this.mouseX && y - ui(12) < this.mouseY && this.mouseY < ui(4) + y) {
 			logoutColor = 0xFFFF00;
 		}
-		this.getSurface().drawString("Click here to logout", baseX + 3, y, logoutColor, 1);
+		this.getSurface().drawString("Click here to logout", baseX + ui(3), y, logoutColor, 1);
 	}
 
 	// custom general menu tab
-	private void drawGeneralSettingsOptions(int baseX, short boxWidth, int x, int y) {
-		int var4 = y - 15;
+	private void drawGeneralSettingsOptions(int baseX, int boxWidth, int x, int y) {
+		int var4 = y - ui(15);
 		this.panelSettings.clearList(this.controlSettingPanel);
 		int index = 0;
-		this.getSurface().drawString("Game options", 3 + baseX, y, 0, 1);
+		this.getSurface().drawString("Game options", ui(3) + baseX, y, 0, 1);
 
 		// camera angle mode - byte index 1
 		if (this.optionCameraModeAuto) {
@@ -9564,11 +9693,16 @@ public final class mudclient implements Runnable {
 
 		if (isScalarOptionOffered) {
 			if (isScalarOptionShowing) {
-				int yPos = y + ((scalarOptionIdx - panelSettings.controlScrollAmount[0] + 1) * 15);
+				// Matches the real per-row spacing the scrolling list itself uses
+				// (fontHeight(1) + spaceHeight, see addScrollingList3's font/spaceHeight args) -
+				// a hardcoded "15" only happened to match at 1x scale and drifted out of sync
+				// with the rest of the panel at any other uiScale once fontHeight() became scaled.
+				int rowHeight = this.getSurface().fontHeight(1) + ui(1);
+				int yPos = y + ((scalarOptionIdx - panelSettings.controlScrollAmount[0] + 1) * rowHeight);
 
 				// Scale down button
-				boolean scaleMinusHover = (this.gameWidth - this.mouseX) >= 125 && (this.gameWidth - this.mouseX) <= 143 &&
-					this.mouseY >= (yPos - 7) && this.mouseY <= (yPos + 4);
+				boolean scaleMinusHover = (this.gameWidth - this.mouseX) >= ui(125) && (this.gameWidth - this.mouseX) <= ui(143) &&
+					this.mouseY >= (yPos - ui(7)) && this.mouseY <= (yPos + ui(4));
 
 				final String minusButtonLabel;
 				final int minusButtonColor;
@@ -9580,7 +9714,7 @@ public final class mudclient implements Runnable {
 					minusButtonColor = scaleMinusHover ? 65280 : 16616744;
 				}
 
-				this.getSurface().drawString("[ " + minusButtonLabel + " ]", this.gameWidth - 143, yPos, minusButtonColor, 1);
+				this.getSurface().drawString("[ " + minusButtonLabel + " ]", this.gameWidth - ui(143), yPos, minusButtonColor, 1);
 
 				// Scalar label
 				final String scalarLabel = scalingType == ScalingAlgorithm.INTEGER_SCALING ?
@@ -9596,11 +9730,11 @@ public final class mudclient implements Runnable {
 					scalarLabelColor = 16777215;
 				}
 
-				this.getSurface().drawString(scalarLabel, this.gameWidth - scalarLabelOffset, yPos + 1, scalarLabelColor, 1);
+				this.getSurface().drawString(scalarLabel, this.gameWidth - ui(scalarLabelOffset), yPos + 1, scalarLabelColor, 1);
 
 				// Scale up button
-				boolean scalePlusHover = (this.gameWidth - this.mouseX) >= 72 && (this.gameWidth - this.mouseX) <= 92 &&
-					this.mouseY >= (yPos - 7) && this.mouseY <= (yPos + 4);
+				boolean scalePlusHover = (this.gameWidth - this.mouseX) >= ui(72) && (this.gameWidth - this.mouseX) <= ui(92) &&
+					this.mouseY >= (yPos - ui(7)) && this.mouseY <= (yPos + ui(4));
 
 				final List<Float> scalars = scalingType == ScalingAlgorithm.INTEGER_SCALING ? integerScalars : interpolationScalars;
 				boolean maxScalar = scalars.indexOf(renderingScalar) == scalars.size() - 1;
@@ -9616,7 +9750,7 @@ public final class mudclient implements Runnable {
 					plusButtonColor = scalePlusHover ? 65280 : 16616744;
 				}
 
-				this.getSurface().drawString("[ " + plusButtonLabel + " ]", this.gameWidth - 93, yPos, plusButtonColor, 1);
+				this.getSurface().drawString("[ " + plusButtonLabel + " ]", this.gameWidth - ui(93), yPos, plusButtonColor, 1);
 			}
 
 			this.panelSettings.setListEntry(this.controlSettingPanel, index++, "@whi@Scaling - ", 45, null, null);
@@ -9867,9 +10001,9 @@ public final class mudclient implements Runnable {
 		}
 
 		// items on death menu option OR logout text if not enabled
-		y = 275;
+		y = ui(275);
 		if (C_CUSTOM_UI)
-			y = var4 + 214;
+			y = var4 + ui(214);
 		/*
 		if (S_ITEMS_ON_DEATH_MENU) {
 			int onDeathColor = 0xFFFFFF;
@@ -9882,21 +10016,21 @@ public final class mudclient implements Runnable {
 		this.getSurface().drawString("Always logout when you finish", x, y, 0, 1);
 
 		// logout menu option
-		y += 15;
+		y += ui(15);
 		int logoutColor = 0xFFFFFF;
-		if (x < this.mouseX && x + boxWidth > this.mouseX && y - 12 < this.mouseY && this.mouseY < 4 + y) {
+		if (x < this.mouseX && x + boxWidth > this.mouseX && y - ui(12) < this.mouseY && this.mouseY < ui(4) + y) {
 			logoutColor = 0xFFFF00;
 		}
-		this.getSurface().drawString("Click here to logout", baseX + 3, y, logoutColor, 1);
+		this.getSurface().drawString("Click here to logout", baseX + ui(3), y, logoutColor, 1);
 		this.panelSettings.drawPanel();
 
 	}
 
 	// android menu tab
-	private void drawAndroidSettingsOptions(int baseX, short boxWidth, int x, int y) {
+	private void drawAndroidSettingsOptions(int baseX, int boxWidth, int x, int y) {
 		this.panelSettings.clearList(this.controlSettingPanel);
 		int index = 0;
-		this.getSurface().drawString("Android options", 3 + baseX, y, 0, 1);
+		this.getSurface().drawString("Android options", ui(3) + baseX, y, 0, 1);
 
 		// Status Bar
 		if (osConfig.C_STATUS_BAR == 0) {
@@ -10021,21 +10155,21 @@ public final class mudclient implements Runnable {
 		}
 
 		// logout text
-		y += 199;
+		y += ui(199);
 		this.getSurface().drawString("Always logout when you finish", x, y, 0, 1);
 		int logoutColor = 0xFFFFFF;
 
 		// logout menu option
-		y += 15;
-		if (x < this.mouseX && x + boxWidth > this.mouseX && y - 12 < this.mouseY && this.mouseY < 4 + y) {
+		y += ui(15);
+		if (x < this.mouseX && x + boxWidth > this.mouseX && y - ui(12) < this.mouseY && this.mouseY < ui(4) + y) {
 			logoutColor = 0xFFFF00;
 		}
-		this.getSurface().drawString("Click here to logout", baseX + 3, y, logoutColor, 1);
+		this.getSurface().drawString("Click here to logout", baseX + ui(3), y, logoutColor, 1);
 		this.panelSettings.drawPanel();
 	}
 
 	// custom general menu tab
-	private void handleGeneralSettingsClicks(short var5, int var6, int yFromTopDistance) {
+	private void handleGeneralSettingsClicks(int var5, int var6, int yFromTopDistance) {
 		int settingIndex;
 		int checkPosition = this.panelSettings.getControlSelectedListIndex(this.controlSettingPanel);
 		if (checkPosition >= 0)
@@ -10069,19 +10203,22 @@ public final class mudclient implements Runnable {
 		boolean isScalarOptionShowing = !isAndroid() && panelSettings.controlScrollAmount[0] <= scalarOptionIdx;
 
 		if (isScalarOptionShowing) {
-			int yPos = yFromTopDistance + ((scalarOptionIdx - panelSettings.controlScrollAmount[0] + 1) * 15);
+			// Must match drawGeneralSettingsOptions()'s rowHeight/hover-bounds exactly, or the
+			// clickable area drifts away from the button that's actually drawn/highlighted.
+			int rowHeight = this.getSurface().fontHeight(1) + ui(1);
+			int yPos = yFromTopDistance + ((scalarOptionIdx - panelSettings.controlScrollAmount[0] + 1) * rowHeight);
 
 			// Scale down button
-			boolean scaleMinusHover = (this.gameWidth - this.mouseX) >= 125 && (this.gameWidth - this.mouseX) <= 143 &&
-				this.mouseY >= (yPos + 3) && this.mouseY <= (yPos + 14);
+			boolean scaleMinusHover = (this.gameWidth - this.mouseX) >= ui(125) && (this.gameWidth - this.mouseX) <= ui(143) &&
+				this.mouseY >= (yPos - ui(7)) && this.mouseY <= (yPos + ui(4));
 
 			if (scaleMinusHover && this.mouseButtonClick == 1) {
 				scaleDown();
 			}
 
 			// Scale up button
-			boolean scalePlusHover = (this.gameWidth - this.mouseX) >= 72 && (this.gameWidth - this.mouseX) <= 92 &&
-				this.mouseY >= (yPos + 3) && this.mouseY <= (yPos + 14);
+			boolean scalePlusHover = (this.gameWidth - this.mouseX) >= ui(72) && (this.gameWidth - this.mouseX) <= ui(92) &&
+				this.mouseY >= (yPos - ui(7)) && this.mouseY <= (yPos + ui(4));
 
 			if (scalePlusHover && this.mouseButtonClick == 1) {
 				scaleUp();
@@ -10341,26 +10478,26 @@ public final class mudclient implements Runnable {
 
 		// adjust for previous settings
 		if (C_CUSTOM_UI) {
-			yFromTopDistance = getUITabsY() - 240 + 214;
+			yFromTopDistance = getUITabsY() - ui(240) + ui(214);
 		} else {
-			yFromTopDistance = 275;
+			yFromTopDistance = ui(275);
 		}
 
 		// logout menu option
-		yFromTopDistance += 15;
-		if (this.mouseX > var6 && var5 + var6 > this.mouseX && this.mouseY > yFromTopDistance - 12
-			&& this.mouseY < yFromTopDistance + 4 && this.mouseButtonClick == 1) {
+		yFromTopDistance += ui(15);
+		if (this.mouseX > var6 && var5 + var6 > this.mouseX && this.mouseY > yFromTopDistance - ui(12)
+			&& this.mouseY < yFromTopDistance + ui(4) && this.mouseButtonClick == 1) {
 			this.sendLogout(0);
 		}
 	}
 
 	// custom social menu tab
-	private void handleSocialSettingsClicks(short var5, int var6, int yFromTopDistance) {
+	private void handleSocialSettingsClicks(int var5, int var6, int yFromTopDistance) {
 		boolean var11 = false;
 
 		// change password
-		yFromTopDistance += 2 * 15 + 5;
-		if (this.mouseX > var6 && this.mouseX < var5 + var6 && this.mouseY > yFromTopDistance - 12 && this.mouseY < yFromTopDistance + 4
+		yFromTopDistance += 2 * ui(15) + ui(5);
+		if (this.mouseX > var6 && this.mouseX < var5 + var6 && this.mouseY > yFromTopDistance - ui(12) && this.mouseY < yFromTopDistance + ui(4)
 			&& mouseButtonClick == 1) {
 			this.panelPasswordChange_Mode = PasswordChangeMode.OLD_PASSWORD;
 			this.inputTextCurrent = "";
@@ -10371,45 +10508,45 @@ public final class mudclient implements Runnable {
 		}
 
 		// change recovery questions
-		yFromTopDistance += 15;
-		if (this.mouseX > var6 && this.mouseX < var5 + var6 && this.mouseY > yFromTopDistance - 12 && this.mouseY < yFromTopDistance + 4
+		yFromTopDistance += ui(15);
+		if (this.mouseX > var6 && this.mouseX < var5 + var6 && this.mouseY > yFromTopDistance - ui(12) && this.mouseY < yFromTopDistance + ui(4)
 			&& mouseButtonClick == 1) {
 			this.packetHandler.getClientStream().newPacket(197);
 			this.packetHandler.getClientStream().finishPacket();
 		}
 
 		// change contact details
-		yFromTopDistance += 15;
-		if (this.mouseX > var6 && this.mouseX < var5 + var6 && this.mouseY > yFromTopDistance - 12 && this.mouseY < yFromTopDistance + 4
+		yFromTopDistance += ui(15);
+		if (this.mouseX > var6 && this.mouseX < var5 + var6 && this.mouseY > yFromTopDistance - ui(12) && this.mouseY < yFromTopDistance + ui(4)
 			&& mouseButtonClick == 1) {
 			this.packetHandler.getClientStream().newPacket(247);
 			this.packetHandler.getClientStream().finishPacket();
 		}
 
 		// privacy divider text
-		yFromTopDistance += 17;
+		yFromTopDistance += ui(17);
 
 		// block chat toggle
-		yFromTopDistance += 15;
-		if (this.mouseX > var6 && this.mouseX < var5 + var6 && this.mouseY > yFromTopDistance - 12
-			&& 4 + yFromTopDistance > this.mouseY && this.mouseButtonClick == 1) {
+		yFromTopDistance += ui(15);
+		if (this.mouseX > var6 && this.mouseX < var5 + var6 && this.mouseY > yFromTopDistance - ui(12)
+			&& ui(4) + yFromTopDistance > this.mouseY && this.mouseButtonClick == 1) {
 			this.settingsBlockChat = ++this.settingsBlockChat %3;
 			var11 = true;
 		}
 
 		// block private toggle
-		yFromTopDistance += 15;
-		if (this.mouseX > var6 && var5 + var6 > this.mouseX && this.mouseY > yFromTopDistance - 12
-			&& yFromTopDistance + 4 > this.mouseY && this.mouseButtonClick == 1) {
+		yFromTopDistance += ui(15);
+		if (this.mouseX > var6 && var5 + var6 > this.mouseX && this.mouseY > yFromTopDistance - ui(12)
+			&& yFromTopDistance + ui(4) > this.mouseY && this.mouseButtonClick == 1) {
 			this.settingsBlockPrivate = ++this.settingsBlockPrivate %3;
 			var11 = true;
 		}
 
 		// Block global friend chat toggle
 		if (S_WANT_GLOBAL_FRIEND && !S_WANT_GLOBAL_CHAT) {
-			yFromTopDistance += 15;
-			if (this.mouseX > var6 && var5 + var6 > this.mouseX && this.mouseY > yFromTopDistance - 12
-				&& yFromTopDistance + 4 > this.mouseY && this.mouseButtonClick == 1) {
+			yFromTopDistance += ui(15);
+			if (this.mouseX > var6 && var5 + var6 > this.mouseX && this.mouseY > yFromTopDistance - ui(12)
+				&& yFromTopDistance + ui(4) > this.mouseY && this.mouseButtonClick == 1) {
 				C_BLOCK_GLOBAL_FRIEND = !C_BLOCK_GLOBAL_FRIEND;
 				this.packetHandler.getClientStream().newPacket(111);
 				this.packetHandler.getClientStream().bufferBits.putByte(41);
@@ -10420,9 +10557,9 @@ public final class mudclient implements Runnable {
 
 		// block global chat toggle
 		if (S_WANT_GLOBAL_CHAT && !S_WANT_GLOBAL_FRIEND) {
-			yFromTopDistance += 15;
-			if (this.mouseX > var6 && var5 + var6 > this.mouseX && this.mouseY > yFromTopDistance - 12
-				&& yFromTopDistance + 4 > this.mouseY && this.mouseButtonClick == 1) {
+			yFromTopDistance += ui(15);
+			if (this.mouseX > var6 && var5 + var6 > this.mouseX && this.mouseY > yFromTopDistance - ui(12)
+				&& yFromTopDistance + ui(4) > this.mouseY && this.mouseButtonClick == 1) {
 				if (this.settingsBlockGlobal >= 4) {
 					this.settingsBlockGlobal = 0;
 				}
@@ -10435,17 +10572,17 @@ public final class mudclient implements Runnable {
 		}
 
 		// block trade toggle
-		yFromTopDistance += 15;
-		if (this.mouseX > var6 && this.mouseX < var6 + var5 && yFromTopDistance - 12 < this.mouseY
-			&& this.mouseY < 4 + yFromTopDistance && this.mouseButtonClick == 1) {
+		yFromTopDistance += ui(15);
+		if (this.mouseX > var6 && this.mouseX < var6 + var5 && yFromTopDistance - ui(12) < this.mouseY
+			&& this.mouseY < ui(4) + yFromTopDistance && this.mouseButtonClick == 1) {
 			this.settingsBlockTrade = ++this.settingsBlockTrade %3;
 			var11 = true;
 		}
 
 		// block duel toggle
-		yFromTopDistance += 15;
+		yFromTopDistance += ui(15);
 		if (wantMembers() && this.mouseX > var6 && this.mouseX < var6 + var5
-			&& yFromTopDistance - 12 < this.mouseY && this.mouseY < yFromTopDistance + 4 && this.mouseButtonClick == 1) {
+			&& yFromTopDistance - ui(12) < this.mouseY && this.mouseY < yFromTopDistance + ui(4) && this.mouseButtonClick == 1) {
 			var11 = true;
 			this.settingsBlockDuel = ++this.settingsBlockDuel %3;
 		}
@@ -10458,9 +10595,9 @@ public final class mudclient implements Runnable {
 
 		// handle online list click
 		if (S_WANT_PLAYER_COMMANDS && !this.insideTutorial) {
-			yFromTopDistance += 25;
+			yFromTopDistance += ui(25);
 			if (this.mouseX > var6 && this.mouseX < var6 + var5
-				&& yFromTopDistance - 18 < this.mouseY && this.mouseY < yFromTopDistance + 7 && this.mouseButtonClick == 1) {
+				&& yFromTopDistance - ui(18) < this.mouseY && this.mouseY < yFromTopDistance + ui(7) && this.mouseButtonClick == 1) {
 				this.sendCommandString("onlinelist");
 			}
 		}
@@ -10468,9 +10605,9 @@ public final class mudclient implements Runnable {
 		// handle leave party click
 		if (S_WANT_PARTIES) {
 			if (party.inParty()) {
-				yFromTopDistance += 14;
+				yFromTopDistance += ui(14);
 				if (this.mouseX > var6 && this.mouseX < var6 + var5
-					&& yFromTopDistance - 5 < this.mouseY && this.mouseY < yFromTopDistance + 10 && this.mouseButtonClick == 1) {
+					&& yFromTopDistance - ui(5) < this.mouseY && this.mouseY < yFromTopDistance + ui(10) && this.mouseButtonClick == 1) {
 					this.sendCommandString("leaveparty");
 				}
 			}
@@ -10478,21 +10615,21 @@ public final class mudclient implements Runnable {
 
 		// skip tutorial button or exit blackhole button
 		if (this.insideTutorial) {
-			yFromTopDistance = 255;
+			yFromTopDistance = ui(255);
 			if (C_CUSTOM_UI)
-				yFromTopDistance = getUITabsY() - 240 + 194;
-			if (this.mouseX > var6 && var5 + var6 > this.mouseX && yFromTopDistance - 12 < this.mouseY
-				&& this.mouseY < yFromTopDistance + 4 && this.mouseButtonClick == 1) {
+				yFromTopDistance = getUITabsY() - ui(240) + ui(194);
+			if (this.mouseX > var6 && var5 + var6 > this.mouseX && yFromTopDistance - ui(12) < this.mouseY
+				&& this.mouseY < yFromTopDistance + ui(4) && this.mouseButtonClick == 1) {
 				this.showItemModX(InputXPrompt.promptSkipTutorial, InputXAction.SKIP_TUTORIAL, false);
 				if (!C_CUSTOM_UI)
 					this.showUiTab = 0;
 			}
 		} else if (this.insideBlackHole) {
-			yFromTopDistance = 255;
+			yFromTopDistance = ui(255);
 			if (C_CUSTOM_UI)
-				yFromTopDistance = getUITabsY() - 240 + 194;
-			if (this.mouseX > var6 && var5 + var6 > this.mouseX && yFromTopDistance - 12 < this.mouseY
-				&& this.mouseY < yFromTopDistance + 4 && this.mouseButtonClick == 1) {
+				yFromTopDistance = getUITabsY() - ui(240) + ui(194);
+			if (this.mouseX > var6 && var5 + var6 > this.mouseX && yFromTopDistance - ui(12) < this.mouseY
+				&& this.mouseY < yFromTopDistance + ui(4) && this.mouseButtonClick == 1) {
 				this.showItemModX(InputXPrompt.promptExitBlackHole, InputXAction.EXIT_BLACK_HOLE, false);
 				if (!C_CUSTOM_UI)
 					this.showUiTab = 0;
@@ -10500,17 +10637,17 @@ public final class mudclient implements Runnable {
 		}
 
 		// logout menu option
-		yFromTopDistance = 290;
+		yFromTopDistance = ui(290);
 		if (C_CUSTOM_UI)
-			yFromTopDistance = getUITabsY() - 240 + 229;
-		if (this.mouseX > var6 && var5 + var6 > this.mouseX && this.mouseY > yFromTopDistance - 12
-			&& this.mouseY < yFromTopDistance + 4 && this.mouseButtonClick == 1) {
+			yFromTopDistance = getUITabsY() - ui(240) + ui(229);
+		if (this.mouseX > var6 && var5 + var6 > this.mouseX && this.mouseY > yFromTopDistance - ui(12)
+			&& this.mouseY < yFromTopDistance + ui(4) && this.mouseButtonClick == 1) {
 			this.sendLogout(0);
 		}
 	}
 
 	// android menu tab
-	private void handleAndroidSettingsClicks(short var5, int var6, int yFromTopDistance) {
+	private void handleAndroidSettingsClicks(int var5, int var6, int yFromTopDistance) {
 
 		// status bar control
 		if (this.panelSettings.getControlSelectedListIndex(this.controlSettingPanel) == 0 && this.mouseButtonClick == 1) {
@@ -10601,73 +10738,73 @@ public final class mudclient implements Runnable {
 		}
 
 		// logout menu option
-		yFromTopDistance += 223;
-		if (this.mouseX > var6 && var5 + var6 > this.mouseX && this.mouseY > yFromTopDistance - 12
-			&& this.mouseY < yFromTopDistance + 4 && this.mouseButtonClick == 1) {
+		yFromTopDistance += ui(223);
+		if (this.mouseX > var6 && var5 + var6 > this.mouseX && this.mouseY > yFromTopDistance - ui(12)
+			&& this.mouseY < yFromTopDistance + ui(4) && this.mouseButtonClick == 1) {
 			this.sendLogout(0);
 		}
 	}
 
 	// authentic settings / social tab
-	private void drawAuthenticSettingsOptions(int baseX, int var4, short boxWidth, int x, int y, int chosenColor, int unchosenColor) {
-		this.getSurface().drawString("Game options - click to toggle", 3 + baseX, y, 0, 1);
+	private void drawAuthenticSettingsOptions(int baseX, int var4, int boxWidth, int x, int y, int chosenColor, int unchosenColor) {
+		this.getSurface().drawString("Game options - click to toggle", ui(3) + baseX, y, 0, 1);
 
 		// camera angle mode - byte index 0
-		y += 15;
+		y += ui(15);
 		if (this.optionCameraModeAuto) {
-			this.getSurface().drawString("@whi@Camera angle mode - @gre@Auto", 3 + baseX, y, 0, 1);
+			this.getSurface().drawString("@whi@Camera angle mode - @gre@Auto", ui(3) + baseX, y, 0, 1);
 		} else {
-			this.getSurface().drawString("@whi@Camera angle mode - @red@Manual", 3 + baseX, y, 0, 1);
+			this.getSurface().drawString("@whi@Camera angle mode - @red@Manual", ui(3) + baseX, y, 0, 1);
 		}
 
 		// mouse buttons - byte index 1
-		y += 15;
+		y += ui(15);
 		if (this.optionMouseButtonOne) {
-			this.getSurface().drawString("@whi@Mouse buttons - @red@One", 3 + baseX, y, 0, 1);
+			this.getSurface().drawString("@whi@Mouse buttons - @red@One", ui(3) + baseX, y, 0, 1);
 		} else {
-			this.getSurface().drawString("@whi@Mouse buttons - @gre@Two", 3 + baseX, y, 0, 1);
+			this.getSurface().drawString("@whi@Mouse buttons - @gre@Two", ui(3) + baseX, y, 0, 1);
 		}
 
 		// sound effects - byte index 2
-		y += 15;
+		y += ui(15);
 		if (wantMembers()) {
 			if (optionSoundDisabled) {
-				this.getSurface().drawString("@whi@Sound effects - @red@off", 3 + baseX, y, 0, 1);
+				this.getSurface().drawString("@whi@Sound effects - @red@off", ui(3) + baseX, y, 0, 1);
 			} else {
-				this.getSurface().drawString("@whi@Sound effects - @gre@on", 3 + baseX, y, 0, 1);
+				this.getSurface().drawString("@whi@Sound effects - @gre@on", ui(3) + baseX, y, 0, 1);
 			}
 		}
 
 		// security settings section
-		y += 15;
-		y += 5;
-		this.getSurface().drawString("Security settings", 3 + baseX, y, 0, 1);
+		y += ui(15);
+		y += ui(5);
+		this.getSurface().drawString("Security settings", ui(3) + baseX, y, 0, 1);
 
 		// change password
-		y += 15;
+		y += ui(15);
 		int securityColor = 0xFFFFFF;
-		if (this.mouseX > x && this.mouseX < x + boxWidth && this.mouseY > y - 12
-			&& this.mouseY < y + 4) {
+		if (this.mouseX > x && this.mouseX < x + boxWidth && this.mouseY > y - ui(12)
+			&& this.mouseY < y + ui(4)) {
 			securityColor = 0xFFFF00;
 		}
-		this.getSurface().drawString("Change password", 3 + baseX, y, securityColor, 1);
+		this.getSurface().drawString("Change password", ui(3) + baseX, y, securityColor, 1);
 
 		// change recovery questions
-		y += 15;
+		y += ui(15);
 		securityColor = 0xFFFFFF;
-		if (this.mouseX > x && this.mouseX < x + boxWidth && this.mouseY > y - 12
-			&& this.mouseY < y + 4) {
+		if (this.mouseX > x && this.mouseX < x + boxWidth && this.mouseY > y - ui(12)
+			&& this.mouseY < y + ui(4)) {
 			securityColor = 0xFFFF00;
 		}
-		this.getSurface().drawString("Change recovery questions", 3 + baseX, y, securityColor, 1);
+		this.getSurface().drawString("Change recovery questions", ui(3) + baseX, y, securityColor, 1);
 
 		// change contact details
-		y += 15;
+		y += ui(15);
 		securityColor = 0xFFFFFF;
-		if (this.mouseX > x && this.mouseX < x + boxWidth && this.mouseY > y - 12 && this.mouseY < y + 4) {
+		if (this.mouseX > x && this.mouseX < x + boxWidth && this.mouseY > y - ui(12) && this.mouseY < y + ui(4)) {
 			securityColor = 0xFFFF00;
 		}
-		this.getSurface().drawString("Change contact details", 3 + baseX, y, securityColor, 1);
+		this.getSurface().drawString("Change contact details", ui(3) + baseX, y, securityColor, 1);
 
 		/*
 		// this section is left for reference only
@@ -10682,91 +10819,91 @@ public final class mudclient implements Runnable {
 		*/
 
 		// privacy setting text
-		y += 20;
-		this.getSurface().drawString("Privacy settings. May be applied to all", 3 + baseX, y, 0, 1);
-		y += 15;
-		this.getSurface().drawString("people including those on your friends list", 3 + baseX, y, 0, 1);
+		y += ui(20);
+		this.getSurface().drawString("Privacy settings. May be applied to all", ui(3) + baseX, y, 0, 1);
+		y += ui(15);
+		this.getSurface().drawString("people including those on your friends list", ui(3) + baseX, y, 0, 1);
 
 		// block chat toggle
-		y += 15;
+		y += ui(15);
 		if (this.settingsBlockChat == 2) {
-			this.getSurface().drawString("Allow chat messages: @red@<off>", 3 + baseX, y, 0xFFFFFF, 1);
+			this.getSurface().drawString("Allow chat messages: @red@<off>", ui(3) + baseX, y, 0xFFFFFF, 1);
 		} else if (this.settingsBlockChat == 1) {
-			this.getSurface().drawString("Allow chat messages: @yel@<friends>", 3 + baseX, y, 0xFFFFFF, 1);
+			this.getSurface().drawString("Allow chat messages: @yel@<friends>", ui(3) + baseX, y, 0xFFFFFF, 1);
 		} else {
-			this.getSurface().drawString("Allow chat messages: @gre@<on>", 3 + baseX, y, 0xFFFFFF, 1);
+			this.getSurface().drawString("Allow chat messages: @gre@<on>", ui(3) + baseX, y, 0xFFFFFF, 1);
 		}
 
 		// block private toggle
-		y += 15;
+		y += ui(15);
 		if (this.settingsBlockPrivate == 0) {
-			this.getSurface().drawString("Allow private messages: @gre@<on>", 3 + baseX, y, 0xFFFFFF, 1);
+			this.getSurface().drawString("Allow private messages: @gre@<on>", ui(3) + baseX, y, 0xFFFFFF, 1);
 		} else if (this.settingsBlockPrivate == 1) {
-			this.getSurface().drawString("Allow private messages: @yel@<friends>", 3 + baseX, y, 0xFFFFFF, 1);
+			this.getSurface().drawString("Allow private messages: @yel@<friends>", ui(3) + baseX, y, 0xFFFFFF, 1);
 		} else {
-			this.getSurface().drawString("Allow private messages: @red@<off>", baseX + 3, y, 0xFFFFFF, 1);
+			this.getSurface().drawString("Allow private messages: @red@<off>", baseX + ui(3), y, 0xFFFFFF, 1);
 		}
 
 		// block trade toggle
-		y += 15;
+		y += ui(15);
 		if (this.settingsBlockTrade == 2) {
-			this.getSurface().drawString("Allow trade requests: @red@<off>", baseX + 3, y, 0xFFFFFF, 1);
+			this.getSurface().drawString("Allow trade requests: @red@<off>", baseX + ui(3), y, 0xFFFFFF, 1);
 		} else if (this.settingsBlockTrade == 1) {
-			this.getSurface().drawString("Allow trade requests: @yel@<friends>", baseX + 3, y, 0xFFFFFF, 1);
+			this.getSurface().drawString("Allow trade requests: @yel@<friends>", baseX + ui(3), y, 0xFFFFFF, 1);
 		} else {
-			this.getSurface().drawString("Allow trade requests: @gre@<on>", 3 + baseX, y, 0xFFFFFF, 1);
+			this.getSurface().drawString("Allow trade requests: @gre@<on>", ui(3) + baseX, y, 0xFFFFFF, 1);
 		}
 
 		// block duel toggle
-		y += 15;
+		y += ui(15);
 		if (wantMembers()) {
 			if (this.settingsBlockDuel == 2) {
-				this.getSurface().drawString("Allow duel requests: @red@<off>", baseX + 3, y, 0xFFFFFF, 1);
+				this.getSurface().drawString("Allow duel requests: @red@<off>", baseX + ui(3), y, 0xFFFFFF, 1);
 			} else if (this.settingsBlockDuel == 1) {
-				this.getSurface().drawString("Allow duel requests: @yel@<friends>", baseX + 3, y, 0xFFFFFF, 1);
+				this.getSurface().drawString("Allow duel requests: @yel@<friends>", baseX + ui(3), y, 0xFFFFFF, 1);
 			} else {
-				this.getSurface().drawString("Allow duel requests: @gre@<on>", 3 + baseX, y, 0xFFFFFF, 1);
+				this.getSurface().drawString("Allow duel requests: @gre@<on>", ui(3) + baseX, y, 0xFFFFFF, 1);
 			}
 		}
 
 		// skip tutorial button or exit blackhole button
 		int logoutColor = 0xFFFFFF;
 		if (this.insideTutorial) {
-			y += 20;
-			if (x < this.mouseX && this.mouseX < x + boxWidth && y - 12 < this.mouseY
-				&& this.mouseY < 4 + y) {
+			y += ui(20);
+			if (x < this.mouseX && this.mouseX < x + boxWidth && y - ui(12) < this.mouseY
+				&& this.mouseY < ui(4) + y) {
 				logoutColor = 0xFFFF00;
 			}
 			this.getSurface().drawString("Skip the tutorial", x, y, logoutColor, 1);
 		} else if (this.insideBlackHole) {
-			y += 20;
-			if (x < this.mouseX && this.mouseX < x + boxWidth && y - 12 < this.mouseY
-				&& this.mouseY < 4 + y) {
+			y += ui(20);
+			if (x < this.mouseX && this.mouseX < x + boxWidth && y - ui(12) < this.mouseY
+				&& this.mouseY < ui(4) + y) {
 				logoutColor = 0xFFFF00;
 			}
 			this.getSurface().drawString("Exit the black hole", x, y, logoutColor, 1);
 		}
 
 		// logout section text
-		y += 20;
+		y += ui(20);
 		this.getSurface().drawString("Always logout when you finish", x, y, 0, 1);
 
 		// logout menu option
-		y += 15;
+		y += ui(15);
 		logoutColor = 0xFFFFFF;
-		if (x < this.mouseX && x + boxWidth > this.mouseX && y - 12 < this.mouseY && this.mouseY < 4 + y) {
+		if (x < this.mouseX && x + boxWidth > this.mouseX && y - ui(12) < this.mouseY && this.mouseY < ui(4) + y) {
 			logoutColor = 0xFFFF00;
 		}
-		this.getSurface().drawString("Click here to logout", baseX + 3, y, logoutColor, 1);
+		this.getSurface().drawString("Click here to logout", baseX + ui(3), y, logoutColor, 1);
 	}
 
 	// authentic settings/social tab version
-	private void handleAuthenticSettingsClicks(short var5, int var6, int yFromTopDistance) {
+	private void handleAuthenticSettingsClicks(int var5, int var6, int yFromTopDistance) {
 
 		// camera mode - byte index 0
-		yFromTopDistance += 15;
-		if (this.mouseX > var6 && this.mouseX < var5 + var6 && this.mouseY > yFromTopDistance - 12
-			&& 4 + yFromTopDistance > this.mouseY && this.mouseButtonClick == 1) {
+		yFromTopDistance += ui(15);
+		if (this.mouseX > var6 && this.mouseX < var5 + var6 && this.mouseY > yFromTopDistance - ui(12)
+			&& ui(4) + yFromTopDistance > this.mouseY && this.mouseButtonClick == 1) {
 			this.optionCameraModeAuto = !this.optionCameraModeAuto;
 			this.packetHandler.getClientStream().newPacket(111);
 			this.packetHandler.getClientStream().bufferBits.putByte(0);
@@ -10775,9 +10912,9 @@ public final class mudclient implements Runnable {
 		}
 
 		// one or two mouse button(s) - byte index 1
-		yFromTopDistance += 15;
-		if (this.mouseX > var6 && this.mouseX < var5 + var6 && this.mouseY > yFromTopDistance - 12
-			&& 4 + yFromTopDistance > this.mouseY && this.mouseButtonClick == 1) {
+		yFromTopDistance += ui(15);
+		if (this.mouseX > var6 && this.mouseX < var5 + var6 && this.mouseY > yFromTopDistance - ui(12)
+			&& ui(4) + yFromTopDistance > this.mouseY && this.mouseButtonClick == 1) {
 			this.optionMouseButtonOne = !this.optionMouseButtonOne;
 			this.packetHandler.getClientStream().newPacket(111);
 			this.packetHandler.getClientStream().bufferBits.putByte(1);
@@ -10787,9 +10924,9 @@ public final class mudclient implements Runnable {
 		}
 
 		// sound on/off - byte index 2
-		yFromTopDistance += 15;
-		if (wantMembers() && this.mouseX > var6 && this.mouseX < var5 + var6 && this.mouseY > yFromTopDistance - 12
-			&& 4 + yFromTopDistance > this.mouseY && this.mouseButtonClick == 1) {
+		yFromTopDistance += ui(15);
+		if (wantMembers() && this.mouseX > var6 && this.mouseX < var5 + var6 && this.mouseY > yFromTopDistance - ui(12)
+			&& ui(4) + yFromTopDistance > this.mouseY && this.mouseButtonClick == 1) {
 			optionSoundDisabled = !optionSoundDisabled;
 			this.packetHandler.getClientStream().newPacket(111);
 			this.packetHandler.getClientStream().bufferBits.putByte(2);
@@ -10798,8 +10935,8 @@ public final class mudclient implements Runnable {
 		}
 
 		// change password
-		yFromTopDistance += 2 * 15 + 5;
-		if (this.mouseX > var6 && this.mouseX < var5 + var6 && this.mouseY > yFromTopDistance - 12 && this.mouseY < yFromTopDistance + 4
+		yFromTopDistance += 2 * ui(15) + ui(5);
+		if (this.mouseX > var6 && this.mouseX < var5 + var6 && this.mouseY > yFromTopDistance - ui(12) && this.mouseY < yFromTopDistance + ui(4)
 			&& mouseButtonClick == 1) {
 			this.panelPasswordChange_Mode = PasswordChangeMode.OLD_PASSWORD;
 			this.inputTextCurrent = "";
@@ -10807,58 +10944,58 @@ public final class mudclient implements Runnable {
 		}
 
 		// change recovery questions
-		yFromTopDistance += 15;
-		if (this.mouseX > var6 && this.mouseX < var5 + var6 && this.mouseY > yFromTopDistance - 12 && this.mouseY < yFromTopDistance + 4
+		yFromTopDistance += ui(15);
+		if (this.mouseX > var6 && this.mouseX < var5 + var6 && this.mouseY > yFromTopDistance - ui(12) && this.mouseY < yFromTopDistance + ui(4)
 			&& mouseButtonClick == 1) {
 			this.packetHandler.getClientStream().newPacket(197);
 			this.packetHandler.getClientStream().finishPacket();
 		}
 
 		// change contact details
-		yFromTopDistance += 15;
-		if (this.mouseX > var6 && this.mouseX < var5 + var6 && this.mouseY > yFromTopDistance - 12 && this.mouseY < yFromTopDistance + 4
+		yFromTopDistance += ui(15);
+		if (this.mouseX > var6 && this.mouseX < var5 + var6 && this.mouseY > yFromTopDistance - ui(12) && this.mouseY < yFromTopDistance + ui(4)
 			&& mouseButtonClick == 1) {
 			this.packetHandler.getClientStream().newPacket(247);
 			this.packetHandler.getClientStream().finishPacket();
 		}
 
 		// divider
-		yFromTopDistance += 3 * 15 + 5;
+		yFromTopDistance += 3 * ui(15) + ui(5);
 		boolean var11 = false;
 
 		// block chat toggle
-		if (this.mouseX > var6 && this.mouseX < var5 + var6 && this.mouseY > yFromTopDistance - 12
-			&& 4 + yFromTopDistance > this.mouseY && this.mouseButtonClick == 1) {
+		if (this.mouseX > var6 && this.mouseX < var5 + var6 && this.mouseY > yFromTopDistance - ui(12)
+			&& ui(4) + yFromTopDistance > this.mouseY && this.mouseButtonClick == 1) {
 			this.settingsBlockChat = ++this.settingsBlockChat %3;
 			var11 = true;
 		}
 
 		// plock private toggle
-		yFromTopDistance += 15;
-		if (this.mouseX > var6 && var5 + var6 > this.mouseX && this.mouseY > yFromTopDistance - 12
-			&& yFromTopDistance + 4 > this.mouseY && this.mouseButtonClick == 1) {
+		yFromTopDistance += ui(15);
+		if (this.mouseX > var6 && var5 + var6 > this.mouseX && this.mouseY > yFromTopDistance - ui(12)
+			&& yFromTopDistance + ui(4) > this.mouseY && this.mouseButtonClick == 1) {
 			this.settingsBlockPrivate = ++this.settingsBlockPrivate %3;
 			var11 = true;
 		}
 
 		// block trade toggle
-		yFromTopDistance += 15;
-		if (this.mouseX > var6 && this.mouseX < var6 + var5 && yFromTopDistance - 12 < this.mouseY
-			&& this.mouseY < 4 + yFromTopDistance && this.mouseButtonClick == 1) {
+		yFromTopDistance += ui(15);
+		if (this.mouseX > var6 && this.mouseX < var6 + var5 && yFromTopDistance - ui(12) < this.mouseY
+			&& this.mouseY < ui(4) + yFromTopDistance && this.mouseButtonClick == 1) {
 			this.settingsBlockTrade = ++this.settingsBlockTrade %3;
 			var11 = true;
 		}
 
 		// block duel toggle
-		yFromTopDistance += 15;
+		yFromTopDistance += ui(15);
 		if (wantMembers() && this.mouseX > var6 && this.mouseX < var6 + var5
-			&& yFromTopDistance - 12 < this.mouseY && this.mouseY < yFromTopDistance + 4 && this.mouseButtonClick == 1) {
+			&& yFromTopDistance - ui(12) < this.mouseY && this.mouseY < yFromTopDistance + ui(4) && this.mouseButtonClick == 1) {
 			var11 = true;
 			this.settingsBlockDuel = ++this.settingsBlockDuel %3;
 		}
 
 		// adjusts the menu slightly to accommodate the skip link below
-		yFromTopDistance += 20;
+		yFromTopDistance += ui(20);
 		if (var11) {
 			this.createPacket64(this.settingsBlockChat, this.settingsBlockPrivate,
 				this.settingsBlockTrade, this.settingsBlockDuel);
@@ -10866,27 +11003,27 @@ public final class mudclient implements Runnable {
 
 		// skip tutorial button or exit blackhole button
 		if (this.insideTutorial) { // tutorial menu option
-			if (this.mouseX > var6 && var5 + var6 > this.mouseX && yFromTopDistance - 12 < this.mouseY
-				&& this.mouseY < yFromTopDistance + 4 && this.mouseButtonClick == 1) {
+			if (this.mouseX > var6 && var5 + var6 > this.mouseX && yFromTopDistance - ui(12) < this.mouseY
+				&& this.mouseY < yFromTopDistance + ui(4) && this.mouseButtonClick == 1) {
 				this.showItemModX(InputXPrompt.promptSkipTutorial, InputXAction.SKIP_TUTORIAL, false);
 				if (!C_CUSTOM_UI)
 					this.showUiTab = 0;
 			}
-			yFromTopDistance += 20;
+			yFromTopDistance += ui(20);
 		} else if (this.insideBlackHole) { // blackhole menu option
-			if (this.mouseX > var6 && var5 + var6 > this.mouseX && yFromTopDistance - 12 < this.mouseY
-				&& this.mouseY < yFromTopDistance + 4 && this.mouseButtonClick == 1) {
+			if (this.mouseX > var6 && var5 + var6 > this.mouseX && yFromTopDistance - ui(12) < this.mouseY
+				&& this.mouseY < yFromTopDistance + ui(4) && this.mouseButtonClick == 1) {
 				this.showItemModX(InputXPrompt.promptExitBlackHole, InputXAction.EXIT_BLACK_HOLE, false);
 				if (!C_CUSTOM_UI)
 					this.showUiTab = 0;
 			}
-			yFromTopDistance += 20;
+			yFromTopDistance += ui(20);
 		}
 
 		// logout menu option
-		yFromTopDistance += 15;
-		if (this.mouseX > var6 && var5 + var6 > this.mouseX && this.mouseY > yFromTopDistance - 12
-			&& this.mouseY < yFromTopDistance + 4 && this.mouseButtonClick == 1) {
+		yFromTopDistance += ui(15);
+		if (this.mouseX > var6 && var5 + var6 > this.mouseX && this.mouseY > yFromTopDistance - ui(12)
+			&& this.mouseY < yFromTopDistance + ui(4) && this.mouseButtonClick == 1) {
 			this.sendLogout(0);
 		}
 	}
@@ -10926,20 +11063,20 @@ public final class mudclient implements Runnable {
 
 		try {
 
-			int x = this.surface.width2 - 199;
-			int y = 36;
+			int x = this.surface.width2 - ui(199);
+			int y = ui(36);
 			if (!C_CUSTOM_UI)
-				this.getSurface().drawSprite(spriteSelect(GUIPARTS.SKILLSTAB.getDef()), x - 49, 3);
+				this.getSurface().drawSprite(spriteSelect(GUIPARTS.SKILLSTAB.getDef()), x - ui(49), ui(3));
 			if (C_CUSTOM_UI)
-				y = maxY - 287;
-			short width = 196;
-			short height;
+				y = maxY - ui(287);
+			int width = ui(196);
+			int height;
 			if (S_WANT_EXP_INFO)
-				height = 275;
+				height = ui(275);
 			else
-				height = 262;
+				height = ui(262);
 			if (Config.S_WANT_OPENPK_POINTS) {
-				height = 186;
+				height = ui(186);
 			}
 			int var8;
 			int yFromTopDistance = var8 = GenUtil.buildColor(160, 160, 160);
@@ -10949,22 +11086,22 @@ public final class mudclient implements Runnable {
 				yFromTopDistance = GenUtil.buildColor(220, 220, 220);
 			}
 
-			this.surface.drawBoxAlpha(x, y, width / 2, 24, yFromTopDistance, 128);
-			this.surface.drawBoxAlpha(x + width / 2, y, width / 2, 24, var8, 128);
-			this.surface.drawBoxAlpha(x, 24 + y, width, height - 12, GenUtil.buildColor(220, 220, 220), 128);
-			this.surface.drawLineHoriz(x, y + 24, width, 0);
-			this.surface.drawLineVert(x + width / 2, y, 0, 24);
-			this.surface.drawColoredStringCentered(x + width / 4, "Stats", 0, 0, 4, y + 16);
-			this.surface.drawColoredStringCentered(x + width / 4 + width / 2, "Quests", 0, 0, 4, y + 16);
+			this.surface.drawBoxAlpha(x, y, width / 2, ui(24), yFromTopDistance, 210);
+			this.surface.drawBoxAlpha(x + width / 2, y, width / 2, ui(24), var8, 210);
+			this.surface.drawBoxAlpha(x, ui(24) + y, width, height - ui(12), GenUtil.buildColor(220, 220, 220), 210);
+			this.surface.drawLineHoriz(x, y + ui(24), width, 0);
+			this.surface.drawLineVert(x + width / 2, y, 0, ui(24));
+			this.surface.drawColoredStringCentered(x + width / 4, "Stats", 0, 0, 4, y + ui(16));
+			this.surface.drawColoredStringCentered(x + width / 4 + width / 2, "Quests", 0, 0, 4, y + ui(16));
 			int heightMargin;
 
 			// stats menu tab
 			if (this.uiTabPlayerInfoSubTab == 0) {
-				heightMargin = 72;
+				heightMargin = ui(72);
 				if (C_CUSTOM_UI)
-					heightMargin = y + 36;
-				int yOffset = heightMargin + 13;
-				int xOffset = x + 5;
+					heightMargin = y + ui(36);
+				int yOffset = heightMargin + ui(13);
+				int xOffset = x + ui(5);
 				int textColour = 0xFFFFFF, textColourHovered = 0xFF0000, textColourHeading = 0xFFFF00;
 				int currentlyHoveredSkill = -1;
 				long totalXp = 0;
@@ -10975,10 +11112,10 @@ public final class mudclient implements Runnable {
 				this.getSurface().drawString("Skills", xOffset, heightMargin, textColourHeading, 3);
 
 				//Determine if the mouse is hovering over a skill
-				if (this.mouseX >= xOffset && this.mouseX <= x + 196) {
-					if (this.mouseY >= heightMargin - 13 && this.mouseY <= (heightMargin + 13 * leftColLength) - 2) {
-						int xthing = this.mouseX > (xOffset + width / 2 - 10) ? 1 : 0;
-						int ything = (int) Math.floor((double) (this.mouseY - heightMargin + 13) / 13);
+				if (this.mouseX >= xOffset && this.mouseX <= x + ui(196)) {
+					if (this.mouseY >= heightMargin - ui(13) && this.mouseY <= (heightMargin + ui(13) * leftColLength) - ui(2)) {
+						int xthing = this.mouseX > (xOffset + width / 2 - ui(10)) ? 1 : 0;
+						int ything = (int) Math.floor((double) (this.mouseY - heightMargin + ui(13)) / ui(13));
 						currentlyHoveredSkill = (leftColLength + 1) * xthing + ything - 1;
 						if (!(currentlyHoveredSkill >= 0 && currentlyHoveredSkill <= this.getSkillNames().length - 1)) {
 							currentlyHoveredSkill = -1;
@@ -11030,21 +11167,21 @@ public final class mudclient implements Runnable {
 					this.getSurface().drawString(this.getSkillNames()[currSkill] + ":@yel@" + this.playerStatCurrent[i]
 						+ "/" + this.playerStatBase[i], xOffset, yOffset, currentlyHoveredSkill == i ? textColourHovered : textColour, 1);
 
-					yOffset += 13;
+					yOffset += ui(13);
 					i++;
 
 					if (i == leftColLength) {
 						//Here we give an extra 10 pixels to the X offset so stats don't overlap.
 						if (Config.S_WANT_OPENPK_POINTS) {
-							xOffset += 10;
+							xOffset += ui(10);
 						}
-						xOffset += width / 2 - 10;
+						xOffset += width / 2 - ui(10);
 						yOffset = heightMargin;
 					}
 				}
 
 				if (leftColLength != rightColLength) {
-					xOffset = x + 5;
+					xOffset = x + ui(5);
 				}
 
 				if (!Config.S_WANT_OPENPK_POINTS) {
@@ -11052,38 +11189,38 @@ public final class mudclient implements Runnable {
 				}
 
 				if (Config.S_WANT_FATIGUE) {
-					if (xOffset == x + 5) {
-						xOffset += width / 2 - 10;
+					if (xOffset == x + ui(5)) {
+						xOffset += width / 2 - ui(10);
 					} else {
-						yOffset += 13;
-						xOffset = x + 5;
+						yOffset += ui(13);
+						xOffset = x + ui(5);
 					}
 					this.getSurface().drawString("Fatigue: @yel@" + this.statFatigue + "%", xOffset, yOffset,
 						textColour, 1);
 				}
 
-				yOffset += (Config.S_WANT_OPENPK_POINTS ? 10 : 20);
-				this.getSurface().drawString("Equipment Status", 5 + x, yOffset, textColourHeading, 3);
-				yOffset += 13;
+				yOffset += (Config.S_WANT_OPENPK_POINTS ? ui(10) : ui(20));
+				this.getSurface().drawString("Equipment Status", ui(5) + x, yOffset, textColourHeading, 3);
+				yOffset += ui(13);
 
 				//Draw the equipment bonuses
 				for (currSkill = 0; currSkill < 3; ++currSkill) {
 					this.getSurface().drawString(this.equipmentStatNames[currSkill] + ":@yel@" + this.playerStatEquipment[currSkill],
-						5 + x, yOffset, textColour, 1);
+						ui(5) + x, yOffset, textColour, 1);
 					if (2 > currSkill) {
 						this.getSurface().drawString(
 							this.equipmentStatNames[currSkill + 3] + ":@yel@" + this.playerStatEquipment[3 + currSkill],
-							width / 2 + x + 25, yOffset, 0xFFFFFF, 1);
+							width / 2 + x + ui(25), yOffset, 0xFFFFFF, 1);
 					}
-					yOffset += 13;
+					yOffset += ui(13);
 				}
-				yOffset -= 2;
-				this.getSurface().drawLineHoriz(x, yOffset - 7, width, 0);
+				yOffset -= ui(2);
+				this.getSurface().drawLineHoriz(x, yOffset - ui(7), width, 0);
 
-				heightMargin = yOffset + 8;
+				heightMargin = yOffset + ui(8);
 				if (currentlyHoveredSkill == -1) {
-					this.getSurface().drawString("Overall levels", x + 5, heightMargin, textColourHeading, 1);
-					heightMargin += 12;
+					this.getSurface().drawString("Overall levels", x + ui(5), heightMargin, textColourHeading, 1);
+					heightMargin += ui(12);
 					int currSkillTotal = 0;
 					totalXp = 0;
 
@@ -11093,28 +11230,28 @@ public final class mudclient implements Runnable {
 					}
 
 					if (S_WANT_EXP_INFO) {
-						this.getSurface().drawString("Total xp: " + totalXp, 5 + x, heightMargin, textColour, 1);
-						heightMargin += 12;
+						this.getSurface().drawString("Total xp: " + totalXp, ui(5) + x, heightMargin, textColour, 1);
+						heightMargin += ui(12);
 					}
-					this.getSurface().drawString("Skill total: " + currSkillTotal, 5 + x, heightMargin, textColour, 1);
-					heightMargin += 12;
-					this.getSurface().drawString("Combat level: " + this.localPlayer.level, 5 + x, heightMargin, textColour, 1);
-					heightMargin += 12;
+					this.getSurface().drawString("Skill total: " + currSkillTotal, ui(5) + x, heightMargin, textColour, 1);
+					heightMargin += ui(12);
+					this.getSurface().drawString("Combat level: " + this.localPlayer.level, ui(5) + x, heightMargin, textColour, 1);
+					heightMargin += ui(12);
 
 					if (Config.S_WANT_OPENPK_POINTS) {
 						//TODO: we'll need to reposition this when we move to the Mini Stats menu for OpenPK.
-						this.getSurface().drawString("Points: " + this.openPkPoints, 5 + x, heightMargin, textColour, 1);
+						this.getSurface().drawString("Points: " + this.openPkPoints, ui(5) + x, heightMargin, textColour, 1);
 					}
 
 					//exp freeze notification
 					if (Config.S_FEATURES_SLEEP && !Config.S_WANT_FATIGUE)
 						if (experienceOff)
-							this.getSurface().drawString(Config.S_WANT_OPENPK_POINTS ? "Points gain off" : "Exp gain off", Config.S_WANT_OPENPK_POINTS ? 110 + x : 122 + x, yOffset + 8, 0x00FF0000, 1);
+							this.getSurface().drawString(Config.S_WANT_OPENPK_POINTS ? "Points gain off" : "Exp gain off", Config.S_WANT_OPENPK_POINTS ? ui(110) + x : ui(122) + x, yOffset + ui(8), 0x00FF0000, 1);
 						else
-							this.getSurface().drawString(Config.S_WANT_OPENPK_POINTS ? "Points gain on" : "Exp gain on", Config.S_WANT_OPENPK_POINTS ? 112 + x : 124 + x, yOffset + 8, 0x0000FF00, 1);
+							this.getSurface().drawString(Config.S_WANT_OPENPK_POINTS ? "Points gain on" : "Exp gain on", Config.S_WANT_OPENPK_POINTS ? ui(112) + x : ui(124) + x, yOffset + ui(8), 0x0000FF00, 1);
 				} else { //if there is a skill hovered over
-					this.getSurface().drawString(skillNameLong[currentlyHoveredSkill] + " skill", 5 + x, heightMargin, textColourHeading, 1);
-					heightMargin += 12;
+					this.getSurface().drawString(skillNameLong[currentlyHoveredSkill] + " skill", ui(5) + x, heightMargin, textColourHeading, 1);
+					heightMargin += ui(12);
 					int nextLevelExp = this.experienceArray[0];
 
 					for (int currLevel = 0; currLevel < S_PLAYER_LEVEL_LIMIT - 1; ++currLevel) {
@@ -11123,13 +11260,13 @@ public final class mudclient implements Runnable {
 						}
 					}
 
-					this.getSurface().drawString("Total xp: " + this.playerExperience[currentlyHoveredSkill], 5 + x, heightMargin, textColour,
+					this.getSurface().drawString("Total xp: " + this.playerExperience[currentlyHoveredSkill], ui(5) + x, heightMargin, textColour,
 						1);
-					heightMargin += 12;
-					this.getSurface().drawString("Next level at: " + nextLevelExp, 5 + x, heightMargin, textColour, 1);
+					heightMargin += ui(12);
+					this.getSurface().drawString("Next level at: " + nextLevelExp, ui(5) + x, heightMargin, textColour, 1);
 					if (S_WANT_EXP_INFO) {
-						heightMargin += 12;
-						this.getSurface().drawString("Xp to next level: " + (nextLevelExp - this.playerExperience[currentlyHoveredSkill]), 5 + x, heightMargin, textColour, 1);
+						heightMargin += ui(12);
+						this.getSurface().drawString("Xp to next level: " + (nextLevelExp - this.playerExperience[currentlyHoveredSkill]), ui(5) + x, heightMargin, textColour, 1);
 					}
 				}
 			}
@@ -11153,9 +11290,9 @@ public final class mudclient implements Runnable {
 
 				int position = this.panelQuestInfo.getControlSelectedListIndex(this.controlQuestInfoPanel) - 1;
 				if (S_WANT_QUEST_MENUS && this.mouseButtonClick == 1 && position >= 0
-					&& this.getMouseX() > x && this.getMouseY() > y + 36
+					&& this.getMouseX() > x && this.getMouseY() > y + ui(36)
 					&& this.getMouseX() < x + this.getSurface().stringWidth(1, this.questNames[position])
-					&& this.getMouseY() < height + y + 8) {
+					&& this.getMouseY() < height + y + ui(8)) {
 					setQuestGuideChosen(this.questNames[position]);
 					setQuestGuideProgress(this.questStages[position]);
 					setQuestGuideStartWho(position);
@@ -11172,21 +11309,21 @@ public final class mudclient implements Runnable {
 			}
 
 			if (var1) {
-				int mouseYOffset = this.mouseY - 36;
+				int mouseYOffset = this.mouseY - ui(36);
 				if (C_CUSTOM_UI)
 					mouseYOffset = this.mouseY - y; // relative Y
-				x = -this.getSurface().width2 - (-199 - this.mouseX);
+				x = -this.getSurface().width2 - (-ui(199) - this.mouseX);
 				if (x >= 0 && mouseYOffset >= 0 && x < width && mouseYOffset < height) {
 					if (this.uiTabPlayerInfoSubTab == 1) {
 						if (C_CUSTOM_UI)
 							this.panelQuestInfo.handleMouse(this.getMouseX(), this.getMouseY(), this.getMouseButtonDown(), this.getLastMouseDown());
 						else
-							this.panelQuestInfo.handleMouse(x + this.getSurface().width2 - 199, 36 + mouseYOffset,
+							this.panelQuestInfo.handleMouse(x + this.getSurface().width2 - ui(199), ui(36) + mouseYOffset,
 								this.currentMouseButtonDown, this.lastMouseButtonDown);
 					}
-					if (mouseYOffset <= 24 && this.mouseButtonClick == 1) {
-						if (x >= 98) {
-							if (x > 98) {
+					if (mouseYOffset <= ui(24) && this.mouseButtonClick == 1) {
+						if (x >= ui(98)) {
+							if (x > ui(98)) {
 								this.uiTabPlayerInfoSubTab = 1;
 							}
 						} else {
@@ -11468,36 +11605,36 @@ public final class mudclient implements Runnable {
 	}
 
 	void repositionCustomUI() {
-		int var3 = this.getSurface().width2 - 199;
+		int var3 = this.getSurface().width2 - ui(199);
 		int maxY = getUITabsY();
-		panelSettings.reposition(controlSettingPanel, var3 + 1, (maxY - 240) + 16, 195, 184);
-		panelSocial.reposition(controlSocialPanel, var3, (maxY - 182) + 40, 196, 126);
-		panelMagic.reposition(controlMagicPanel, var3, (maxY - 182) + 24, 196, 90);
-		panelPlayerInfo.reposition(controlPlayerInfoPanel, var3, (maxY - 287) + 24, 196, 251);
-		panelQuestInfo.reposition(controlQuestInfoPanel, var3, (maxY - 287) + 24, 196, 251);
-		int offX = 300;
-		panelMessageTabs.reposition(panelMessageChat, 5, getGameHeight() - 65, getGameWidth() - offX, 56);
-		panelMessageTabs.reposition(panelMessageEntry, 7, getGameHeight() - 10, getGameWidth() - offX, 14);
-		panelMessageTabs.reposition(panelMessageQuest, 5, getGameHeight() - 65, getGameWidth() - offX, 56);
-		panelMessageTabs.reposition(panelMessagePrivate, 5, getGameHeight() - 65, getGameWidth() - offX, 56);
-		panelMessageTabs.reposition(panelMessageClan, 5, getGameHeight() - 65, getGameWidth() - offX, 56);
+		panelSettings.reposition(controlSettingPanel, var3 + 1, (maxY - ui(240)) + ui(16), ui(195), ui(184));
+		panelSocial.reposition(controlSocialPanel, var3, (maxY - ui(182)) + ui(40), ui(196), ui(126));
+		panelMagic.reposition(controlMagicPanel, var3, (maxY - ui(182)) + ui(24), ui(196), ui(90));
+		panelPlayerInfo.reposition(controlPlayerInfoPanel, var3, (maxY - ui(287)) + ui(24), ui(196), ui(251));
+		panelQuestInfo.reposition(controlQuestInfoPanel, var3, (maxY - ui(287)) + ui(24), ui(196), ui(251));
+		int offX = ui(300);
+		panelMessageTabs.reposition(panelMessageChat, ui(5), getGameHeight() - ui(65), getGameWidth() - offX, ui(56));
+		panelMessageTabs.reposition(panelMessageEntry, ui(7), getGameHeight() - ui(10), getGameWidth() - offX, ui(14));
+		panelMessageTabs.reposition(panelMessageQuest, ui(5), getGameHeight() - ui(65), getGameWidth() - offX, ui(56));
+		panelMessageTabs.reposition(panelMessagePrivate, ui(5), getGameHeight() - ui(65), getGameWidth() - offX, ui(56));
+		panelMessageTabs.reposition(panelMessageClan, ui(5), getGameHeight() - ui(65), getGameWidth() - offX, ui(56));
 	}
 
 	void repositionAuthenticUI() {
-		int var3 = this.getSurface().width2 - 199;
-		byte var12 = 36;
+		int var3 = this.getSurface().width2 - ui(199);
+		int var12 = ui(36);
 		if (!authenticSettings) {
-			panelSettings.reposition(controlSettingPanel, var3 + 1, 24 + var12 + 16, 195, 184);
+			panelSettings.reposition(controlSettingPanel, var3 + 1, ui(24) + var12 + ui(16), ui(195), ui(184));
 		}
-		panelSocial.reposition(controlSocialPanel, var3, var12 + 40, 196, 126);
-		panelMagic.reposition(controlMagicPanel, var3, 24 + var12, 196, 90);
-		panelPlayerInfo.reposition(controlPlayerInfoPanel, var3, 24 + var12, 196, 251);
-		panelQuestInfo.reposition(controlQuestInfoPanel, var3, 24 + var12, 196, 251);
-		panelMessageTabs.reposition(panelMessageChat, 5, getGameHeight() - 65, getGameWidth() - 10, 56);
-		panelMessageTabs.reposition(panelMessageEntry, 7, getGameHeight() - 10, getGameWidth() - 14, 14);
-		panelMessageTabs.reposition(panelMessageQuest, 5, getGameHeight() - 65, getGameWidth() - 10, 56);
-		panelMessageTabs.reposition(panelMessagePrivate, 5, getGameHeight() - 65, getGameWidth() - 10, 56);
-		panelMessageTabs.reposition(panelMessageClan, 5, getGameHeight() - 65, getGameWidth() - 10, 56);
+		panelSocial.reposition(controlSocialPanel, var3, var12 + ui(40), ui(196), ui(126));
+		panelMagic.reposition(controlMagicPanel, var3, ui(24) + var12, ui(196), ui(90));
+		panelPlayerInfo.reposition(controlPlayerInfoPanel, var3, ui(24) + var12, ui(196), ui(251));
+		panelQuestInfo.reposition(controlQuestInfoPanel, var3, ui(24) + var12, ui(196), ui(251));
+		panelMessageTabs.reposition(panelMessageChat, ui(5), getGameHeight() - ui(65), getGameWidth() - ui(10), ui(56));
+		panelMessageTabs.reposition(panelMessageEntry, ui(7), getGameHeight() - ui(10), getGameWidth() - ui(14), ui(14));
+		panelMessageTabs.reposition(panelMessageQuest, ui(5), getGameHeight() - ui(65), getGameWidth() - ui(10), ui(56));
+		panelMessageTabs.reposition(panelMessagePrivate, ui(5), getGameHeight() - ui(65), getGameWidth() - ui(10), ui(56));
+		panelMessageTabs.reposition(panelMessageClan, ui(5), getGameHeight() - ui(65), getGameWidth() - ui(10), ui(56));
 	}
 
 	boolean reposition() {
@@ -11516,10 +11653,10 @@ public final class mudclient implements Runnable {
 			this.halfGameHeight(), this.m_qd, this.halfGameWidth());
 
 		clientPort.resized();
-		int var3 = this.getSurface().width2 - 199;
-		byte var12 = 36;
-		panelClan.reposition(controlClanPanel, var3, var12 + 72, 196, 128);
-		panelPlayerTaskInfo.reposition(controlPlayerTaskInfoPanel, var3, 24 + var12 + 27, 196, 224);
+		int var3 = this.getSurface().width2 - ui(199);
+		int var12 = ui(36);
+		panelClan.reposition(controlClanPanel, var3, var12 + ui(72), ui(196), ui(128));
+		panelPlayerTaskInfo.reposition(controlPlayerTaskInfoPanel, var3, ui(24) + var12 + ui(27), ui(196), ui(224));
 		if (!authenticSettings && C_CUSTOM_UI) {
 			repositionCustomUI();
 		} else {
@@ -12057,26 +12194,26 @@ public final class mudclient implements Runnable {
 				}
 
 				if (!this.isSleeping) {
-					if (mouseY > (getGameHeight() - 4)) { // Chat Tab Selection
-						if (mouseX > 15 + (halfGameWidth() - 256) && mouseX < 96 + (halfGameWidth() - 256)
+					if (mouseY > (getGameHeight() - ui(4))) { // Chat Tab Selection
+						if (mouseX > ui(15) + (halfGameWidth() - ui(256)) && mouseX < ui(96) + (halfGameWidth() - ui(256))
 							&& lastMouseButtonDown == 1)
 							this.messageTabSelected = MessageTab.ALL;
-						if (mouseX > 110 + (halfGameWidth() - 256) && mouseX < 194 + (halfGameWidth() - 256)
+						if (mouseX > ui(110) + (halfGameWidth() - ui(256)) && mouseX < ui(194) + (halfGameWidth() - ui(256))
 							&& lastMouseButtonDown == 1) {
 							this.messageTabSelected = MessageTab.CHAT;
 							this.panelMessageTabs.controlScrollAmount[this.panelMessageChat] = 999999;
 						}
-						if (mouseX > 215 + (halfGameWidth() - 256) && mouseX < 295 + (halfGameWidth() - 256)
+						if (mouseX > ui(215) + (halfGameWidth() - ui(256)) && mouseX < ui(295) + (halfGameWidth() - ui(256))
 							&& lastMouseButtonDown == 1) {
 							this.messageTabSelected = MessageTab.QUEST;
 							this.panelMessageTabs.controlScrollAmount[this.panelMessageQuest] = 999999;
 						}
-						if (mouseX > 315 + (halfGameWidth() - 256) && mouseX < 395 + (halfGameWidth() - 256)
+						if (mouseX > ui(315) + (halfGameWidth() - ui(256)) && mouseX < ui(395) + (halfGameWidth() - ui(256))
 							&& lastMouseButtonDown == 1) {
 							this.messageTabSelected = MessageTab.PRIVATE;
 							this.panelMessageTabs.controlScrollAmount[this.panelMessagePrivate] = 999999;
 						}
-						if (mouseX > 417 + (halfGameWidth() - 256) && mouseX < 497 + (halfGameWidth() - 256)
+						if (mouseX > ui(417) + (halfGameWidth() - ui(256)) && mouseX < ui(497) + (halfGameWidth() - ui(256))
 							&& lastMouseButtonDown == 1) {
 							if (S_WANT_CLANS) {
 								this.messageTabSelected = MessageTab.CLAN;
@@ -12104,8 +12241,8 @@ public final class mudclient implements Runnable {
 						this.currentMouseButtonDown, this.lastMouseButtonDown);
 					bank.bank.handleMouse(this.mouseX, this.mouseY,
 						this.currentMouseButtonDown, this.lastMouseButtonDown);
-					if (this.messageTabSelected != MessageTab.ALL && this.mouseX >= 494
-						&& this.mouseY >= this.getGameHeight() - 66) {
+					if (this.messageTabSelected != MessageTab.ALL && this.mouseX >= getGameWidth() - ui(18)
+						&& this.mouseY >= this.getGameHeight() - ui(66)) {
 						this.lastMouseButtonDown = 0;
 					}
 
@@ -12397,11 +12534,11 @@ public final class mudclient implements Runnable {
 		// We'll say the Player clicked for a new Captcha if they clicked in the region of the "click here" text.
 		if (this.lastMouseButtonDown != 1) return false;
 		if (isAndroid()) {
-			return (this.halfGameWidth() - 150 < this.mouseX && this.halfGameWidth() + 150 > this.mouseX)
-				&& (165 < this.mouseY && this.mouseY < 215);
+			return (this.halfGameWidth() - ui(150) < this.mouseX && this.halfGameWidth() + ui(150) > this.mouseX)
+				&& (ui(165) < this.mouseY && this.mouseY < ui(215));
 		} else {
-			return (this.halfGameWidth() - 200 < this.mouseX && this.halfGameWidth() + 200 > this.mouseX)
-				&& (275 < this.mouseY && this.mouseY < 320);
+			return (this.halfGameWidth() - ui(200) < this.mouseX && this.halfGameWidth() + ui(200) > this.mouseX)
+				&& (ui(275) < this.mouseY && this.mouseY < ui(320));
 		}
 	}
 
@@ -13639,243 +13776,243 @@ public final class mudclient implements Runnable {
 				yFromTopDistance += 15;
 				if (this.mouseButtonClick != 0) {
 					this.mouseButtonClick = 0;
-					if (this.mouseX < 31 || this.mouseY < 35 || this.mouseX > 481 || this.mouseY > 310) {
+					if (this.mouseX < ui(31) || this.mouseY < ui(35) || this.mouseX > ui(481) || this.mouseY > ui(310)) {
 						this.reportAbuse_State = 0;
 						return;
 					}
 
-					if (this.mouseX > 66 && this.mouseX < 446 && this.mouseY >= yFromTopDistance - 15 && this.mouseY < yFromTopDistance + 5) {
+					if (this.mouseX > ui(66) && this.mouseX < ui(446) && this.mouseY >= yFromTopDistance - 15 && this.mouseY < yFromTopDistance + 5) {
 						this.reportAbuse_State = 0;
 						return;
 					}
 				}
 
-				this.getSurface().drawBox(31, 35, 450, 275, 0);
-				this.getSurface().drawBoxBorder(31, 450, 35, 275, 0xFFFFFF);
-				byte var7 = 50;
-				this.getSurface().drawColoredStringCentered(256,
+				this.getSurface().drawBox(ui(31), ui(35), ui(450), ui(275), 0);
+				this.getSurface().drawBoxBorder(ui(31), ui(450), ui(35), ui(275), 0xFFFFFF);
+				int var7 = ui(50);
+				this.getSurface().drawColoredStringCentered(ui(256),
 					"This form is for reporting players who are breaking our rules", 0xFFFFFF, 0, 1, var7);
-				yFromTopDistance = var7 + 15;
-				this.getSurface().drawColoredStringCentered(256,
+				yFromTopDistance = var7 + ui(15);
+				this.getSurface().drawColoredStringCentered(ui(256),
 					"Using it sends a snapshot of the last 60 seconds of activity to us", 0xFFFFFF, 0, 1, yFromTopDistance);
-				yFromTopDistance += 15;
-				this.getSurface().drawColoredStringCentered(256, "If you misuse this form, you will be banned.",
+				yFromTopDistance += ui(15);
+				this.getSurface().drawColoredStringCentered(ui(256), "If you misuse this form, you will be banned.",
 					16744448, 0, 1, yFromTopDistance);
-				yFromTopDistance += 15;
-				yFromTopDistance += 10;
-				this.getSurface().drawColoredStringCentered(256,
+				yFromTopDistance += ui(15);
+				yFromTopDistance += ui(10);
+				this.getSurface().drawColoredStringCentered(ui(256),
 					"Click on the most suitable option from the Rules of " + SERVER_NAME + ".", 0xFFFF00, 0, 1, yFromTopDistance);
-				yFromTopDistance += 15;
-				this.getSurface().drawColoredStringCentered(256,
+				yFromTopDistance += ui(15);
+				this.getSurface().drawColoredStringCentered(ui(256),
 					"This will send a report to our Player Support team for investigation.", 0xFFFF00, 0, 1, yFromTopDistance);
-				yFromTopDistance += 18;
-				this.getSurface().drawColoredStringCentered(106, "Honour", 0xFF0000, 0, 4, yFromTopDistance);
-				this.getSurface().drawColoredStringCentered(256, "Respect", 0xFF0000, 0, 4, yFromTopDistance);
-				this.getSurface().drawColoredStringCentered(406, "Security", 0xFF0000, 0, 4, yFromTopDistance);
-				yFromTopDistance += 18;
+				yFromTopDistance += ui(18);
+				this.getSurface().drawColoredStringCentered(ui(106), "Honour", 0xFF0000, 0, 4, yFromTopDistance);
+				this.getSurface().drawColoredStringCentered(ui(256), "Respect", 0xFF0000, 0, 4, yFromTopDistance);
+				this.getSurface().drawColoredStringCentered(ui(406), "Security", 0xFF0000, 0, 4, yFromTopDistance);
+				yFromTopDistance += ui(18);
 				if (this.reportAbuse_AbuseType == 1) {
-					this.getSurface().drawBox(36, yFromTopDistance - 12, 140, 30, 3158064);
+					this.getSurface().drawBox(ui(36), yFromTopDistance - ui(12), ui(140), ui(30), 3158064);
 				}
 
-				this.getSurface().drawBoxBorder(36, 140, yFromTopDistance - 12, 30, 4210752);
+				this.getSurface().drawBoxBorder(ui(36), ui(140), yFromTopDistance - ui(12), ui(30), 4210752);
 				if (this.reportAbuse_AbuseType == 7) {
-					this.getSurface().drawBox(186, yFromTopDistance - 12, 140, 30, 3158064);
+					this.getSurface().drawBox(ui(186), yFromTopDistance - ui(12), ui(140), ui(30), 3158064);
 				}
 
-				this.getSurface().drawBoxBorder(186, 140, yFromTopDistance - 12, 30, 4210752);
+				this.getSurface().drawBoxBorder(ui(186), ui(140), yFromTopDistance - ui(12), ui(30), 4210752);
 				if (this.reportAbuse_AbuseType == 12) {
-					this.getSurface().drawBox(336, yFromTopDistance - 12, 140, 30, 3158064);
+					this.getSurface().drawBox(ui(336), yFromTopDistance - ui(12), ui(140), ui(30), 3158064);
 				}
 
-				this.getSurface().drawBoxBorder(336, 140, yFromTopDistance - 12, 30, 4210752);
+				this.getSurface().drawBoxBorder(ui(336), ui(140), yFromTopDistance - ui(12), ui(30), 4210752);
 				if (this.reportAbuse_AbuseType == 1) {
 					color = 16744448;
 				} else {
 					color = 0xFFFFFF;
 				}
 
-				this.getSurface().drawColoredStringCentered(106, "Buying or", color, 0, 0, yFromTopDistance);
+				this.getSurface().drawColoredStringCentered(ui(106), "Buying or", color, 0, 0, yFromTopDistance);
 				if (this.reportAbuse_AbuseType == 7) {
 					color = 16744448;
 				} else {
 					color = 0xFFFFFF;
 				}
 
-				this.getSurface().drawColoredStringCentered(256, "Seriously offensive", color, 0, 0, yFromTopDistance);
+				this.getSurface().drawColoredStringCentered(ui(256), "Seriously offensive", color, 0, 0, yFromTopDistance);
 				if (this.reportAbuse_AbuseType != 12) {
 					color = 0xFFFFFF;
 				} else {
 					color = 16744448;
 				}
 
-				this.getSurface().drawColoredStringCentered(406, "Asking for or providing", color, 0, 0, yFromTopDistance);
-				yFromTopDistance += 12;
+				this.getSurface().drawColoredStringCentered(ui(406), "Asking for or providing", color, 0, 0, yFromTopDistance);
+				yFromTopDistance += ui(12);
 				if (this.reportAbuse_AbuseType != 1) {
 					color = 0xFFFFFF;
 				} else {
 					color = 16744448;
 				}
 
-				this.getSurface().drawColoredStringCentered(106, "selling an account", color, 0, 0, yFromTopDistance);
+				this.getSurface().drawColoredStringCentered(ui(106), "selling an account", color, 0, 0, yFromTopDistance);
 				if (this.reportAbuse_AbuseType != 7) {
 					color = 0xFFFFFF;
 				} else {
 					color = 16744448;
 				}
 
-				this.getSurface().drawColoredStringCentered(256, "language", color, 0, 0, yFromTopDistance);
+				this.getSurface().drawColoredStringCentered(ui(256), "language", color, 0, 0, yFromTopDistance);
 				if (this.reportAbuse_AbuseType != 12) {
 					color = 0xFFFFFF;
 				} else {
 					color = 16744448;
 				}
 
-				this.getSurface().drawColoredStringCentered(406, "contact information", color, 0, 0, yFromTopDistance);
-				yFromTopDistance += 20;
+				this.getSurface().drawColoredStringCentered(ui(406), "contact information", color, 0, 0, yFromTopDistance);
+				yFromTopDistance += ui(20);
 				if (this.reportAbuse_AbuseType == 2) {
-					this.getSurface().drawBox(36, yFromTopDistance - 12, 140, 18, 3158064);
+					this.getSurface().drawBox(ui(36), yFromTopDistance - ui(12), ui(140), ui(18), 3158064);
 				}
 
-				this.getSurface().drawBoxBorder(36, 140, yFromTopDistance - 12, 18, 4210752);
+				this.getSurface().drawBoxBorder(ui(36), ui(140), yFromTopDistance - ui(12), ui(18), 4210752);
 				if (this.reportAbuse_AbuseType == 8) {
-					this.getSurface().drawBox(186, yFromTopDistance - 12, 140, 18, 3158064);
+					this.getSurface().drawBox(ui(186), yFromTopDistance - ui(12), ui(140), ui(18), 3158064);
 				}
 
-				this.getSurface().drawBoxBorder(186, 140, yFromTopDistance - 12, 18, 4210752);
+				this.getSurface().drawBoxBorder(ui(186), ui(140), yFromTopDistance - ui(12), ui(18), 4210752);
 				if (this.reportAbuse_AbuseType == 13) {
-					this.getSurface().drawBox(336, yFromTopDistance - 12, 140, 18, 3158064);
+					this.getSurface().drawBox(ui(336), yFromTopDistance - ui(12), ui(140), ui(18), 3158064);
 				}
 
-				this.getSurface().drawBoxBorder(336, 140, yFromTopDistance - 12, 18, 4210752);
+				this.getSurface().drawBoxBorder(ui(336), ui(140), yFromTopDistance - ui(12), ui(18), 4210752);
 				if (this.reportAbuse_AbuseType == 2) {
 					color = 16744448;
 				} else {
 					color = 0xFFFFFF;
 				}
 
-				this.getSurface().drawColoredStringCentered(106, "Encouraging rule-breaking", color, 0, 0, yFromTopDistance);
+				this.getSurface().drawColoredStringCentered(ui(106), "Encouraging rule-breaking", color, 0, 0, yFromTopDistance);
 				if (this.reportAbuse_AbuseType == 8) {
 					color = 16744448;
 				} else {
 					color = 0xFFFFFF;
 				}
 
-				this.getSurface().drawColoredStringCentered(256, "Solicitation", color, 0, 0, yFromTopDistance);
+				this.getSurface().drawColoredStringCentered(ui(256), "Solicitation", color, 0, 0, yFromTopDistance);
 				if (this.reportAbuse_AbuseType != 13) {
 					color = 0xFFFFFF;
 				} else {
 					color = 16744448;
 				}
 
-				this.getSurface().drawColoredStringCentered(406, "Breaking real-world laws", color, 0, 0, yFromTopDistance);
-				yFromTopDistance += 20;
+				this.getSurface().drawColoredStringCentered(ui(406), "Breaking real-world laws", color, 0, 0, yFromTopDistance);
+				yFromTopDistance += ui(20);
 				if (this.reportAbuse_AbuseType == 3) {
-					this.getSurface().drawBox(36, yFromTopDistance - 12, 140, 18, 3158064);
+					this.getSurface().drawBox(ui(36), yFromTopDistance - ui(12), ui(140), ui(18), 3158064);
 				}
 
-				this.getSurface().drawBoxBorder(36, 140, yFromTopDistance - 12, 18, 4210752);
+				this.getSurface().drawBoxBorder(ui(36), ui(140), yFromTopDistance - ui(12), ui(18), 4210752);
 				if (this.reportAbuse_AbuseType == 9) {
-					this.getSurface().drawBox(186, yFromTopDistance - 12, 140, 18, 3158064);
+					this.getSurface().drawBox(ui(186), yFromTopDistance - ui(12), ui(140), ui(18), 3158064);
 				}
 
-				this.getSurface().drawBoxBorder(186, 140, yFromTopDistance - 12, 18, 4210752);
+				this.getSurface().drawBoxBorder(ui(186), ui(140), yFromTopDistance - ui(12), ui(18), 4210752);
 				if (this.reportAbuse_AbuseType == 14) {
-					this.getSurface().drawBox(336, yFromTopDistance - 12, 140, 18, 3158064);
+					this.getSurface().drawBox(ui(336), yFromTopDistance - ui(12), ui(140), ui(18), 3158064);
 				}
 
-				this.getSurface().drawBoxBorder(336, 140, yFromTopDistance - 12, 18, 4210752);
+				this.getSurface().drawBoxBorder(ui(336), ui(140), yFromTopDistance - ui(12), ui(18), 4210752);
 				if (this.reportAbuse_AbuseType == 3) {
 					color = 16744448;
 				} else {
 					color = 0xFFFFFF;
 				}
 
-				this.getSurface().drawColoredStringCentered(106, "Staff impersonation", color, 0, 0, yFromTopDistance);
+				this.getSurface().drawColoredStringCentered(ui(106), "Staff impersonation", color, 0, 0, yFromTopDistance);
 				if (this.reportAbuse_AbuseType != 9) {
 					color = 0xFFFFFF;
 				} else {
 					color = 16744448;
 				}
 
-				this.getSurface().drawColoredStringCentered(256, "Disruptive behaviour", color, 0, 0, yFromTopDistance);
+				this.getSurface().drawColoredStringCentered(ui(256), "Disruptive behaviour", color, 0, 0, yFromTopDistance);
 				if (this.reportAbuse_AbuseType != 14) {
 					color = 0xFFFFFF;
 				} else {
 					color = 16744448;
 				}
 
-				this.getSurface().drawColoredStringCentered(406, "Advertising websites", color, 0, 0, yFromTopDistance);
-				yFromTopDistance += 20;
+				this.getSurface().drawColoredStringCentered(ui(406), "Advertising websites", color, 0, 0, yFromTopDistance);
+				yFromTopDistance += ui(20);
 				if (this.reportAbuse_AbuseType == 4) {
-					this.getSurface().drawBox(36, yFromTopDistance - 12, 140, 18, 3158064);
+					this.getSurface().drawBox(ui(36), yFromTopDistance - ui(12), ui(140), ui(18), 3158064);
 				}
 
-				this.getSurface().drawBoxBorder(36, 140, yFromTopDistance - 12, 18, 4210752);
+				this.getSurface().drawBoxBorder(ui(36), ui(140), yFromTopDistance - ui(12), ui(18), 4210752);
 				if (this.reportAbuse_AbuseType == 10) {
-					this.getSurface().drawBox(186, yFromTopDistance - 12, 140, 18, 3158064);
+					this.getSurface().drawBox(ui(186), yFromTopDistance - ui(12), ui(140), ui(18), 3158064);
 				}
 
-				this.getSurface().drawBoxBorder(186, 140, yFromTopDistance - 12, 18, 4210752);
+				this.getSurface().drawBoxBorder(ui(186), ui(140), yFromTopDistance - ui(12), ui(18), 4210752);
 				if (this.reportAbuse_AbuseType != 4) {
 					color = 0xFFFFFF;
 				} else {
 					color = 16744448;
 				}
 
-				this.getSurface().drawColoredStringCentered(106, "Macroing or use of bots", color, 0, 0, yFromTopDistance);
+				this.getSurface().drawColoredStringCentered(ui(106), "Macroing or use of bots", color, 0, 0, yFromTopDistance);
 				if (this.reportAbuse_AbuseType == 10) {
 					color = 16744448;
 				} else {
 					color = 0xFFFFFF;
 				}
 
-				this.getSurface().drawColoredStringCentered(256, "Offensive account name", color, 0, 0, yFromTopDistance);
-				yFromTopDistance += 20;
+				this.getSurface().drawColoredStringCentered(ui(256), "Offensive account name", color, 0, 0, yFromTopDistance);
+				yFromTopDistance += ui(20);
 				if (this.reportAbuse_AbuseType == 5) {
-					this.getSurface().drawBox(36, yFromTopDistance - 12, 140, 18, 3158064);
+					this.getSurface().drawBox(ui(36), yFromTopDistance - ui(12), ui(140), ui(18), 3158064);
 				}
 
-				this.getSurface().drawBoxBorder(36, 140, yFromTopDistance - 12, 18, 4210752);
+				this.getSurface().drawBoxBorder(ui(36), ui(140), yFromTopDistance - ui(12), ui(18), 4210752);
 				if (this.reportAbuse_AbuseType == 11) {
-					this.getSurface().drawBox(186, yFromTopDistance - 12, 140, 18, 3158064);
+					this.getSurface().drawBox(ui(186), yFromTopDistance - ui(12), ui(140), ui(18), 3158064);
 				}
 
-				this.getSurface().drawBoxBorder(186, 140, yFromTopDistance - 12, 18, 4210752);
+				this.getSurface().drawBoxBorder(ui(186), ui(140), yFromTopDistance - ui(12), ui(18), 4210752);
 				if (this.reportAbuse_AbuseType == 5) {
 					color = 16744448;
 				} else {
 					color = 0xFFFFFF;
 				}
 
-				this.getSurface().drawColoredStringCentered(106, "Scamming", color, 0, 0, yFromTopDistance);
+				this.getSurface().drawColoredStringCentered(ui(106), "Scamming", color, 0, 0, yFromTopDistance);
 				if (this.reportAbuse_AbuseType != 11) {
 					color = 0xFFFFFF;
 				} else {
 					color = 16744448;
 				}
 
-				this.getSurface().drawColoredStringCentered(256, "Real-life threats", color, 0, 0, yFromTopDistance);
-				yFromTopDistance += 20;
+				this.getSurface().drawColoredStringCentered(ui(256), "Real-life threats", color, 0, 0, yFromTopDistance);
+				yFromTopDistance += ui(20);
 				if (this.reportAbuse_AbuseType == 6) {
-					this.getSurface().drawBox(36, yFromTopDistance - 12, 140, 18, 3158064);
+					this.getSurface().drawBox(ui(36), yFromTopDistance - ui(12), ui(140), ui(18), 3158064);
 				}
 
-				this.getSurface().drawBoxBorder(36, 140, yFromTopDistance - 12, 18, 4210752);
+				this.getSurface().drawBoxBorder(ui(36), ui(140), yFromTopDistance - ui(12), ui(18), 4210752);
 				if (this.reportAbuse_AbuseType != 6) {
 					color = 0xFFFFFF;
 				} else {
 					color = 16744448;
 				}
 
-				this.getSurface().drawColoredStringCentered(106, "Exploiting a bug", color, 0, 0, yFromTopDistance);
-				yFromTopDistance += 18;
-				yFromTopDistance += 15;
+				this.getSurface().drawColoredStringCentered(ui(106), "Exploiting a bug", color, 0, 0, yFromTopDistance);
+				yFromTopDistance += ui(18);
+				yFromTopDistance += ui(15);
 				color = 0xFFFFFF;
-				if (this.mouseX > 196 && this.mouseX < 316 && this.mouseY > yFromTopDistance - 15 && this.mouseY < 5 + yFromTopDistance) {
+				if (this.mouseX > ui(196) && this.mouseX < ui(316) && this.mouseY > yFromTopDistance - ui(15) && this.mouseY < ui(5) + yFromTopDistance) {
 					color = 0xFFFF00;
 				}
 
-				this.getSurface().drawColoredStringCentered(256, "Click here to cancel", color, 0, 1, yFromTopDistance);
+				this.getSurface().drawColoredStringCentered(ui(256), "Click here to cancel", color, 0, 1, yFromTopDistance);
 			}
 		} catch (RuntimeException var6) {
 			throw GenUtil.makeThrowable(var6, "client.ID(" + "dummy" + ')');
@@ -13884,9 +14021,9 @@ public final class mudclient implements Runnable {
 
 	int getUITabsY() {
 		if (C_CUSTOM_UI)
-			return getGameHeight() - 32 - 10;
+			return getGameHeight() - ui(32) - ui(10);
 		else
-			return 3;
+			return ui(3);
 	}
 
 	private boolean handleTabUIClick() {
@@ -13898,13 +14035,17 @@ public final class mudclient implements Runnable {
 			repositionAuthenticUI();
 		}
 		try {
-			if (this.showUiTab == 0 && this.mouseX >= this.getSurface().width2 - 35 && this.mouseY >= 3
-				&& this.mouseX < this.getSurface().width2 - 3 && this.mouseY < 35) {
+			// The top-bar icon strip (GUIPARTS.MENUBAR) now scales via drawSpriteClipping()
+			// (see drawUi's C_CUSTOM_UI-independent draw call), anchored at
+			// width2 - ui(200)/getUITabsY() with size ui(200) x ui(35) - these click
+			// regions scale from the exact same anchor and factor to stay aligned.
+			if (this.showUiTab == 0 && this.mouseX >= this.getSurface().width2 - ui(35) && this.mouseY >= ui(3)
+				&& this.mouseX < this.getSurface().width2 - ui(3) && this.mouseY < ui(35)) {
 				this.showUiTab = Config.INVENTORY_TAB;
 			}
 
-			if (this.showUiTab == 0 && this.mouseX >= this.getSurface().width2 - 35 - 33 && this.mouseY >= 3
-				&& this.getSurface().width2 - 3 - 33 > this.mouseX && this.mouseY < 35) {
+			if (this.showUiTab == 0 && this.mouseX >= this.getSurface().width2 - ui(35) - ui(33) && this.mouseY >= ui(3)
+				&& this.getSurface().width2 - ui(3) - ui(33) > this.mouseX && this.mouseY < ui(35)) {
 				this.showUiTab = Config.MINIMAP_AND_COMPASS_TAB;
 				if (!Config.S_DISABLE_MINIMAP_ROTATION) {
 					this.minimapRandom_1 = (int) (13.0D * Math.random()) - 6; // random rotation of the minimap as anti-bot?
@@ -13912,33 +14053,33 @@ public final class mudclient implements Runnable {
 				}
 			}
 
-			if (this.showUiTab == 0 && this.getSurface().width2 - 101 <= this.mouseX && this.mouseY >= 3
-				&& this.mouseX < this.getSurface().width2 - 3 - 66 && this.mouseY < 35) {
+			if (this.showUiTab == 0 && this.getSurface().width2 - ui(101) <= this.mouseX && this.mouseY >= ui(3)
+				&& this.mouseX < this.getSurface().width2 - ui(3) - ui(66) && this.mouseY < ui(35)) {
 				this.showUiTab = Config.SKILLS_AND_QUESTS_TAB;
 			}
 
-			if (this.showUiTab == 0 && this.mouseX >= this.getSurface().width2 - 99 - 35 && this.mouseY >= 3
-				&& this.getSurface().width2 - 3 - 99 > this.mouseX && this.mouseY < 35) {
+			if (this.showUiTab == 0 && this.mouseX >= this.getSurface().width2 - ui(99) - ui(35) && this.mouseY >= ui(3)
+				&& this.getSurface().width2 - ui(3) - ui(99) > this.mouseX && this.mouseY < ui(35)) {
 				this.showUiTab = Config.MAGIC_AND_PRAYER_TAB;
 			}
 
-			if (this.showUiTab == 0 && this.mouseX >= this.getSurface().width2 - 35 - 132 && this.mouseY >= 3
-				&& this.mouseX < this.getSurface().width2 - 135 && this.mouseY < 35) {
+			if (this.showUiTab == 0 && this.mouseX >= this.getSurface().width2 - ui(35) - ui(132) && this.mouseY >= ui(3)
+				&& this.mouseX < this.getSurface().width2 - ui(135) && this.mouseY < ui(35)) {
 				this.showUiTab = Config.FRIENDS_TAB;
 			}
 
-			if (this.showUiTab == 0 && this.getSurface().width2 - 35 - 165 <= this.mouseX && this.mouseY >= 3
-				&& this.mouseX < this.getSurface().width2 - 165 - 3 && this.mouseY < 35) {
+			if (this.showUiTab == 0 && this.getSurface().width2 - ui(35) - ui(165) <= this.mouseX && this.mouseY >= ui(3)
+				&& this.mouseX < this.getSurface().width2 - ui(165) - ui(3) && this.mouseY < ui(35)) {
 				this.showUiTab = Config.OPTIONS_TAB;
 			}
 
-			if (this.showUiTab != 0 && this.getSurface().width2 - 35 <= this.mouseX && this.mouseY >= 3
-				&& this.getSurface().width2 - 3 > this.mouseX && this.mouseY < 26) {
+			if (this.showUiTab != 0 && this.getSurface().width2 - ui(35) <= this.mouseX && this.mouseY >= ui(3)
+				&& this.getSurface().width2 - ui(3) > this.mouseX && this.mouseY < ui(26)) {
 				this.showUiTab = Config.INVENTORY_TAB;
 			}
 
-			if (this.showUiTab != 0 && this.showUiTab != Config.MINIMAP_AND_COMPASS_TAB && this.getSurface().width2 - 68 <= this.mouseX
-				&& this.mouseY >= 3 && this.getSurface().width2 - 33 - 3 > this.mouseX && this.mouseY < 26) {
+			if (this.showUiTab != 0 && this.showUiTab != Config.MINIMAP_AND_COMPASS_TAB && this.getSurface().width2 - ui(68) <= this.mouseX
+				&& this.mouseY >= ui(3) && this.getSurface().width2 - ui(33) - ui(3) > this.mouseX && this.mouseY < ui(26)) {
 				this.showUiTab = Config.MINIMAP_AND_COMPASS_TAB;
 				if (!Config.S_DISABLE_MINIMAP_ROTATION) {
 					this.minimapRandom_2 = (int) (23.0D * Math.random()) - 11; // random rotation of the minimap as anti-bot?
@@ -13946,64 +14087,64 @@ public final class mudclient implements Runnable {
 				}
 			}
 
-			if (this.showUiTab != 0 && this.mouseX >= this.getSurface().width2 - 66 - 35 && this.mouseY >= 3
-				&& this.getSurface().width2 - 3 - 66 > this.mouseX && this.mouseY < 26) {
+			if (this.showUiTab != 0 && this.mouseX >= this.getSurface().width2 - ui(66) - ui(35) && this.mouseY >= ui(3)
+				&& this.getSurface().width2 - ui(3) - ui(66) > this.mouseX && this.mouseY < ui(26)) {
 				this.showUiTab = Config.SKILLS_AND_QUESTS_TAB;
 			}
 
-			if (this.showUiTab != 0 && this.getSurface().width2 - 35 - 99 <= this.mouseX && this.mouseY >= 3
-				&& this.getSurface().width2 - 102 > this.mouseX && this.mouseY < 26) {
+			if (this.showUiTab != 0 && this.getSurface().width2 - ui(35) - ui(99) <= this.mouseX && this.mouseY >= ui(3)
+				&& this.getSurface().width2 - ui(102) > this.mouseX && this.mouseY < ui(26)) {
 				this.showUiTab = Config.MAGIC_AND_PRAYER_TAB;
 			}
 
-			if (this.showUiTab != 0 && this.getSurface().width2 - 167 <= this.mouseX && this.mouseY >= 3
-				&& this.getSurface().width2 - 132 - 3 > this.mouseX && this.mouseY < 26) {
+			if (this.showUiTab != 0 && this.getSurface().width2 - ui(167) <= this.mouseX && this.mouseY >= ui(3)
+				&& this.getSurface().width2 - ui(132) - ui(3) > this.mouseX && this.mouseY < ui(26)) {
 				this.showUiTab = Config.FRIENDS_TAB;
 			}
 
-			if (this.showUiTab != 0 && this.getSurface().width2 - 35 - 165 <= this.mouseX && this.mouseY >= 3
-				&& this.mouseX < this.getSurface().width2 - 168 && this.mouseY < 26) {
+			if (this.showUiTab != 0 && this.getSurface().width2 - ui(35) - ui(165) <= this.mouseX && this.mouseY >= ui(3)
+				&& this.mouseX < this.getSurface().width2 - ui(168) && this.mouseY < ui(26)) {
 				this.showUiTab = Config.OPTIONS_TAB;
 			}
 
 			if (!S_WANT_EQUIPMENT_TAB) {
 				if (this.showUiTab == Config.INVENTORY_TAB
-					&& (this.mouseX < this.getSurface().width2 - 248 || 36 + this.m_cl / 5 * 34 < this.mouseY)) {
+					&& (this.mouseX < this.getSurface().width2 - ui(248) || ui(36) + this.m_cl / 5 * ui(34) < this.mouseY)) {
 					this.showUiTab = 0;
 				}
 			} else {
 				if (this.showUiTab == Config.INVENTORY_TAB && this.tabEquipmentIndex == 0
-					&& (this.mouseX < this.getSurface().width2 - 248 || 90 + this.m_cl / 5 * 34 < this.mouseY)) {
+					&& (this.mouseX < this.getSurface().width2 - ui(248) || ui(90) + this.m_cl / 5 * ui(34) < this.mouseY)) {
 					this.showUiTab = 0;
 				} else if (this.showUiTab == Config.INVENTORY_TAB && this.tabEquipmentIndex == 1
-					&& (this.mouseX < this.getSurface().width2 - 248 || 90 + this.m_cl / 5 * 34 < this.mouseY)) {
+					&& (this.mouseX < this.getSurface().width2 - ui(248) || ui(90) + this.m_cl / 5 * ui(34) < this.mouseY)) {
 					this.showUiTab = 0;
 				}
 			}
 
-			if (this.showUiTab == Config.SKILLS_AND_QUESTS_TAB && (this.getSurface().width2 - 199 > this.mouseX || this.mouseY > 324)) {
+			if (this.showUiTab == Config.SKILLS_AND_QUESTS_TAB && (this.getSurface().width2 - ui(199) > this.mouseX || this.mouseY > ui(324))) {
 				this.showUiTab = 0;
 			}
 
 			// If we are on Android, this area needs to be larger in the Y direction for the "cast last spell" box
 			if (this.showUiTab == MAGIC_AND_PRAYER_TAB) {
 				if (isAndroid()) {
-					if (this.getSurface().width2 - 199 > this.mouseX || this.mouseY > 300) {
+					if (this.getSurface().width2 - ui(199) > this.mouseX || this.mouseY > ui(300)) {
 						this.showUiTab = 0;
 					}
 				} else {
-					if (this.getSurface().width2 - 199 > this.mouseX || this.mouseY > 240) {
+					if (this.getSurface().width2 - ui(199) > this.mouseX || this.mouseY > ui(240)) {
 						this.showUiTab = 0;
 					}
 				}
 			}
 
 			if ((this.showUiTab == Config.MINIMAP_AND_COMPASS_TAB || this.showUiTab == Config.FRIENDS_TAB)
-				&& (this.getSurface().width2 - 199 > this.mouseX || this.mouseY > (this.panelSocialTab == 1 ? 307 : 240))) {
+				&& (this.getSurface().width2 - ui(199) > this.mouseX || this.mouseY > (this.panelSocialTab == 1 ? ui(307) : ui(240)))) {
 				this.showUiTab = 0;
 			}
 
-			if (this.showUiTab == Config.OPTIONS_TAB && (this.getSurface().width2 - 199 > this.mouseX || this.mouseY > 325)) {
+			if (this.showUiTab == Config.OPTIONS_TAB && (this.getSurface().width2 - ui(199) > this.mouseX || this.mouseY > ui(325))) {
 				this.showUiTab = 0;
 			}
 
@@ -14016,18 +14157,21 @@ public final class mudclient implements Runnable {
 	private boolean handleTabUIClick_CUSTOM() {
 		boolean clicked = mouseButtonClick == 1;
 		int minY = getUITabsY();
-		int maxY = minY + 32;
+		// The icon-strip art (GUIPARTS.MENUBAR) scales via drawSpriteClipping() -
+		// see the non-custom-UI counterpart above. minY is already tied to the same
+		// getUITabsY() the art is drawn at.
+		int maxY = minY + ui(32);
 		if (!clicked)
 			return false;
 		try {
-			if (this.showUiTab == 0 && this.mouseX >= this.getSurface().width2 - 35 && this.mouseY >= minY
-				&& this.mouseX < this.getSurface().width2 - 3 && this.mouseY < maxY) {
+			if (this.showUiTab == 0 && this.mouseX >= this.getSurface().width2 - ui(35) && this.mouseY >= minY
+				&& this.mouseX < this.getSurface().width2 - ui(3) && this.mouseY < maxY) {
 				this.showUiTab = Config.INVENTORY_TAB;
 				return true;
 			}
 
-			if (this.mouseX >= this.getSurface().width2 - 35 - 33 && this.mouseY >= minY
-				&& this.getSurface().width2 - 3 - 33 > this.mouseX && this.mouseY < maxY) {
+			if (this.mouseX >= this.getSurface().width2 - ui(35) - ui(33) && this.mouseY >= minY
+				&& this.getSurface().width2 - ui(3) - ui(33) > this.mouseX && this.mouseY < maxY) {
 				drawMinimap = !drawMinimap;
 				if (!Config.S_DISABLE_MINIMAP_ROTATION) {
 					this.minimapRandom_1 = (int) (13.0D * Math.random()) - 6; // random rotation of the minimap as anti-bot?
@@ -14036,32 +14180,32 @@ public final class mudclient implements Runnable {
 				return true;
 			}
 
-			if (this.showUiTab == 0 && this.getSurface().width2 - 101 <= this.mouseX && this.mouseY >= minY
-				&& this.mouseX < this.getSurface().width2 - 3 - 66 && this.mouseY < maxY) {
+			if (this.showUiTab == 0 && this.getSurface().width2 - ui(101) <= this.mouseX && this.mouseY >= minY
+				&& this.mouseX < this.getSurface().width2 - ui(3) - ui(66) && this.mouseY < maxY) {
 				this.showUiTab = Config.SKILLS_AND_QUESTS_TAB;
 				return true;
 			}
 
-			if (this.showUiTab == 0 && this.mouseX >= this.getSurface().width2 - 99 - 35 && this.mouseY >= minY
-				&& this.getSurface().width2 - 3 - 99 > this.mouseX && this.mouseY < maxY) {
+			if (this.showUiTab == 0 && this.mouseX >= this.getSurface().width2 - ui(99) - ui(35) && this.mouseY >= minY
+				&& this.getSurface().width2 - ui(3) - ui(99) > this.mouseX && this.mouseY < maxY) {
 				this.showUiTab = Config.MAGIC_AND_PRAYER_TAB;
 				return true;
 			}
 
-			if (this.showUiTab == 0 && this.mouseX >= this.getSurface().width2 - 35 - 132 && this.mouseY >= minY
-				&& this.mouseX < this.getSurface().width2 - 135 && this.mouseY < maxY) {
+			if (this.showUiTab == 0 && this.mouseX >= this.getSurface().width2 - ui(35) - ui(132) && this.mouseY >= minY
+				&& this.mouseX < this.getSurface().width2 - ui(135) && this.mouseY < maxY) {
 				this.showUiTab = Config.FRIENDS_TAB;
 				return true;
 			}
 
-			if (this.showUiTab == 0 && this.getSurface().width2 - 35 - 165 <= this.mouseX && this.mouseY >= minY
-				&& this.mouseX < this.getSurface().width2 - 165 - 3 && this.mouseY < maxY) {
+			if (this.showUiTab == 0 && this.getSurface().width2 - ui(35) - ui(165) <= this.mouseX && this.mouseY >= minY
+				&& this.mouseX < this.getSurface().width2 - ui(165) - ui(3) && this.mouseY < maxY) {
 				this.showUiTab = Config.OPTIONS_TAB;
 				return true;
 			}
 
-			if (this.showUiTab != 0 && this.getSurface().width2 - 35 <= this.mouseX && this.mouseY >= minY
-				&& this.getSurface().width2 - 3 > this.mouseX && this.mouseY < maxY) {
+			if (this.showUiTab != 0 && this.getSurface().width2 - ui(35) <= this.mouseX && this.mouseY >= minY
+				&& this.getSurface().width2 - ui(3) > this.mouseX && this.mouseY < maxY) {
 				if (this.showUiTab == Config.INVENTORY_TAB)
 					this.showUiTab = 0;
 				else
@@ -14082,8 +14226,8 @@ public final class mudclient implements Runnable {
 				return true;
 			}*/
 
-			if (this.showUiTab != 0 && this.mouseX >= this.getSurface().width2 - 66 - 35 && this.mouseY >= minY
-				&& this.getSurface().width2 - 3 - 66 > this.mouseX && this.mouseY < maxY) {
+			if (this.showUiTab != 0 && this.mouseX >= this.getSurface().width2 - ui(66) - ui(35) && this.mouseY >= minY
+				&& this.getSurface().width2 - ui(3) - ui(66) > this.mouseX && this.mouseY < maxY) {
 				if (this.showUiTab == Config.SKILLS_AND_QUESTS_TAB)
 					this.showUiTab = 0;
 				else
@@ -14091,8 +14235,8 @@ public final class mudclient implements Runnable {
 				return true;
 			}
 
-			if (this.showUiTab != 0 && this.getSurface().width2 - 35 - 99 <= this.mouseX && this.mouseY >= minY
-				&& this.getSurface().width2 - 102 > this.mouseX && this.mouseY < maxY) {
+			if (this.showUiTab != 0 && this.getSurface().width2 - ui(35) - ui(99) <= this.mouseX && this.mouseY >= minY
+				&& this.getSurface().width2 - ui(102) > this.mouseX && this.mouseY < maxY) {
 				if (this.showUiTab == Config.MAGIC_AND_PRAYER_TAB)
 					this.showUiTab = 0;
 				else
@@ -14100,8 +14244,8 @@ public final class mudclient implements Runnable {
 				return true;
 			}
 
-			if (this.showUiTab != 0 && this.getSurface().width2 - 167 <= this.mouseX && this.mouseY >= minY
-				&& this.getSurface().width2 - 132 - 3 > this.mouseX && this.mouseY < maxY) {
+			if (this.showUiTab != 0 && this.getSurface().width2 - ui(167) <= this.mouseX && this.mouseY >= minY
+				&& this.getSurface().width2 - ui(132) - ui(3) > this.mouseX && this.mouseY < maxY) {
 				if (this.showUiTab == Config.FRIENDS_TAB)
 					this.showUiTab = 0;
 				else
@@ -14109,8 +14253,8 @@ public final class mudclient implements Runnable {
 				return true;
 			}
 
-			if (this.showUiTab != 0 && this.getSurface().width2 - 35 - 165 <= this.mouseX && this.mouseY >= minY
-				&& this.mouseX < this.getSurface().width2 - 168 && this.mouseY < maxY) {
+			if (this.showUiTab != 0 && this.getSurface().width2 - ui(35) - ui(165) <= this.mouseX && this.mouseY >= minY
+				&& this.mouseX < this.getSurface().width2 - ui(168) && this.mouseY < maxY) {
 				if (this.showUiTab == Config.OPTIONS_TAB)
 					this.showUiTab = 0;
 				else
@@ -14155,20 +14299,20 @@ public final class mudclient implements Runnable {
 	private boolean mouseInTabArea_CUSTOM() {
 		try {
 			//tab area
-			if (this.showUiTab == 0 && this.mouseX >= this.getSurface().width2 - 199 && this.mouseY >= getUITabsY()
+			if (this.showUiTab == 0 && this.mouseX >= this.getSurface().width2 - ui(199) && this.mouseY >= getUITabsY()
 				&& this.mouseX < this.getSurface().width2 && this.mouseY < getGameHeight()) {
 				return true;
 			}
 			//tab interface
-			if (this.showUiTab != 0 && this.mouseX >= this.getSurface().width2 - 250 && this.mouseY >= getUITabsY() - 340
+			if (this.showUiTab != 0 && this.mouseX >= this.getSurface().width2 - ui(250) && this.mouseY >= getUITabsY() - ui(340)
 				&& this.mouseX < this.getSurface().width2 && this.mouseY < getGameHeight()) {
 				return true;
 			}
 			//minimap
 			if (drawMinimap) {
-				int minX = this.getSurface().width2 - 170;
-				int minY = 10;
-				int borderSize = 2;
+				int minX = this.getSurface().width2 - ui(170);
+				int minY = ui(10);
+				int borderSize = ui(2);
 				// int maxX = minX + 156 + (borderSize*2);
 				int maxY = minY + 152 + (borderSize * 2);
 
@@ -14586,6 +14730,57 @@ public final class mudclient implements Runnable {
 		}
 	}
 
+	/**
+	 * Mild edge-clamped 3x3 box blur applied to texture source pixels before
+	 * 256-color quantization. World textures are tiny source images (often
+	 * 64x64) stretched across much larger on-screen areas post-widescreen, so
+	 * softening hard texel edges here reduces perceived blockiness without
+	 * needing higher-resolution source art. Does not mutate the input array.
+	 *
+	 * 0x000000 is a reserved transparency sentinel (punch-through regions in
+	 * wall/world textures, remapped to the magenta palette marker after this
+	 * runs) and is treated as a hole: it never contributes to a neighbor's
+	 * average and is passed through unblurred, so the sentinel and its border
+	 * don't bleed into real texture color or vice versa.
+	 */
+	private int[] boxBlurTexture(int[] src, int width, int height) {
+		int[] out = new int[src.length];
+		for (int y = 0; y < height; y++) {
+			for (int x = 0; x < width; x++) {
+				int center = src[y * width + x];
+				if (center == 0x000000) {
+					out[y * width + x] = 0x000000;
+					continue;
+				}
+				int rSum = 0, gSum = 0, bSum = 0, count = 0;
+				for (int dy = -1; dy <= 1; dy++) {
+					int sy = y + dy;
+					if (sy < 0 || sy >= height) continue;
+					for (int dx = -1; dx <= 1; dx++) {
+						int sx = x + dx;
+						if (sx < 0 || sx >= width) continue;
+						int c = src[sy * width + sx];
+						if (c == 0x000000) continue;
+						rSum += (c >> 16) & 0xFF;
+						gSum += (c >> 8) & 0xFF;
+						bSum += c & 0xFF;
+						count++;
+					}
+				}
+				if (count == 0) {
+					out[y * width + x] = center;
+					continue;
+				}
+				int r = rSum / count;
+				int g = gSum / count;
+				int b = bSum / count;
+				int color = (r << 16) | (g << 8) | b;
+				out[y * width + x] = color == 0 ? 1 : color;
+			}
+		}
+		return out;
+	}
+
 	private void loadTextures() {
 		clientPort.showLoadingProgress(50, "Textures");
 		this.scene.setFrustum(0, 11, 7, getSurface().spriteTree.get("textures").size());
@@ -14594,7 +14789,21 @@ public final class mudclient implements Runnable {
 			sprite = getSurface().spriteTree.get("textures").get(String.valueOf(i)).getFrames()[0].getSprite();
 
 			int length = sprite.getWidth() * sprite.getHeight();
-			int[] pixels = sprite.getPixels();
+			boolean[] wasBlackTexel = new boolean[length];
+			for (int k = 0; k < length; k++) {
+				wasBlackTexel[k] = sprite.getPixels()[k] == 0x000000;
+			}
+			// Two passes reads as a noticeably softer blur than one (closer to a small
+			// gaussian than a single 3x3 box), since a single pass proved too subtle to
+			// register as a visible change. Both passes run before the transparency-marker
+			// restore below, so the magenta marker itself never gets blurred into neighbors.
+			int[] pixels = boxBlurTexture(sprite.getPixels(), sprite.getWidth(), sprite.getHeight());
+			pixels = boxBlurTexture(pixels, sprite.getWidth(), sprite.getHeight());
+			for (int k = 0; k < length; k++) {
+				if (wasBlackTexel[k]) {
+					pixels[k] = 16711935;
+				}
+			}
 			int[] ai1 = new int[32768];
 			for (int k = 0; k < length; k++) {
 				ai1[((pixels[k] & 0xf80000) >> 9) + ((pixels[k] & 0xf800) >> 6) + ((pixels[k] & 0xf8) >> 3)]++;
@@ -14664,7 +14873,21 @@ public final class mudclient implements Runnable {
 			loadSprite(spriteTexture + i, "texture", 1);
 			Sprite sprite = getSurface().sprites[spriteTexture + i];
 			int length = sprite.getWidth() * sprite.getHeight();
-			int[] pixels = sprite.getPixels();
+			boolean[] wasBlackTexel = new boolean[length];
+			for (int k = 0; k < length; k++) {
+				wasBlackTexel[k] = sprite.getPixels()[k] == 0x000000;
+			}
+			// Two passes reads as a noticeably softer blur than one (closer to a small
+			// gaussian than a single 3x3 box), since a single pass proved too subtle to
+			// register as a visible change. Both passes run before the transparency-marker
+			// restore below, so the magenta marker itself never gets blurred into neighbors.
+			int[] pixels = boxBlurTexture(sprite.getPixels(), sprite.getWidth(), sprite.getHeight());
+			pixels = boxBlurTexture(pixels, sprite.getWidth(), sprite.getHeight());
+			for (int k = 0; k < length; k++) {
+				if (wasBlackTexel[k]) {
+					pixels[k] = 16711935;
+				}
+			}
 			int[] ai1 = new int[32768];
 			for (int k = 0; k < length; k++) {
 				ai1[((pixels[k] & 0xf80000) >> 9) + ((pixels[k] & 0xf800) >> 6) + ((pixels[k] & 0xf8) >> 3)]++;
@@ -14932,7 +15155,7 @@ public final class mudclient implements Runnable {
 											this.showLoginScreenStatus("Error unable to login.", "Server rejected session");
 										} else if (loginResponse == 9) {
 											this.showLoginScreenStatus("Error unable to login.",
-												"Under 13 accounts cannot access RuneScape Classic");
+												"Under 13 accounts cannot access RuneWake");
 										} else if (loginResponse == 10) {
 											this.showLoginScreenStatus("That username is already in use.",
 												"Wait 60 seconds then retry");
@@ -14955,7 +15178,7 @@ public final class mudclient implements Runnable {
 														this.showLoginScreenStatus("Error - loginserver mismatch",
 															"Please try a different world");
 													} else if (loginResponse == 21) {
-														this.showLoginScreenStatus("That is not a veteran RS-Classic account.",
+														this.showLoginScreenStatus("That is not a veteran RuneWake account.",
 															"Please try a non-veterans world.");
 													} else if (loginResponse != 22) {
 														if (loginResponse == 23) {
@@ -15184,23 +15407,23 @@ public final class mudclient implements Runnable {
 
 			this.getSurface().fade2black(16316665);
 			this.getSurface().fade2black(16316665);
-			this.getSurface().drawBox(0, 0, getGameWidth(), 6, 0);
+			this.getSurface().drawBox(0, 0, getGameWidth(), ui(6), 0);
 
 			int var9;
 			for (var9 = 6; var9 >= 1; --var9) {
-				this.getSurface().a(8, var9, var9, 0, 16740352, getGameWidth(), 0);
+				this.getSurface().a(8, var9, ui(var9), 0, 16740352, getGameWidth(), 0);
 			}
 
-			this.getSurface().drawBox(0, halfGameHeight() + 27, getGameWidth(), 20, 0);
+			this.getSurface().drawBox(0, halfGameHeight() + ui(27), getGameWidth(), ui(20), 0);
 
 			for (var9 = 6; var9 >= 1; --var9) {
-				this.getSurface().a(8, var9, halfGameHeight() + 27 - var9, 0, 16740352, getGameWidth(), 0);
+				this.getSurface().a(8, var9, halfGameHeight() + ui(27) - ui(var9), 0, 16740352, getGameWidth(), 0);
 			}
 
 			if (DISPLAY_LOGO_SPRITE)
-				this.getSurface().drawSprite(spriteSelect(GUIPARTS.MAINLOGO.getDef()), 15, 15);
+				this.getSurface().drawSprite(spriteSelect(GUIPARTS.MAINLOGO.getDef()), ui(15), ui(15));
 			//this.getSurface().drawColoredStringCentered(250, "Open RSC", 0xFFFFFF, 0, 7, 110); // width, title, color, crown sprite, font size, height
-			this.getSurface().storeSpriteVert(0, 0, 0, getGameWidth(), halfGameHeight() + 33);
+			this.getSurface().storeSpriteVert(0, 0, 0, getGameWidth(), halfGameHeight() + ui(33));
 
 			// Second view
 			slide_y = 9216;
@@ -15215,22 +15438,22 @@ public final class mudclient implements Runnable {
 			this.scene.endScene(-114);
 			this.getSurface().fade2black(16316665);
 			this.getSurface().fade2black(16316665);
-			this.getSurface().drawBox(0, 0, getGameWidth(), 6, 0);
+			this.getSurface().drawBox(0, 0, getGameWidth(), ui(6), 0);
 
 			for (var9 = 6; var9 >= 1; --var9) {
-				this.getSurface().a(8, var9, var9, 0, 16740352, getGameWidth(), 0);
+				this.getSurface().a(8, var9, ui(var9), 0, 16740352, getGameWidth(), 0);
 			}
 
-			this.getSurface().drawBox(0, halfGameHeight() + 27, getGameWidth(), 20, 0);
+			this.getSurface().drawBox(0, halfGameHeight() + ui(27), getGameWidth(), ui(20), 0);
 
 			for (var9 = 6; var9 >= 1; --var9) {
-				this.getSurface().a(8, var9, halfGameHeight() + 27 - var9, 0, 16740352, getGameWidth(), 0);
+				this.getSurface().a(8, var9, halfGameHeight() + ui(27) - ui(var9), 0, 16740352, getGameWidth(), 0);
 			}
 
 			if (DISPLAY_LOGO_SPRITE)
-				this.getSurface().drawSprite(spriteSelect(GUIPARTS.MAINLOGO.getDef()), 15, 15);
+				this.getSurface().drawSprite(spriteSelect(GUIPARTS.MAINLOGO.getDef()), ui(15), ui(15));
 			//this.getSurface().drawColoredStringCentered(250, "Open RSC", 0xFFFFFF, 0, 7, 110); // width, title, color, crown sprite, font size, height
-			this.getSurface().storeSpriteVert(1, 0, 0, getGameWidth(), halfGameHeight() + 33);
+			this.getSurface().storeSpriteVert(1, 0, 0, getGameWidth(), halfGameHeight() + ui(33));
 
 			// Third view
 			zoom_distance = 500;
@@ -15255,22 +15478,22 @@ public final class mudclient implements Runnable {
 
 			this.getSurface().fade2black(16316665);
 			this.getSurface().fade2black(16316665);
-			this.getSurface().drawBox(0, 0, getGameWidth(), 6, 0);
+			this.getSurface().drawBox(0, 0, getGameWidth(), ui(6), 0);
 
 			for (var9 = 6; var9 >= 1; --var9) {
-				this.getSurface().a(8, var9, var9, 0, 16740352, getGameWidth(), 0);
+				this.getSurface().a(8, var9, ui(var9), 0, 16740352, getGameWidth(), 0);
 			}
 
-			this.getSurface().drawBox(0, halfGameHeight() + 27, getGameWidth(), 20, 0);
+			this.getSurface().drawBox(0, halfGameHeight() + ui(27), getGameWidth(), ui(20), 0);
 
 			for (var9 = 6; var9 >= 1; --var9) {
-				this.getSurface().a(8, var9, halfGameHeight() + 27, 0, 16740352, getGameWidth(), 0);
+				this.getSurface().a(8, var9, halfGameHeight() + ui(27), 0, 16740352, getGameWidth(), 0);
 			}
 
 			if (DISPLAY_LOGO_SPRITE)
-				this.getSurface().drawSprite(spriteSelect(GUIPARTS.MAINLOGO.getDef()), 15, 15);
+				this.getSurface().drawSprite(spriteSelect(GUIPARTS.MAINLOGO.getDef()), ui(15), ui(15));
 			//this.getSurface().drawColoredStringCentered(250, "Open RSC", 0xFFFFFF, 0, 7, 110); // width, title, color, crown sprite, font size, height
-			this.getSurface().storeSpriteVert(2, 0, 0, getGameWidth(), halfGameHeight() + 33);
+			this.getSurface().storeSpriteVert(2, 0, 0, getGameWidth(), halfGameHeight() + ui(33));
 		} catch (RuntimeException var10) {
 			throw GenUtil.makeThrowable(var10, "client.HC(" + var1 + ')');
 		}
@@ -15483,16 +15706,16 @@ public final class mudclient implements Runnable {
 	private void showItemModX(InputXAction action, String[] lines, boolean var4, String defaultText) {
 		try {
 			this.inputX_Lines = lines;
-			this.inputX_Width = 400;
+			this.inputX_Width = ui(400);
 
 			for (int i = 0; lines.length > i; ++i) {
-				int width = this.getSurface().stringWidth(1, lines[i]) + 10;
+				int width = this.getSurface().stringWidth(1, lines[i]) + ui(10);
 				if (this.inputX_Width < width) {
 					this.inputX_Width = width;
 				}
 			}
 
-			this.inputX_Height = 15 + (this.getSurface().fontHeight(1) + 2) * (1 + lines.length)
+			this.inputX_Height = ui(15) + (this.getSurface().fontHeight(1) + ui(2)) * (1 + lines.length)
 				+ this.getSurface().fontHeight(4);
 			this.inputX_Action = action;
 			this.inputTextCurrent = defaultText;
@@ -17109,7 +17332,7 @@ public final class mudclient implements Runnable {
 									XPNotification xpdrop = iterator.next();
 									if (!xpdrop.isActive) {
 										if (C_EXPERIENCE_COUNTER > 0) {
-											if (time > m_timer && xpdrop.y > 20) {
+											if (time > m_timer && xpdrop.y > ui(20)) {
 												m_timer = time + 250;
 												xpdrop.isActive = true;
 											} else {
@@ -17153,13 +17376,13 @@ public final class mudclient implements Runnable {
 										C_EXPERIENCE_DROP_SPEED == 1 ? 0.00005 : 1;
 									xpdrop.y -= dropSpeed;
 
-									if (C_EXPERIENCE_COUNTER > 0 && xpdrop.y <= 30) {
+									if (C_EXPERIENCE_COUNTER > 0 && xpdrop.y <= ui(30)) {
 										xpdrop.isActive = false;
 									} else if (xpdrop.y <= 0) {
 										xpdrop.isActive = false;
 									}
 
-									if (C_EXPERIENCE_COUNTER > 0 && (xpdrop.y <= 30 || xpdrop.y > getGameHeight() - 30)) {
+									if (C_EXPERIENCE_COUNTER > 0 && (xpdrop.y <= ui(30) || xpdrop.y > getGameHeight() - ui(30))) {
 										iterator.remove();
 									} else if (xpdrop.y <= 0 || xpdrop.y > getGameHeight()) {
 										iterator.remove();
@@ -17687,12 +17910,12 @@ public final class mudclient implements Runnable {
 		return gameWidth;
 	}
 
-	private int halfGameWidth() {
+	public int halfGameWidth() {
 		return gameWidth / 2;
 	}
 
 	// Scales a legacy 512x334-baseline UI pixel dimension to the live resolution.
-	private int ui(int px) {
+	public int ui(int px) {
 		return Math.round(px * uiScale);
 	}
 
@@ -17704,7 +17927,7 @@ public final class mudclient implements Runnable {
 		this.gameHeight = gameHeight;
 	}
 
-	private int halfGameHeight() {
+	public int halfGameHeight() {
 		return gameHeight / 2;
 	}
 
@@ -18392,7 +18615,7 @@ public final class mudclient implements Runnable {
 	}
 
 	public boolean isInFirstPersonView() {
-		return this.isFirstPersonView && this.localPlayer.direction != ORSCharacterDirection.COMBAT_B && this.localPlayer.direction != ORSCharacterDirection.COMBAT_B;
+		return this.isFirstPersonView && this.localPlayer.direction != ORSCharacterDirection.COMBAT_A && this.localPlayer.direction != ORSCharacterDirection.COMBAT_B;
 	}
 
 	public void toggleFirstPersonView() {
@@ -18417,8 +18640,8 @@ public final class mudclient implements Runnable {
 			this.skill = skill;
 			this.amount = amount;
 			this.levelUp = levelUp;
-			x = halfGameWidth() - 50;
-			y = (int) ((float) getGameHeight() / 4.0f + 40);
+			x = halfGameWidth() - ui(50);
+			y = (int) ((float) getGameHeight() / 4.0f + ui(40));
 			isActive = false;
 		}
 	}

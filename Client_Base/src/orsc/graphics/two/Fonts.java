@@ -26,4 +26,14 @@ public class Fonts {
 		fontData[tmpFontDataHead] = bytes;
 		return tmpFontDataHead++;
 	}
+
+	/**
+	 * Replaces an already-loaded font slot's data in place (e.g. with a generated modern font -
+	 * see ClientPort#regenerateFonts()). Only ever called after all original fonts finished
+	 * loading successfully, so a partial failure elsewhere never leaves a slot in a broken state.
+	 */
+	public static void setFont(int index, byte[] bytes, boolean antiAliased) {
+		fontData[index] = bytes;
+		fontAntiAliased[index] = antiAliased;
+	}
 }

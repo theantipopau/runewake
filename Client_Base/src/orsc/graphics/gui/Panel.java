@@ -103,6 +103,22 @@ public final class Panel {
 		}
 	}
 
+	/**
+	 * Restyles this panel's button/decorated-box bevel colors (a light-to-dark ramp used for
+	 * the 3D border effect - see renderButtonBackground/renderToggleButton/renderDecoratedBox).
+	 * Purely a color change on the existing procedural rendering, no new art required, so it's
+	 * safe to apply per-panel (e.g. just the login screens) without affecting every other panel.
+	 */
+	public void setButtonColorScheme(int highlight, int highlightMid, int shadowMid, int shadow) {
+		this.colorI = highlight;
+		this.colorJ = highlightMid;
+		this.colorK = shadowMid;
+		this.colorL = shadow;
+		this.colorF = highlight;
+		this.colorG = highlightMid;
+		this.colorH = shadowMid;
+	}
+
 	public final int addButton(int x, int y, int width, int height) {
 		try {
 			this.controlType[this.controlCount] = PanelControlType.BUTTON;

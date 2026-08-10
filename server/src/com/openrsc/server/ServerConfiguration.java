@@ -400,8 +400,8 @@ public class ServerConfiguration {
 		SSL_SERVER_KEY_PATH = tryReadString("ssl_server_key_path").orElse("");
 
 		// World settings
-		SERVER_NAME = tryReadString("server_name").orElse("Runescape");
-		SERVER_NAME_WELCOME = tryReadString("server_name_welcome").orElse("Runescape Classic");
+		SERVER_NAME = tryReadString("server_name").orElse("RuneWake");
+		SERVER_NAME_WELCOME = tryReadString("server_name_welcome").orElse("RuneWake");
 		WELCOME_TEXT = tryReadString("welcome_text").orElse("You need a members account to use this server");
 		DISPLAY_LOGO_SPRITE = tryReadBool("display_logo_sprite").orElse(true);
 		LOGO_SPRITE_ID = tryReadString("logo_sprite_id").orElse("2010");
@@ -862,10 +862,8 @@ public class ServerConfiguration {
 	private void readGlobalRules(final String fileName) {
 		File file = new File(fileName);
 
-		try {
+		try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
 			ArrayList<String> globalRules = new ArrayList<String>();
-
-			BufferedReader reader = new BufferedReader(new FileReader(file));
 
 			String line = reader.readLine();
 			while (line != null) {

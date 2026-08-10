@@ -55,7 +55,7 @@ public final class RSCMultiPortDecoder extends ByteToMessageDecoder implements A
 		ctx.pipeline().addFirst(new OptionalSslHandler(this.server.getSSLContext()));
 		ctx.pipeline().addBefore(Server.rscConnectionHandlerId, "httpcodec", new HttpServerCodec());
 		ctx.pipeline().addBefore(Server.rscConnectionHandlerId, "aggregator", new HttpObjectAggregator(65536));
-		ctx.pipeline().addBefore(Server.rscConnectionHandlerId, "httphandler", new HttpRequestHandler("/"));
+		ctx.pipeline().addBefore(Server.rscConnectionHandlerId, "httphandler", new HttpRequestHandler("/", this.server));
 		ctx.pipeline().addBefore(Server.rscConnectionHandlerId, "compreshandler", new WebSocketServerCompressionHandler());
 		ctx.pipeline().addBefore(Server.rscConnectionHandlerId, "wshandler", new WebSocketServerProtocolHandler("/", "binary", true));
 		ctx.pipeline().addBefore(Server.rscConnectionHandlerId, "framehandler", new WebSocketFrameHandler());

@@ -48,13 +48,14 @@ public abstract class JDBCDatabase extends GameDatabase {
             String query,
             CheckedConsumer<Exception, ResultSet> resultSetConsumer
     ) {
-        ResultSet resultSet = withPreparedStatement(
-                query,
-                (CheckedFunction<Exception, PreparedStatement, ResultSet>) PreparedStatement::executeQuery
-        );
-        try {
+        // The PreparedStatement and ResultSet must stay open for the duration of the consumer
+        // call - closing the statement (as the withPreparedStatement() helper does on return)
+        // closes its ResultSet too per the JDBC spec, so routing through that helper handed
+        // back an already-closed ResultSet here.
+        try (PreparedStatement preparedStatement = getConnection().prepareStatement(query);
+             ResultSet resultSet = preparedStatement.executeQuery()) {
             resultSetConsumer.accept(resultSet);
-        } catch(Exception ex) {
+        } catch (Exception ex) {
             throw new GameDatabaseException(
                     getClass(),
                     ex.getMessage()

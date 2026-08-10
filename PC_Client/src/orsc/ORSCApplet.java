@@ -550,6 +550,211 @@ public class ORSCApplet extends Applet implements ComponentListener, ImageObserv
 	}
 
 	@Override
+	public Sprite loadScaledImageSprite(String resourceName, int targetWidth, int targetHeight) {
+		try {
+			BufferedImage source = ImageIO.read(getClass().getResource("/res/" + resourceName));
+			if (source == null || targetWidth <= 0 || targetHeight <= 0) {
+				return null;
+			}
+
+			BufferedImage scaled = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_ARGB);
+			Graphics2D g = scaled.createGraphics();
+			g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+			g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+			g.drawImage(source, 0, 0, targetWidth, targetHeight, null);
+			g.dispose();
+
+			int[] pixels = new int[targetWidth * targetHeight];
+			for (int y = 0; y < targetHeight; y++) {
+				for (int x = 0; x < targetWidth; x++) {
+					// The sprite renderer treats a pixel value of exactly 0 (pure black) as
+					// transparent - nudge true black up by 1 so dark image regions (night
+					// sky, shadows) don't punch see-through holes in what should be opaque art.
+					int rgb = scaled.getRGB(x, y) & 0xFFFFFF;
+					pixels[x + y * targetWidth] = rgb == 0 ? 1 : rgb;
+				}
+			}
+
+			return new Sprite(pixels, targetWidth, targetHeight);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	// Target pixel height for each of the 8 font slots (0-7), matching GraphicsController's
+	// fontHeight() lookup table exactly - other code reads layout/line-spacing from that table,
+	// not from the actual glyph data, so generated glyphs should render close to these heights
+	// or spacing will drift from what's actually drawn.
+	private static final int[] FONT_TARGET_HEIGHT = {12, 14, 14, 15, 15, 19, 24, 29};
+	// Bold/plain per slot, matching the original h11p/h12b/h12p/h13b/h14b/h16b/h20b/h24b loading
+	// order in mudclient.loadLogo() (p = plain, b = bold).
+	private static final boolean[] FONT_BOLD = {false, true, false, true, true, true, true, true};
+
+	@Override
+	public boolean regenerateFonts() {
+		try {
+			byte[][] generated = new byte[FONT_TARGET_HEIGHT.length][];
+			for (int i = 0; i < FONT_TARGET_HEIGHT.length; i++) {
+				generated[i] = buildFontData(FONT_BOLD[i] ? Font.BOLD : Font.PLAIN, FONT_TARGET_HEIGHT[i]);
+			}
+
+			// Only commit once every font has generated successfully - never leave a partial
+			// mix of old (original bitmap) and new (generated) fonts across slots.
+			for (int i = 0; i < generated.length; i++) {
+				Fonts.setFont(i, generated[i], true);
+			}
+			return true;
+		} catch (Exception e) {
+			System.out.println("regenerateFonts: falling back to original bitmap fonts");
+			e.printStackTrace();
+			return false;
+		}
+	}
+
+	/**
+	 * Renders every character in {@link Fonts#inputFilterChars} (in that exact order - the game
+	 * indexes glyphs by position in that string, not by character code) using a system font, and
+	 * packs the result into the exact same binary layout the original .jf bitmap fonts use, so
+	 * every existing draw/measure call site (GraphicsController.plotCharacter/stringWidth/etc.)
+	 * needs no changes at all:
+	 * <p>
+	 * Per-character index record (9 bytes), stored first for every character in order:
+	 * <pre>
+	 *   +0,+1,+2: pixel-data byte offset into this same array, packed 7 bits per byte
+	 *             (offset&gt;&gt;14 &amp; 0x7F, offset&gt;&gt;7 &amp; 0x7F, offset &amp; 0x7F) - the consumer does
+	 *             a raw (b0&lt;&lt;14)+(b1&lt;&lt;7)+b2 with no unsigned masking, so each byte MUST stay
+	 *             within 0-127 or Java's signed-byte sign-extension corrupts the address.
+	 *   +3: width (0-127)
+	 *   +4: height (0-127)
+	 *   +5: x-offset added to the draw x (signed byte, left side bearing)
+	 *   +6: y-offset subtracted from the draw y / baseline (signed byte, ascent above baseline)
+	 *   +7: advance width added to the cursor after drawing (0-127, unsigned in practice - also
+	 *       not masked by the consumer, so must stay under 128)
+	 *   +8: unused by any current call site; written as 0
+	 * </pre>
+	 * followed by the concatenated per-glyph pixel data (one byte per pixel, row-major,
+	 * antialiased coverage 0-255 - {@code Fonts.fontAntiAliased} is set true for these fonts so
+	 * the renderer's existing alpha-blend path is used instead of a hard on/off draw).
+	 */
+	private byte[] buildFontData(int style, int targetPixelHeight) {
+		String chars = Fonts.inputFilterChars;
+		int numChars = chars.length();
+
+		// Font point size isn't 1:1 with rendered pixel height - probe once and rescale.
+		Font probe = new Font("SansSerif", style, targetPixelHeight);
+		BufferedImage probeImg = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
+		Graphics2D probeG = probeImg.createGraphics();
+		probeG.setFont(probe);
+		FontMetrics probeFm = probeG.getFontMetrics();
+		probeG.dispose();
+		int probeHeight = probeFm.getAscent() + probeFm.getDescent();
+		float ratio = probeHeight > 0 ? (float) targetPixelHeight / probeHeight : 1.0f;
+		int pointSize = Math.max(6, Math.round(targetPixelHeight * ratio));
+
+		Font font = new Font("SansSerif", style, pointSize);
+		int canvasSize = pointSize * 3 + 10; // generous margin for ascenders/descenders
+
+		BufferedImage canvas = new BufferedImage(canvasSize, canvasSize, BufferedImage.TYPE_INT_ARGB);
+		Graphics2D g = canvas.createGraphics();
+		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+		g.setFont(font);
+		FontMetrics fm = g.getFontMetrics();
+
+		int originX = canvasSize / 4;
+		int originY = canvasSize / 2;
+
+		byte[] index = new byte[numChars * 9];
+		int pixelBase = index.length;
+		java.io.ByteArrayOutputStream pixelBlob = new java.io.ByteArrayOutputStream();
+		int[] row = new int[canvasSize];
+
+		for (int i = 0; i < numChars; i++) {
+			char ch = chars.charAt(i);
+
+			g.setComposite(AlphaComposite.Clear);
+			g.fillRect(0, 0, canvasSize, canvasSize);
+			g.setComposite(AlphaComposite.SrcOver);
+			g.setColor(Color.WHITE);
+			g.drawString(String.valueOf(ch), originX, originY);
+
+			int minX = canvasSize, minY = canvasSize, maxX = -1, maxY = -1;
+			for (int y = 0; y < canvasSize; y++) {
+				canvas.getRGB(0, y, canvasSize, 1, row, 0, canvasSize);
+				for (int x = 0; x < canvasSize; x++) {
+					if ((row[x] >>> 24 & 0xFF) > 8) {
+						if (x < minX) minX = x;
+						if (x > maxX) maxX = x;
+						if (y < minY) minY = y;
+						if (y > maxY) maxY = y;
+					}
+				}
+			}
+
+			int width, height, xOffset, yOffset;
+			byte[] glyphPixels;
+			if (maxX < 0) {
+				// No ink (e.g. space) - zero-size glyph, but the advance below still applies.
+				width = 0;
+				height = 0;
+				xOffset = 0;
+				yOffset = 0;
+				glyphPixels = new byte[0];
+			} else {
+				width = Math.min(127, maxX - minX + 1);
+				height = Math.min(127, maxY - minY + 1);
+				xOffset = clampToByte(minX - originX);
+				yOffset = clampToByte(originY - minY);
+				glyphPixels = new byte[width * height];
+				int gi = 0;
+				for (int y = minY; y < minY + height; y++) {
+					canvas.getRGB(0, y, canvasSize, 1, row, 0, canvasSize);
+					for (int x = minX; x < minX + width; x++) {
+						glyphPixels[gi++] = (byte) (row[x] >>> 24 & 0xFF);
+					}
+				}
+			}
+
+			int advance = Math.max(0, Math.min(127, fm.charWidth(ch)));
+			int offset = pixelBase + pixelBlob.size();
+			if (offset > 0x1FFFFF) {
+				// 21-bit address space (7 bits per byte, 3 bytes) - not expected to ever
+				// trigger for 8 small fonts, but fail loudly rather than silently corrupt
+				// addressing if it somehow did.
+				throw new IllegalStateException("generated font exceeds addressable size");
+			}
+
+			int idx = i * 9;
+			index[idx] = (byte) (offset >> 14 & 0x7F);
+			index[idx + 1] = (byte) (offset >> 7 & 0x7F);
+			index[idx + 2] = (byte) (offset & 0x7F);
+			index[idx + 3] = (byte) width;
+			index[idx + 4] = (byte) height;
+			index[idx + 5] = (byte) xOffset;
+			index[idx + 6] = (byte) yOffset;
+			index[idx + 7] = (byte) advance;
+			index[idx + 8] = 0;
+
+			pixelBlob.write(glyphPixels, 0, glyphPixels.length);
+		}
+
+		g.dispose();
+
+		byte[] result = new byte[pixelBase + pixelBlob.size()];
+		System.arraycopy(index, 0, result, 0, index.length);
+		byte[] blobBytes = pixelBlob.toByteArray();
+		System.arraycopy(blobBytes, 0, result, pixelBase, blobBytes.length);
+		return result;
+	}
+
+	private static byte clampToByte(int v) {
+		if (v > 127) return 127;
+		if (v < -128) return -128;
+		return (byte) v;
+	}
+
+	@Override
 	public void drawKeyboard() {
 	}
 

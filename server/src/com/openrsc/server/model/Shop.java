@@ -91,6 +91,9 @@ public final class Shop {
 
 					if (amount <= 0) {
 						shopItems.remove(i);
+						// The item that shifts into slot i hasn't been processed yet this tick -
+						// counteract the loop's i++ so it isn't skipped.
+						i--;
 					}
 					updatePlayers = true;
 				}

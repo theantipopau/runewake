@@ -65,6 +65,23 @@ public interface ClientPort {
 
 	void setIconImage(String serverName);
 
+	/**
+	 * Regenerates the game's 8 bitmap fonts from a modern system font, in place, matching the
+	 * exact binary layout {@code Fonts.fontData}/{@code GraphicsController.plotCharacter}
+	 * already expect (so no other code needs to change) - returns false (and must leave the
+	 * original fonts completely untouched) if generation isn't supported on this platform or
+	 * anything goes wrong, so callers can safely no-op on failure.
+	 */
+	boolean regenerateFonts();
+
+	/**
+	 * Loads a bundled image resource (from the res/ folder) and returns it as a Sprite scaled
+	 * to the given dimensions, for use with the normal (unscaled) sprite draw calls. Returns
+	 * null if image loading isn't supported on this platform or the resource can't be found -
+	 * callers should fall back to existing behavior rather than assume this always succeeds.
+	 */
+	Sprite loadScaledImageSprite(String resourceName, int targetWidth, int targetHeight);
+
 	static boolean saveHideIp(int preference) {
 		FileOutputStream fileout;
 		try {

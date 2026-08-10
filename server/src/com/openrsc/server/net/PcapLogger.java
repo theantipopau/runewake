@@ -119,8 +119,7 @@ public class PcapLogger {
 
 		// Required files
 		File pcapFile = new File(pcapDir.toFile(), fname + ".pcap.gz");
-		try {
-			DataOutputStream pcap = new DataOutputStream(new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(pcapFile))));
+		try (DataOutputStream pcap = new DataOutputStream(new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(pcapFile))))) {
 
 			// Write global header
 			pcap.writeInt(0xa1b2c3d4); // Magic number
@@ -136,8 +135,6 @@ public class PcapLogger {
 					writePCAPPacket(pcap, packet);
 				}
 			}
-
-			pcap.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

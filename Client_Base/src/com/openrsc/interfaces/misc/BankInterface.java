@@ -26,10 +26,13 @@ public class BankInterface {
 	public Panel bank;
 	ArrayList<BankItem> bankItems;
 
+	private static final int BASE_WIDTH = 408;
+	private static final int BASE_HEIGHT = 334;
+
 	BankInterface(mudclient m) {
 		mc = m;
-		width = 408; // WIDTH MODIFIER
-		height = 334; // HEIGHT MODIFIER
+		width = BASE_WIDTH; // WIDTH MODIFIER
+		height = BASE_HEIGHT; // HEIGHT MODIFIER
 		membersWorld = wantMembers();
 		bank = new Panel(mc.getSurface(), 3);
 		bankItems = new ArrayList<>();
@@ -43,6 +46,9 @@ public class BankInterface {
 	public boolean onRender() {
 		int currMouseX = mc.getMouseX();
 		int currMouseY = mc.getMouseY();
+
+		width = mc.ui(BASE_WIDTH);
+		height = mc.ui(BASE_HEIGHT);
 
 		if (!mc.getInitLoginCleared()) {
 			swapNoteMode = false;
@@ -77,13 +83,13 @@ public class BankInterface {
 		if (mc.getMouseClick() == 1 || ((mc.getMouseButtonDown() == 1 && mc.getMouseButtonDownTime() > 99999 && Config.isAndroid()) ||
 			(mc.getMouseButtonDown() == 1 && mc.getMouseButtonDownTime() > 20 && !Config.isAndroid()))) {
 			int selectedX = currMouseX - (mc.getGameWidth() / 2 - width / 2);
-			int selectedY = currMouseY - (mc.getGameHeight() / 2 - height / 2 + 20);
-			if (selectedX >= 0 && selectedY >= 16 && selectedX < 408 && selectedY < 280) {
+			int selectedY = currMouseY - (mc.getGameHeight() / 2 - height / 2 + mc.ui(20));
+			if (selectedX >= 0 && selectedY >= mc.ui(16) && selectedX < width && selectedY < mc.ui(280)) {
 				if (mc.inputX_Action == InputXAction.ACT_0) {
 					selectSlot(selectedX, selectedY); // Set the slot we clicked on
 
 					selectedX = mc.getGameWidth() / 2 - width / 2;
-					selectedY = mc.getGameHeight() / 2 - height / 2 + 20;
+					selectedY = mc.getGameHeight() / 2 - height / 2 + mc.ui(20);
 				}
 
 				// Check for a transaction
@@ -92,17 +98,17 @@ public class BankInterface {
 				}
 
 				// Select bank page
-			} else if (currentItems.size() > 48 && selectedX >= 50 && selectedX <= 115 &&
-				selectedY <= 16 && currMouseY > mc.getGameHeight() / 2 - 146 && membersWorld) {
+			} else if (currentItems.size() > 48 && selectedX >= mc.ui(50) && selectedX <= mc.ui(115) &&
+				selectedY <= mc.ui(16) && currMouseY > mc.getGameHeight() / 2 - mc.ui(146) && membersWorld) {
 				mouseOverBankPageText = 0; // Select page 1
-			} else if (currentItems.size() > 48 && selectedX >= 115 && selectedX <= 180 &&
-				selectedY <= 16 && currMouseY > mc.getGameHeight() / 2 - 146 && membersWorld) {
+			} else if (currentItems.size() > 48 && selectedX >= mc.ui(115) && selectedX <= mc.ui(180) &&
+				selectedY <= mc.ui(16) && currMouseY > mc.getGameHeight() / 2 - mc.ui(146) && membersWorld) {
 				mouseOverBankPageText = 1; // Select page 2
-			} else if (currentItems.size() > 96 && selectedX >= 180 && selectedX <= 245 &&
-				selectedY <= 16 && currMouseY > mc.getGameHeight() / 2 - 146 && membersWorld) {
+			} else if (currentItems.size() > 96 && selectedX >= mc.ui(180) && selectedX <= mc.ui(245) &&
+				selectedY <= mc.ui(16) && currMouseY > mc.getGameHeight() / 2 - mc.ui(146) && membersWorld) {
 				mouseOverBankPageText = 2; // Select page 3
-			} else if (currentItems.size() > 144 && selectedX >= 245 && selectedX <= 310 &&
-				selectedY <= 16 && currMouseY > mc.getGameHeight() / 2 - 146 && membersWorld) {
+			} else if (currentItems.size() > 144 && selectedX >= mc.ui(245) && selectedX <= mc.ui(310) &&
+				selectedY <= mc.ui(16) && currMouseY > mc.getGameHeight() / 2 - mc.ui(146) && membersWorld) {
 				mouseOverBankPageText = 3; // Select page 4
 
 			} else { // Close Bank
@@ -120,12 +126,12 @@ public class BankInterface {
 		int selectedItemSlot = mouseOverBankPageText * 48;
 		for (int verticalSlots = 0; verticalSlots < 6; verticalSlots++) {
 			for (int horizontalSlots = 0; horizontalSlots < 8; horizontalSlots++) {
-				int slotX = 7 + horizontalSlots * 49;
-				int slotY = 28 + verticalSlots * 34;
+				int slotX = mc.ui(7) + horizontalSlots * mc.ui(49);
+				int slotY = mc.ui(28) + verticalSlots * mc.ui(34);
 
 				// If the selection is in area
-				if (selectedX > slotX && selectedX < slotX + 49 &&
-					selectedY > slotY && selectedY < slotY + 34) {
+				if (selectedX > slotX && selectedX < slotX + mc.ui(49) &&
+					selectedY > slotY && selectedY < slotY + mc.ui(34)) {
 
 					// Check if the click was on a bank item.
 					if (selectedItemSlot < currentItems.size()) {
@@ -151,16 +157,16 @@ public class BankInterface {
 		final boolean L_WANT_CERT_DEPOSIT = Config.S_WANT_CERT_DEPOSIT && BankUtil.isCert(itemID);
 
 		// Incremental Withdraw or Deposit
-		if (currMouseX >= selectedX + 220 && currMouseY >= selectedY + 240
-			&& currMouseX < selectedX + 250 && currMouseY <= selectedY + 251) {
+		if (currMouseX >= selectedX + mc.ui(220) && currMouseY >= selectedY + mc.ui(240)
+			&& currMouseX < selectedX + mc.ui(250) && currMouseY <= selectedY + mc.ui(251)) {
 			if (mc.mouseButtonItemCountIncrement == 0)
 				mc.mouseButtonItemCountIncrement = 1;
 			if (Config.S_WANT_BANK_NOTES) {
 				this.swapNoteMode = !this.swapNoteMode;
 			} else
 				sendWithdraw(mc.mouseButtonItemCountIncrement); // Withdraw 1
-		} else if (mc.getInventoryCount(itemID) >= 1 && currMouseX >= selectedX + 220 && currMouseY >= selectedY + 265
-			&& currMouseX < selectedX + 250 && currMouseY <= selectedY + 276) {
+		} else if (mc.getInventoryCount(itemID) >= 1 && currMouseX >= selectedX + mc.ui(220) && currMouseY >= selectedY + mc.ui(265)
+			&& currMouseX < selectedX + mc.ui(250) && currMouseY <= selectedY + mc.ui(276)) {
 			if (mc.mouseButtonItemCountIncrement == 0)
 				mc.mouseButtonItemCountIncrement = 1;
 			if (L_WANT_CERT_DEPOSIT) {
@@ -172,57 +178,57 @@ public class BankInterface {
 
 		// Non incremental Withdraw or deposit
 		else if ((mc.getMouseButtonDownTime() < 99999 && Config.isAndroid()) || (mc.getMouseButtonDownTime() < 50 && !Config.isAndroid())) {
-			if ((amount >= 5 || Config.S_WANT_BANK_NOTES) && currMouseX >= selectedX + 250 && currMouseY >= selectedY + 240
-				&& currMouseX < selectedX + 280 && currMouseY <= selectedY + 251) {
+			if ((amount >= 5 || Config.S_WANT_BANK_NOTES) && currMouseX >= selectedX + mc.ui(250) && currMouseY >= selectedY + mc.ui(240)
+				&& currMouseX < selectedX + mc.ui(280) && currMouseY <= selectedY + mc.ui(251)) {
 				if (Config.S_WANT_BANK_NOTES) {
 					this.swapNoteMode = !this.swapNoteMode;
 				} else
 					sendWithdraw(5); // Withdraw 5
-			} else if ((amount >= 10 || Config.S_WANT_BANK_NOTES) && currMouseX >= selectedX + 280 && currMouseY >= selectedY + 240
-				&& currMouseX < selectedX + 305 && currMouseY <= selectedY + 251) {
+			} else if ((amount >= 10 || Config.S_WANT_BANK_NOTES) && currMouseX >= selectedX + mc.ui(280) && currMouseY >= selectedY + mc.ui(240)
+				&& currMouseX < selectedX + mc.ui(305) && currMouseY <= selectedY + mc.ui(251)) {
 				if (!Config.S_WANT_BANK_NOTES)
 					sendWithdraw(10); // Withdraw 10
-			} else if ((amount >= 50 || Config.S_WANT_BANK_NOTES) && currMouseX >= selectedX + 305 && currMouseY >= selectedY + 240
-				&& currMouseX < selectedX + 335 && currMouseY <= selectedY + 251) {
+			} else if ((amount >= 50 || Config.S_WANT_BANK_NOTES) && currMouseX >= selectedX + mc.ui(305) && currMouseY >= selectedY + mc.ui(240)
+				&& currMouseX < selectedX + mc.ui(335) && currMouseY <= selectedY + mc.ui(251)) {
 				if (Config.S_WANT_BANK_NOTES)
 					sendWithdraw(1);
 				else
 					sendWithdraw(50); // Withdraw 50
-			} else if (currMouseX >= selectedX + 340 && currMouseY >= selectedY + 240
-				&& currMouseX < selectedX + 368 && currMouseY <= selectedY + 251) {
+			} else if (currMouseX >= selectedX + mc.ui(340) && currMouseY >= selectedY + mc.ui(240)
+				&& currMouseX < selectedX + mc.ui(368) && currMouseY <= selectedY + mc.ui(251)) {
 				// Withdraw X
 				mc.showItemModX(InputXPrompt.bankWithdrawX, InputXAction.BANK_WITHDRAW, true);
 				mc.setMouseClick(0);
-			} else if (currMouseX >= selectedX + 370 && currMouseY >= selectedY + 240
-				&& currMouseX < selectedX + 400 && currMouseY <= selectedY + 251) {
+			} else if (currMouseX >= selectedX + mc.ui(370) && currMouseY >= selectedY + mc.ui(240)
+				&& currMouseX < selectedX + mc.ui(400) && currMouseY <= selectedY + mc.ui(251)) {
 				sendWithdraw(Integer.MAX_VALUE); // Withdraw All
 			}
 
 			// Depositing
-			else if ((mc.getInventoryCount(itemID) >= 5 || L_WANT_CERT_DEPOSIT) && currMouseX >= selectedX + 250 && currMouseY >= selectedY + 265
-				&& currMouseX < selectedX + 280 && currMouseY <= selectedY + 276) {
+			else if ((mc.getInventoryCount(itemID) >= 5 || L_WANT_CERT_DEPOSIT) && currMouseX >= selectedX + mc.ui(250) && currMouseY >= selectedY + mc.ui(265)
+				&& currMouseX < selectedX + mc.ui(280) && currMouseY <= selectedY + mc.ui(276)) {
 				if (L_WANT_CERT_DEPOSIT) {
 					this.swapCertMode = !this.swapCertMode;
 					sendCertMode();
 				} else
 					sendDeposit(5); // Deposit 5
-			} else if ((mc.getInventoryCount(itemID) >= 10 || L_WANT_CERT_DEPOSIT) && currMouseX >= selectedX + 280 && currMouseY >= selectedY + 265
-				&& currMouseX < selectedX + 305 && currMouseY <= selectedY + 276) {
+			} else if ((mc.getInventoryCount(itemID) >= 10 || L_WANT_CERT_DEPOSIT) && currMouseX >= selectedX + mc.ui(280) && currMouseY >= selectedY + mc.ui(265)
+				&& currMouseX < selectedX + mc.ui(305) && currMouseY <= selectedY + mc.ui(276)) {
 				if (!L_WANT_CERT_DEPOSIT)
 					sendDeposit(10); // Deposit 10
-			} else if ((mc.getInventoryCount(itemID) >= 50 || L_WANT_CERT_DEPOSIT) && currMouseX >= selectedX + 305 && currMouseY >= selectedY + 265
-				&& currMouseX < selectedX + 335 && currMouseY <= selectedY + 276) {
+			} else if ((mc.getInventoryCount(itemID) >= 50 || L_WANT_CERT_DEPOSIT) && currMouseX >= selectedX + mc.ui(305) && currMouseY >= selectedY + mc.ui(265)
+				&& currMouseX < selectedX + mc.ui(335) && currMouseY <= selectedY + mc.ui(276)) {
 				if (L_WANT_CERT_DEPOSIT)
 					sendDeposit(1);
 				else
 					sendDeposit(50); // Deposit 50
-			} else if (currMouseX >= selectedX + 340 && currMouseY >= selectedY + 265
-				&& currMouseX < selectedX + 368 && currMouseY <= selectedY + 276) {
+			} else if (currMouseX >= selectedX + mc.ui(340) && currMouseY >= selectedY + mc.ui(265)
+				&& currMouseX < selectedX + mc.ui(368) && currMouseY <= selectedY + mc.ui(276)) {
 				// Deposit X
 				mc.showItemModX(InputXPrompt.bankDepositX, InputXAction.BANK_DEPOSIT, true);
 				mc.setMouseClick(0);
-			} else if (currMouseX >= selectedX + 370 && currMouseY >= selectedY + 265
-				&& currMouseX < selectedX + 400 && currMouseY <= selectedY + 276) {
+			} else if (currMouseX >= selectedX + mc.ui(370) && currMouseY >= selectedY + mc.ui(265)
+				&& currMouseX < selectedX + mc.ui(400) && currMouseY <= selectedY + mc.ui(276)) {
 				sendDeposit(Integer.MAX_VALUE); // Deposit All
 			}
 		}
@@ -230,14 +236,14 @@ public class BankInterface {
 
 	private void drawBankComponents(int currMouseX, int currMouseY) {
 		int relativeX = mc.getGameWidth() / 2 - width / 2; // WAS 256
-		int relativeY = mc.getGameHeight() / 2 - height / 2 + 20; // WAS 170
-		mc.getSurface().drawBox(relativeX, relativeY, 408, 12, 192);
+		int relativeY = mc.getGameHeight() / 2 - height / 2 + mc.ui(20); // WAS 170
+		mc.getSurface().drawBox(relativeX, relativeY, width, mc.ui(12), 192);
 		int backgroundColour = 0x989898;
-		mc.getSurface().drawBoxAlpha(relativeX, relativeY + 12, 408, 17, backgroundColour, 160);
-		mc.getSurface().drawBoxAlpha(relativeX, relativeY + 29, 8, 204, backgroundColour, 160);
-		mc.getSurface().drawBoxAlpha(relativeX + 399, relativeY + 29, 9, 204, backgroundColour, 160);
-		mc.getSurface().drawBoxAlpha(relativeX, relativeY + 233, 408, 47, backgroundColour, 160);
-		drawString("Bank", relativeX + 1, relativeY + 10, 1, 0xffffff);
+		mc.getSurface().drawBoxAlpha(relativeX, relativeY + mc.ui(12), width, mc.ui(17), backgroundColour, 160);
+		mc.getSurface().drawBoxAlpha(relativeX, relativeY + mc.ui(29), mc.ui(8), mc.ui(204), backgroundColour, 160);
+		mc.getSurface().drawBoxAlpha(relativeX + mc.ui(399), relativeY + mc.ui(29), mc.ui(9), mc.ui(204), backgroundColour, 160);
+		mc.getSurface().drawBoxAlpha(relativeX, relativeY + mc.ui(233), width, mc.ui(47), backgroundColour, 160);
+		drawString("Bank", relativeX + mc.ui(1), relativeY + mc.ui(10), 1, 0xffffff);
 
 		// Draw Bank Page Buttons
 		if (membersWorld) {
@@ -246,69 +252,69 @@ public class BankInterface {
 
 		// Draw Top Descriptions & Close Button
 		int closeButtonColour = 0xffffff;
-		if (currMouseX > relativeX + 320 && currMouseY >= relativeY + 3 && currMouseX < relativeX + 408 && currMouseY < relativeY + 15)
+		if (currMouseX > relativeX + mc.ui(320) && currMouseY >= relativeY + mc.ui(3) && currMouseX < relativeX + width && currMouseY < relativeY + mc.ui(15))
 			closeButtonColour = 0xff0000;
-		drawString("Close window", relativeX + 326, relativeY + 10, 1, closeButtonColour);
-		drawString("Number in bank in green", relativeX + 7, relativeY + 24, 1, 0x00ff00);
-		drawString("Number held in blue", relativeX + 289, relativeY + 24, 1, 0x00ffff);
+		drawString("Close window", relativeX + mc.ui(326), relativeY + mc.ui(10), 1, closeButtonColour);
+		drawString("Number in bank in green", relativeX + mc.ui(7), relativeY + mc.ui(24), 1, 0x00ff00);
+		drawString("Number held in blue", relativeX + mc.ui(289), relativeY + mc.ui(24), 1, 0x00ffff);
 
 		// Draw the items in the bank.
 		drawBankItems(relativeX, relativeY);
 
 		// Line between Withdraw & Deposit
-		mc.getSurface().drawLineHoriz(relativeX + 5, relativeY + 256, width - 8, 0);
+		mc.getSurface().drawLineHoriz(relativeX + mc.ui(5), relativeY + mc.ui(256), width - mc.ui(8), 0);
 
 		// Draw the Quantity Buttons
 		if (this.selectedBankSlot != -1) {
 			drawQuantityButtons(currMouseX, currMouseY, relativeX, relativeY);
 		} else {
-			mc.getSurface().drawColoredStringCentered(relativeX + 204, "Select an object to withdraw or deposit", 0xFFFF00, 0, 3,
-				relativeY + 248);
+			mc.getSurface().drawColoredStringCentered(relativeX + mc.ui(204), "Select an object to withdraw or deposit", 0xFFFF00, 0, 3,
+				relativeY + mc.ui(248));
 		}
 	}
 
 	private void drawPageButtons(int currMouseX, int currMouseY, int relativeX, int relativeY) {
-		int pageButtonMargin = 50;
+		int pageButtonMargin = mc.ui(50);
 		int pageButtonColour = 0xffffff;
 
 		if (currentItems.size() > 48) {
 			// Page 1
 			if (mouseOverBankPageText == 0)
 				pageButtonColour = 0xff0000;
-			else if (currMouseX > relativeX + pageButtonMargin && currMouseY >= relativeY + 4
-				&& currMouseX < relativeX + pageButtonMargin + 65 && currMouseY < relativeY + 16)
+			else if (currMouseX > relativeX + pageButtonMargin && currMouseY >= relativeY + mc.ui(4)
+				&& currMouseX < relativeX + pageButtonMargin + mc.ui(65) && currMouseY < relativeY + mc.ui(16))
 				pageButtonColour = 0xffff00;
-			drawString("<page 1>", relativeX + pageButtonMargin, relativeY + 10, 1, pageButtonColour);
-			pageButtonMargin += 65;
+			drawString("<page 1>", relativeX + pageButtonMargin, relativeY + mc.ui(10), 1, pageButtonColour);
+			pageButtonMargin += mc.ui(65);
 
 			// Page 2
 			pageButtonColour = 0xffffff;
 			if (mouseOverBankPageText == 1)
 				pageButtonColour = 0xff0000;
-			else if (currMouseX > relativeX + pageButtonMargin && currMouseY >= relativeY + 4
-				&& currMouseX < relativeX + pageButtonMargin + 65 && currMouseY < relativeY + 16)
+			else if (currMouseX > relativeX + pageButtonMargin && currMouseY >= relativeY + mc.ui(4)
+				&& currMouseX < relativeX + pageButtonMargin + mc.ui(65) && currMouseY < relativeY + mc.ui(16))
 				pageButtonColour = 0xffff00;
-			drawString("<page 2>", relativeX + pageButtonMargin, relativeY + 10, 1, pageButtonColour);
-			pageButtonMargin += 65;
+			drawString("<page 2>", relativeX + pageButtonMargin, relativeY + mc.ui(10), 1, pageButtonColour);
+			pageButtonMargin += mc.ui(65);
 		}
 		if (currentItems.size() > 96) {
 			pageButtonColour = 0xffffff;
 			if (mouseOverBankPageText == 2)
 				pageButtonColour = 0xff0000;
-			else if (currMouseX > relativeX + pageButtonMargin && currMouseY >= relativeY + 4
-				&& currMouseX < relativeX + pageButtonMargin + 65 && currMouseY < relativeY + 16)
+			else if (currMouseX > relativeX + pageButtonMargin && currMouseY >= relativeY + mc.ui(4)
+				&& currMouseX < relativeX + pageButtonMargin + mc.ui(65) && currMouseY < relativeY + mc.ui(16))
 				pageButtonColour = 0xffff00;
-			drawString("<page 3>", relativeX + pageButtonMargin, relativeY + 10, 1, pageButtonColour);
-			pageButtonMargin += 65;
+			drawString("<page 3>", relativeX + pageButtonMargin, relativeY + mc.ui(10), 1, pageButtonColour);
+			pageButtonMargin += mc.ui(65);
 		}
 		if (currentItems.size() > 144) {
 			pageButtonColour = 0xffffff;
 			if (mouseOverBankPageText == 3)
 				pageButtonColour = 0xff0000;
-			else if (currMouseX > relativeX + pageButtonMargin && currMouseY >= relativeY + 4
-				&& currMouseX < relativeX + pageButtonMargin + 65 && currMouseY < relativeY + 16)
+			else if (currMouseX > relativeX + pageButtonMargin && currMouseY >= relativeY + mc.ui(4)
+				&& currMouseX < relativeX + pageButtonMargin + mc.ui(65) && currMouseY < relativeY + mc.ui(16))
 				pageButtonColour = 0xffff00;
-			drawString("<page 4>", relativeX + pageButtonMargin, relativeY + 10, 1, pageButtonColour);
+			drawString("<page 4>", relativeX + pageButtonMargin, relativeY + mc.ui(10), 1, pageButtonColour);
 		}
 	}
 
@@ -317,17 +323,17 @@ public class BankInterface {
 		int inventoryCount;
 		for (int verticalSlots = 0; verticalSlots < 6; verticalSlots++) {
 			for (int horizontalSlots = 0; horizontalSlots < 8; horizontalSlots++) {
-				int slotX = relativeX + 7 + horizontalSlots * 49;
-				int slotY = relativeY + 28 + verticalSlots * 34;
+				int slotX = relativeX + mc.ui(7) + horizontalSlots * mc.ui(49);
+				int slotY = relativeY + mc.ui(28) + verticalSlots * mc.ui(34);
 
 				// Background Colour of Bank Tile
 				if (this.selectedBankSlot == inventorySlot) { // Selected
-					mc.getSurface().drawBoxAlpha(slotX, slotY, 49, 34, 0xff0000, 160);
+					mc.getSurface().drawBoxAlpha(slotX, slotY, mc.ui(49), mc.ui(34), 0xff0000, 160);
 				} else { // Not Selected
-					mc.getSurface().drawBoxAlpha(slotX, slotY, 49, 34, 0xd0d0d0, 160);
+					mc.getSurface().drawBoxAlpha(slotX, slotY, mc.ui(49), mc.ui(34), 0xd0d0d0, 160);
 				}
 
-				mc.getSurface().drawBoxBorder(slotX, 50, slotY, 35, 0);
+				mc.getSurface().drawBoxBorder(slotX, mc.ui(50), slotY, mc.ui(35), 0);
 
 				// Draw Item Sprite From Bank
 				if (inventorySlot < currentItems.size()) { // We don't exceed the bank size
@@ -344,21 +350,21 @@ public class BankInterface {
 								// Draw the note background
 								mc.getSurface().drawSpriteClipping(
 									mc.spriteSelect(EntityHandler.noteDef),
-									slotX, slotY, 48, 32,
+									slotX, slotY, mc.ui(48), mc.ui(32),
 									EntityHandler.noteDef.getPictureMask(),
 									0, EntityHandler.noteDef.getBlueMask(),
 									false, 0, 1);
 								// Draw the item on top of the note background
 								mc.getSurface().drawSpriteClipping(
 									mc.spriteSelect(def),
-									slotX + 7, slotY + 5, 29, 19,
+									slotX + mc.ui(7), slotY + mc.ui(5), mc.ui(29), mc.ui(19),
 									def.getPictureMask(), 0, def.getBlueMask(), false,
 									0, 1);
 							} else {
 								// Draw the certificate sprite
 								mc.getSurface().drawSpriteClipping(
 									mc.spriteSelect(EntityHandler.certificateDef),
-									slotX, slotY, 48, 32,
+									slotX, slotY, mc.ui(48), mc.ui(32),
 									EntityHandler.certificateDef.getPictureMask(),
 									0, EntityHandler.certificateDef.getBlueMask(),
 									false, 0, 1);
@@ -367,7 +373,7 @@ public class BankInterface {
 							// Draw the item in the correct slot.
 							mc.getSurface().drawSpriteClipping(
 								mc.spriteSelect(def),
-								slotX, slotY, 48, 32,
+								slotX, slotY, mc.ui(48), mc.ui(32),
 								def.getPictureMask(),
 								0, def.getBlueMask(),
 								false, 0, 1);
@@ -376,15 +382,15 @@ public class BankInterface {
 						// Amount in bank (green)
 						Item banked = getBankItemByID(i.getCatalogID());
 						if (banked != null)
-							drawString("" + banked.getAmount(), slotX + 1, slotY + 10, 1, 0x00ff00);
+							drawString("" + banked.getAmount(), slotX + mc.ui(1), slotY + mc.ui(10), 1, 0x00ff00);
 						else
-							drawString("0", slotX + 1, slotY + 10, 1, 0x00ff00);
+							drawString("0", slotX + mc.ui(1), slotY + mc.ui(10), 1, 0x00ff00);
 
 						// Amount in inventory (blue)
 						inventoryCount = mc.getInventoryCount(i.getCatalogID());
 						drawString(String.valueOf(inventoryCount),
-							(slotX + 47) - mc.getSurface().stringWidth(1, String.valueOf(inventoryCount)),
-							slotY + 29, 1, 0x00ffff); // Amount in inventory (blue)
+							(slotX + mc.ui(47)) - mc.getSurface().stringWidth(1, String.valueOf(inventoryCount)),
+							slotY + mc.ui(29), 1, 0x00ffff); // Amount in inventory (blue)
 					}
 				}
 				inventorySlot++;
@@ -401,132 +407,132 @@ public class BankInterface {
 		if (getBankItemByID(itemID) != null && getBankItemByID(itemID).getAmount() > 0) {
 			drawString(
 				"Withdraw " + EntityHandler.getItemDef(itemID).getName(),
-				relativeX + 2, relativeY + 248, 1, 0xffffff);
+				relativeX + mc.ui(2), relativeY + mc.ui(248), 1, 0xffffff);
 
-			boolean b = currMouseX >= relativeX + 305 && currMouseY >= relativeY + 240 &&
-				currMouseX < relativeX + 335 && currMouseY <= relativeY + 251;
+			boolean b = currMouseX >= relativeX + mc.ui(305) && currMouseY >= relativeY + mc.ui(240) &&
+				currMouseX < relativeX + mc.ui(335) && currMouseY <= relativeY + mc.ui(251);
 			if (Config.S_WANT_BANK_NOTES) {
-				if (currMouseX >= relativeX + 220 && currMouseY >= relativeY + 240 &&
-					currMouseX < relativeX + 250 && currMouseY <= relativeY + 251)
+				if (currMouseX >= relativeX + mc.ui(220) && currMouseY >= relativeY + mc.ui(240) &&
+					currMouseX < relativeX + mc.ui(250) && currMouseY <= relativeY + mc.ui(251))
 					quantityColour = 0xff0000;
 				if (S_WANT_CERT_AS_NOTES) {
-					drawString("Note: ", relativeX + 222, relativeY + 248, 1, quantityColour);
+					drawString("Note: ", relativeX + mc.ui(222), relativeY + mc.ui(248), 1, quantityColour);
 				} else {
-					drawString("Certificate: ", relativeX + 187, relativeY + 248, 1, quantityColour);
+					drawString("Certificate: ", relativeX + mc.ui(187), relativeY + mc.ui(248), 1, quantityColour);
 				}
 				drawString(swapNoteMode ? "On" : "Off",
-					relativeX + 257, relativeY + 248, 1, swapNoteMode ? 0x00FF00 : 0xFF0000);
+					relativeX + mc.ui(257), relativeY + mc.ui(248), 1, swapNoteMode ? 0x00FF00 : 0xFF0000);
 
 				quantityColour = 0xffffff;
 				if (b)
 					quantityColour = 0xff0000;
-				drawString("One", relativeX + 307, relativeY + 248, 1, quantityColour);
+				drawString("One", relativeX + mc.ui(307), relativeY + mc.ui(248), 1, quantityColour);
 
 			} else { // Authentic
-				if (currMouseX >= relativeX + 220 && currMouseY >= relativeY + 240 &&
-					currMouseX < relativeX + 250 && currMouseY <= relativeY + 251)
+				if (currMouseX >= relativeX + mc.ui(220) && currMouseY >= relativeY + mc.ui(240) &&
+					currMouseX < relativeX + mc.ui(250) && currMouseY <= relativeY + mc.ui(251))
 					quantityColour = 0xff0000;
-				drawString("One", relativeX + 222, relativeY + 248, 1, quantityColour);
+				drawString("One", relativeX + mc.ui(222), relativeY + mc.ui(248), 1, quantityColour);
 
 				if (amount >= 5) {
 					quantityColour = 0xffffff;
-					if (currMouseX >= relativeX + 250 && currMouseY >= relativeY + 240 &&
-						currMouseX < relativeX + 280 && currMouseY <= relativeY + 251)
+					if (currMouseX >= relativeX + mc.ui(250) && currMouseY >= relativeY + mc.ui(240) &&
+						currMouseX < relativeX + mc.ui(280) && currMouseY <= relativeY + mc.ui(251))
 						quantityColour = 0xff0000;
-					drawString("Five", relativeX + 252, relativeY + 248, 1, quantityColour);
+					drawString("Five", relativeX + mc.ui(252), relativeY + mc.ui(248), 1, quantityColour);
 				}
 
 				if (amount >= 10) {
 					quantityColour = 0xffffff;
-					if (currMouseX >= relativeX + 280 && currMouseY >= relativeY + 240 &&
-						currMouseX < relativeX + 305 && currMouseY <= relativeY + 251)
+					if (currMouseX >= relativeX + mc.ui(280) && currMouseY >= relativeY + mc.ui(240) &&
+						currMouseX < relativeX + mc.ui(305) && currMouseY <= relativeY + mc.ui(251))
 						quantityColour = 0xff0000;
-					drawString("10", relativeX + 282, relativeY + 248, 1, quantityColour);
+					drawString("10", relativeX + mc.ui(282), relativeY + mc.ui(248), 1, quantityColour);
 				}
 
 				if (amount >= 50) {
 					quantityColour = 0xffffff;
 					if (b)
 						quantityColour = 0xff0000;
-					drawString("50", relativeX + 307, relativeY + 248, 1, quantityColour);
+					drawString("50", relativeX + mc.ui(307), relativeY + mc.ui(248), 1, quantityColour);
 				}
 			}
 
 			quantityColour = 0xffffff;
-			if (currMouseX >= relativeX + 340 && currMouseY >= relativeY + 240 &&
-				currMouseX < relativeX + 368 && currMouseY <= relativeY + 251)
+			if (currMouseX >= relativeX + mc.ui(340) && currMouseY >= relativeY + mc.ui(240) &&
+				currMouseX < relativeX + mc.ui(368) && currMouseY <= relativeY + mc.ui(251))
 				quantityColour = 0xff0000;
-			drawString("X", relativeX + 346, relativeY + 248, 1, quantityColour);
+			drawString("X", relativeX + mc.ui(346), relativeY + mc.ui(248), 1, quantityColour);
 
 			quantityColour = 0xffffff;
-			if (currMouseX >= relativeX + 370 && currMouseY >= relativeY + 240 &&
-				currMouseX < relativeX + 400 && currMouseY <= relativeY + 251)
+			if (currMouseX >= relativeX + mc.ui(370) && currMouseY >= relativeY + mc.ui(240) &&
+				currMouseX < relativeX + mc.ui(400) && currMouseY <= relativeY + mc.ui(251))
 				quantityColour = 0xff0000;
-			drawString("All", relativeX + 370, relativeY + 248, 1, quantityColour);
+			drawString("All", relativeX + mc.ui(370), relativeY + mc.ui(248), 1, quantityColour);
 		}
 
 		if (mc.getInventoryCount(itemID) > 0) {
 			drawString("Deposit " + EntityHandler.getItemDef(itemID).getName(),
-				relativeX + 2, relativeY + 273, 1, 0xffffff);
+				relativeX + mc.ui(2), relativeY + mc.ui(273), 1, 0xffffff);
 
 			quantityColour = 0xffffff;
 
 			if (Config.S_WANT_CERT_DEPOSIT && BankUtil.isCert(itemID)) {
-				if (currMouseX >= relativeX + 220 && currMouseY >= relativeY + 265 &&
-					currMouseX < relativeX + 250 && currMouseY <= relativeY + 276)
+				if (currMouseX >= relativeX + mc.ui(220) && currMouseY >= relativeY + mc.ui(265) &&
+					currMouseX < relativeX + mc.ui(250) && currMouseY <= relativeY + mc.ui(276))
 					quantityColour = 0xff0000;
-				drawString("Uncert: ", relativeX + 212, relativeY + 273, 1, quantityColour);
+				drawString("Uncert: ", relativeX + mc.ui(212), relativeY + mc.ui(273), 1, quantityColour);
 				drawString(swapCertMode ? "On" : "Off",
-					relativeX + 257, relativeY + 273, 1, swapCertMode ? 0x00FF00 : 0xFF0000);
+					relativeX + mc.ui(257), relativeY + mc.ui(273), 1, swapCertMode ? 0x00FF00 : 0xFF0000);
 
 				quantityColour = 0xffffff;
 
-				if (currMouseX >= relativeX + 305 && currMouseY >= relativeY + 265 &&
-					currMouseX < relativeX + 335 && currMouseY <= relativeY + 276)
+				if (currMouseX >= relativeX + mc.ui(305) && currMouseY >= relativeY + mc.ui(265) &&
+					currMouseX < relativeX + mc.ui(335) && currMouseY <= relativeY + mc.ui(276))
 					quantityColour = 0xff0000;
-				drawString("One", relativeX + 307, relativeY + 273, 1, quantityColour);
+				drawString("One", relativeX + mc.ui(307), relativeY + mc.ui(273), 1, quantityColour);
 			} else {
-				if (currMouseX >= relativeX + 220 && currMouseY >= relativeY + 265 &&
-					currMouseX < relativeX + 250 && currMouseY <= relativeY + 276)
+				if (currMouseX >= relativeX + mc.ui(220) && currMouseY >= relativeY + mc.ui(265) &&
+					currMouseX < relativeX + mc.ui(250) && currMouseY <= relativeY + mc.ui(276))
 					quantityColour = 0xff0000;
-				drawString("One", relativeX + 222, relativeY + 273, 1, quantityColour);
+				drawString("One", relativeX + mc.ui(222), relativeY + mc.ui(273), 1, quantityColour);
 
 				if (mc.getInventoryCount(itemID) >= 5) {
 					quantityColour = 0xffffff;
-					if (currMouseX >= relativeX + 250 && currMouseY >= relativeY + 265 &&
-						currMouseX < relativeX + 280 && currMouseY <= relativeY + 276)
+					if (currMouseX >= relativeX + mc.ui(250) && currMouseY >= relativeY + mc.ui(265) &&
+						currMouseX < relativeX + mc.ui(280) && currMouseY <= relativeY + mc.ui(276))
 						quantityColour = 0xff0000;
-					drawString("Five", relativeX + 252, relativeY + 273, 1, quantityColour);
+					drawString("Five", relativeX + mc.ui(252), relativeY + mc.ui(273), 1, quantityColour);
 				}
 
 				if (mc.getInventoryCount(itemID) >= 10) {
 					quantityColour = 0xffffff;
-					if (currMouseX >= relativeX + 280 && currMouseY >= relativeY + 265 &&
-						currMouseX < relativeX + 305 && currMouseY <= relativeY + 276)
+					if (currMouseX >= relativeX + mc.ui(280) && currMouseY >= relativeY + mc.ui(265) &&
+						currMouseX < relativeX + mc.ui(305) && currMouseY <= relativeY + mc.ui(276))
 						quantityColour = 0xff0000;
-					drawString("10", relativeX + 282, relativeY + 273, 1, quantityColour);
+					drawString("10", relativeX + mc.ui(282), relativeY + mc.ui(273), 1, quantityColour);
 				}
 
 				if (mc.getInventoryCount(itemID) >= 50) {
 					quantityColour = 0xffffff;
-					if (currMouseX >= relativeX + 305 && currMouseY >= relativeY + 265 &&
-						currMouseX < relativeX + 335 && currMouseY <= relativeY + 276)
+					if (currMouseX >= relativeX + mc.ui(305) && currMouseY >= relativeY + mc.ui(265) &&
+						currMouseX < relativeX + mc.ui(335) && currMouseY <= relativeY + mc.ui(276))
 						quantityColour = 0xff0000;
-					drawString("50", relativeX + 307, relativeY + 273, 1, quantityColour);
+					drawString("50", relativeX + mc.ui(307), relativeY + mc.ui(273), 1, quantityColour);
 				}
 			}
 
 			quantityColour = 0xffffff;
-			if (currMouseX >= relativeX + 340 && currMouseY >= relativeY + 265 &&
-				currMouseX < relativeX + 368 && currMouseY <= relativeY + 276)
+			if (currMouseX >= relativeX + mc.ui(340) && currMouseY >= relativeY + mc.ui(265) &&
+				currMouseX < relativeX + mc.ui(368) && currMouseY <= relativeY + mc.ui(276))
 				quantityColour = 0xff0000;
-			drawString("X", relativeX + 346, relativeY + 273, 1, quantityColour);
+			drawString("X", relativeX + mc.ui(346), relativeY + mc.ui(273), 1, quantityColour);
 
 			quantityColour = 0xffffff;
-			if (currMouseX >= relativeX + 370 && currMouseY >= relativeY + 265 &&
-				currMouseX < relativeX + 400 && currMouseY <= relativeY + 276)
+			if (currMouseX >= relativeX + mc.ui(370) && currMouseY >= relativeY + mc.ui(265) &&
+				currMouseX < relativeX + mc.ui(400) && currMouseY <= relativeY + mc.ui(276))
 				quantityColour = 0xff0000;
-			drawString("All", relativeX + 370, relativeY + 273, 1, quantityColour);
+			drawString("All", relativeX + mc.ui(370), relativeY + mc.ui(273), 1, quantityColour);
 		}
 	}
 

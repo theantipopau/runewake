@@ -90,7 +90,7 @@ public class BankPinInterface extends NComponent {
 		alternativeBox.addComponent(resetPin);
 
 		NComponent titleText = new NComponent(client);
-		titleText.setText("Bank of RuneScape");
+		titleText.setText("Bank of Runewake");
 		titleText.setFontColor(0x9B0907, 0x9B0907);
 		titleText.setTextSize(3);
 		titleText.setLocation(3, 2);
