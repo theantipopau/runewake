@@ -1008,13 +1008,35 @@ producing a real `RuneWake-Setup.exe`. New `Packaging/` folder:
   matching its own help text, and used it for further testing (no more
   network calls after the fix). Cleaned up all downloaded test files
   afterward.
-- **Hard blocker before this can go to real users** (same one flagged in
-  7i, now confirmed by hitting it directly): `Defaults.java` still points
-  at `rsc.vet` — until it's re-pointed at a RuneWake-owned file host (with
-  RuneWake's own MD5 manifest and client files uploaded there), a real
-  install would download the wrong game under the RuneWake name. Documented
-  clearly in `Packaging/README.md`. Not resolved - needs your decision on
-  where RuneWake will host update files.
+- [x] **Hard blocker resolved (2026-08-16)**: you picked GitHub for update
+  hosting. Literal GitHub *Releases* turned out to be a dead end though -
+  its assets are a flat namespace with no subfolders, but the launcher's
+  updater builds URLs as `_GAME_FILES_SERVER + relativePath` (e.g.
+  `Cache/video/spritepacks/Menus.osar`), and the cache genuinely has
+  nested subfolders. Confirmed this before building anything, and you
+  picked `raw.githubusercontent.com` against a dedicated branch instead -
+  same free/no-new-infra property, but it actually preserves folder
+  structure with zero changes to the download protocol. Built it: new
+  orphan `game-files` branch (`Open_RSC_Client.jar` + `Cache/` + a
+  `MD5.SUM` generated with the exact `find | md5sum` recipe
+  `Deployment_Scripts/deploy-openrsc-client.sh` already uses, verified
+  byte-for-byte against what `Md5Handler.java` expects), pushed to origin,
+  and confirmed live via `curl` (200s on the manifest and the jar).
+  `Defaults.java`'s `_GAME_FILES_SERVER` and `_VERSION_UPDATE_URL` both now
+  point at RuneWake's own repo instead of `rsc.vet` / upstream
+  `Open-RSC/Core-Framework`. Also fixed the launcher window title
+  (`_TITLE`), which the earlier branding pass missed since it lives in the
+  separate `PC_Launcher` module. Caught and excluded one real mistake
+  before pushing: the first staging pass copied `Cache/ip.txt` /
+  `port.txt` verbatim, which held this session's local test server
+  address (`localhost:43594`) — those are per-install local state, not
+  distributable defaults, so they're excluded now (matches
+  `Downloader.java`'s own `_EXCLUDED_FILES` list, which already treats
+  them as local-only for the same reason). Full republish recipe for
+  future client updates is in `Packaging/README.md`. **Not yet done**:
+  actually rebuilding and shipping `RuneWake-Setup.exe` with this fix —
+  the installer itself hasn't been rebuilt this session, only the
+  launcher source and the hosted files it points at.
 
 ## 7k. Broader server-side sweep (2026-07-08)
 
