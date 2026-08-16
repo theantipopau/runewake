@@ -1165,15 +1165,24 @@ tutorial box showing literal `%%` characters instead of paragraph breaks.
 
 Pick based on what actually bothered you most after testing this build:
 1. Confirm the login screen now looks right (no more overlapping buttons).
-2. If font size and wall/entity fade now look right → extend the same
-   distance-fade approach to name/hit-splat/chat-bubble text (section 4).
+2. ~~Extend distance-fade to name/hit-splat/chat-bubble text~~ — checked
+   2026-08-16: already done. Chat bubbles (`characterDialogAlpha`) and
+   health bars (`characterHealthAlpha`) both already fade via
+   `computeDistanceFadeAlpha()`. RSC classic has no floating hit-splat/
+   damage-number text or nametag overlay to extend to — the health bar
+   *is* the combat feedback here. Nothing left to do on this item.
 3. If font size is still off → send specifics (too big/small/not scaling
    at what window size), that's a quick targeted tune.
 4. If the fade zone is now too gradual/too abrupt → the `fogDistance / 5`
    (20%) and `smoothingZone / 100` constants in section 5 are easy single-
-   number tunes once you can see how it reads.
-5. Character creation panel is worth doing before launch (every new account
-   hits it); recovery/contact are fine to leave for later.
+   number tunes once you can see how it reads. The new entity-model fade
+   (section 7n) uses the same constants, so one tune covers both.
+5. ~~Character creation panel~~ — checked 2026-08-16 (see 7h): already
+   fully done, nothing outstanding. Recovery/contact panels still fine to
+   leave for later.
+6. New from this session: the welcome/tutorial dialog's `%%` literal-text
+   bug and entity pop-in fade gap are fixed (7n) — worth confirming those
+   read right in-game too.
 
 See **Phase 2** below for the dedicated-server / server-browser / AI-players
 epics — those are tracked separately since they're a different kind of work
@@ -1250,9 +1259,11 @@ guessed. Ordered easiest → hardest, which is also implementation order.
     override mechanism already existed, just wasn't exposed anywhere) and
     then runs `run-client.bat`. User drops it next to `run-client.bat` once;
     after that it's genuinely one click per server.
-- [ ] Not done: any actual hosting/deployment of the browser page, and no
-  real servers in `servers.json` beyond a localhost placeholder — that's
-  for you to fill in once there's something running to list.
+- [x] **Deployed to GitHub Pages (2026-08-16)** — live at
+  `https://theantipopau.github.io/runewake/`, served from a `gh-pages`
+  orphan branch (classic branch-based Pages, no CI workflow added).
+  `servers.json` still only has the localhost placeholder — that's for you
+  to fill in once there's a real server running to list.
 
 ## B. Simple dedicated server — done (plain JDK, no Docker)
 
