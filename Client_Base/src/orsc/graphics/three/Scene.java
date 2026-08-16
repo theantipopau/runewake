@@ -2737,6 +2737,19 @@ public final class Scene {
 						int var21 = this.m_Nb - (var17 - var14);
 						this.graphics.drawEntity(this.m_gb[var3], var20 + this.m_Zb, var21, var28, var17,
 							(256 << this.rot1024_vp_src) / var15, var19);
+						// Landscape faces (the else-branch below) get a gradual darkening fade via
+						// fogSmoothingStartDistance/fogZFalloff before their hard fogLandscapeDistance
+						// cutoff (see the vertZRot check further down). Dynamic entity models (players/
+						// NPCs, this m_T branch) had no equivalent - drawEntity() has no shade/alpha
+						// parameter to fade the blit itself, so instead of touching that pixel-level
+						// code, reuse the already-proven drawBoxAlpha primitive to darken the same
+						// on-screen rect with the identical formula the landscape fade uses, so entities
+						// fade toward black in step with the terrain instead of popping at full
+						// brightness right up to fogEntityDistance.
+						if (var15 > this.fogSmoothingStartDistance) {
+							int fadeAmount = Math.min(256, (var15 - this.fogSmoothingStartDistance) / this.fogZFalloff);
+							this.graphics.drawBoxAlpha(var20 + this.m_Zb, var21, var28, var17, 0, fadeAmount);
+						}
 						if (this.m_K && this.m_db > this.m_cc) {
 							var20 += (this.m_Q[var3] << this.rot1024_vp_src) / var15;
 							if (var21 <= this.m_Wb && var21 + var17 >= this.m_Wb && var20 <= this.m_j

@@ -1115,6 +1115,52 @@ original "not yet tested against a live running server" note).
   actual reason websocket/webclient connections never worked for anyone
   running the simple no-SSL setup, not just a server-browser-specific bug.
 
+## 7n. Two more live-testing bugs found and fixed (2026-08-10)
+
+You tested the local server/client from 7l/7m and reported "formatting issues
+and texture popping still occurring," with a screenshot of the welcome
+tutorial box showing literal `%%` characters instead of paragraph breaks.
+
+- [x] **`%`-triggered forced line breaks silently stopped working at high
+  `uiScale`.** `GraphicsController.drawWrappedCenteredString()`'s
+  `newLineOnPercent` path (used by the welcome/tutorial/server-message box,
+  fed server-side strings like `"...tutorial.% %Most actions..."` where `%`
+  marks a forced paragraph break) forced a line break by setting
+  `width = 1000` - a hardcoded sentinel that reliably exceeded `wrapWidth` at
+  the original 512-baseline scale, back when box widths were always well
+  under 1000px. Since `wrapWidth` itself now scales with `uiScale`, a large
+  enough window pushes the real (scaled) `wrapWidth` past 1000, so the
+  sentinel stops exceeding it and the forced break never fires - the `%`
+  character then falls through as an ordinary glyph and gets drawn literally,
+  exactly matching the screenshot. **Fix**: `width = wrapWidth + 1` instead
+  of a fixed `1000` - unconditionally exceeds `wrapWidth` at any scale, for
+  good. Compiled clean.
+- [x] **Entity/NPC pop-in: found the real gap, and a prior session's claim
+  in section 4 was wrong.** Re-read `Scene.java`'s render loop directly
+  (rather than trusting the earlier note) to check "texture popping" against
+  what's actually there. The `if (var2 == this.m_T)` branch (~:2725, dynamic
+  player/NPC models) draws straight through `drawEntity()` with **no**
+  darkening/fade applied at all - only the sibling `else` branch just below
+  it (~:2749, static landscape polygons) actually reads
+  `fogSmoothingStartDistance`/`fogZFalloff` to darken faces gradually before
+  `fogLandscapeDistance`'s hard cutoff. Section 4's claim that "entities
+  already share the landscape's fade-out treatment" was incorrect - these
+  are two separate branches of the same `if`, not a shared loop. This means
+  every player/NPC model has genuinely been popping in/out at full
+  brightness the whole time, independent of any of the landscape fade tuning
+  done in sections 5/7g. **Fix** (~:2738): `drawEntity()` has no shade/alpha
+  parameter to fade the blit itself, so rather than touch that pixel-level
+  code (same risk class as the reverted icon-strip mistake in section 7),
+  reused the already-proven `drawBoxAlpha` primitive to overlay a black box
+  on the exact same on-screen rect just handed to `drawEntity()`, with alpha
+  computed from the identical `(vertZRot - fogSmoothingStartDistance) /
+  fogZFalloff` formula the landscape branch already uses - so entities fade
+  toward black in step with the terrain around them instead of snapping.
+  Compiled clean. **Not yet live-tested** - please check both fixes; the
+  entity fade in particular is a new formula (reusing proven values, but a
+  first attempt at applying them this way) and worth a close look at how it
+  reads as NPCs/players approach your draw distance.
+
 ## 8. Suggested next session
 
 Pick based on what actually bothered you most after testing this build:

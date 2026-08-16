@@ -952,7 +952,11 @@ public class GraphicsController {
 					}
 
 					if (str.charAt(i) == '%' && newLineOnPercent) {
-						width = 1000;
+						// Was a hardcoded 1000 - reliable at the original 512-baseline scale where
+						// wrapWidth was always well under it, but wrapWidth itself now scales with
+						// uiScale and can exceed 1000 on a large enough window, silently disabling
+						// this forced break so '%' fell through and rendered as a literal character.
+						width = wrapWidth + 1;
 						lastBreak = i;
 					}
 
