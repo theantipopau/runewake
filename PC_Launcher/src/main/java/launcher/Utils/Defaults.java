@@ -3,8 +3,8 @@ package launcher.Utils;
 public class Defaults {
 
   // URLS
-  public static final String _VERSION_UPDATE_URL = "https://raw.githubusercontent.com/Open-RSC/Core-Framework/develop/PC_Launcher/src/main/java/launcher/Utils/Defaults.java";
-  public final static String _GAME_FILES_SERVER = "https://rsc.vet/downloads/";
+  public static final String _VERSION_UPDATE_URL = "https://raw.githubusercontent.com/theantipopau/runewake/develop/PC_Launcher/src/main/java/launcher/Utils/Defaults.java";
+  public final static String _GAME_FILES_SERVER = "https://raw.githubusercontent.com/theantipopau/runewake/game-files/";
 
   // EXTRAS
   public final static String _RSCPLUS_REPOSITORY_DL = "https://github.com/RSCPlus/rscplus/releases/download/Latest/rscplus-windows.zip";
@@ -15,7 +15,7 @@ public class Defaults {
   public final static String _FLEACIRCUS_REPOSITORY_DL = "https://github.com/Hubcapp/fleacircus2000-deob/releases/download/Latest/fleacircus.zip";
 
   // STRINGS
-  public final static String _TITLE = "Open RuneScape Classic Game Launcher";
+  public final static String _TITLE = "RuneWake Launcher";
 
   // FILES
   public final static String _CLIENT_FILENAME = "Open_RSC_Client";
