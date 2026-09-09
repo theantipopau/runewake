@@ -1183,6 +1183,94 @@ tutorial box showing literal `%%` characters instead of paragraph breaks.
   first attempt at applying them this way) and worth a close look at how it
   reads as NPCs/players approach your draw distance.
 
+## 7o. Premium presentation slice audit + theme-token foundation (2026-09-09)
+
+Requested: diagnose/fix remaining texture-popping, complete widescreen
+scaling, improve GUI consistency, and establish a reusable visual theme
+system. **Audit finding**: re-read this file end-to-end plus
+`UI_SCALING_PLAN.md` before touching anything, per standing instruction.
+Both documents show the widescreen/UI-scaling checklist (inventory,
+minimap, chat tabs, every dialog/panel/bank/HUD element) and every
+previously-reported texture/entity/terrain pop-in root cause (fog
+fade-zone width, fog darkening ceiling, entity-model fade overlay,
+box-blur transparency-marker bug) already diagnosed and fixed across
+sessions 2026-07-05 through 2026-08-10 (see sections 3-7n above). The two
+items still explicitly marked "not yet live-tested" (icon-strip
+`drawSpriteClipping` scaling, section 7n's `%%`/entity-fade fix) are
+pending your confirmation, not further code changes - re-doing them without
+a new symptom report would just be guessing. Did **not** find a new,
+previously-undiagnosed cause of popping to chase blind.
+Given that, the highest-value item still genuinely unstarted from the
+original ask is **D: a centralised theme/token system** - up to now, new
+styling (the 2026-07-06 login re-theme) used ad hoc repeated
+`GenUtil.buildColor(198, 170, 112), GenUtil.buildColor(150, 122, 76), ...`
+literals duplicated at all 6 of its call sites, not named tokens.
+
+- [x] **Added `orsc/graphics/gui/Theme.java`** - one small, dependency-free
+  class holding named `int` colour constants for exactly the token set
+  requested (background, elevated/inset panel, primary/secondary accent,
+  text primary/muted, success/warning/danger, selection/hover/pressed/
+  disabled, border light/dark, overlay-scrim), plus
+  `applyBronzeButtonScheme(Panel)` wrapping the existing bronze/gold bevel
+  values. Placed in `orsc.graphics.gui` (already wildcard-imported by
+  `mudclient.java`) so no new imports were needed and `Panel.java`'s
+  already-public `setButtonColorScheme()` was reachable directly.
+- [x] **Replaced all 6 duplicated literal `setButtonColorScheme(...)` call
+  sites** (`createRecoveryQuestionPanel()`, `createPasswordRecoveryPanel()`,
+  `createContactDetailsPanel()`, `createLoginPanels()` x3 - welcome/login/
+  registration panels) with `Theme.applyBronzeButtonScheme(panel)`. Zero
+  visual change (identical values, just centralised) - lowest possible risk
+  refactor, verified via `ant compile` (BUILD SUCCESSFUL).
+- **Deliberately not attempted this slice**: retheming the ~100
+  `drawBoxAlpha(...)` panel-tint call sites across the rest of
+  `mudclient.java` (inventory, settings, magic, social, bank, etc.) to pull
+  from `Theme` - these are a much larger blast radius (many different
+  panels, several already carefully tuned for opacity/readability in
+  section 7f) and retheming them is a distinct, separately-reviewable
+  change from *introducing* the token system. Flagging as the concrete next
+  slice below rather than doing a wide, harder-to-review sweep in the same
+  pass that only asked for the foundation.
+- Authentic mode is unaffected: `Panel.java`'s default `colorA`-`colorL`
+  scheme (used unless `setButtonColorScheme`/`Theme` is applied) is
+  untouched, and the bronze scheme was already, and remains, scoped to the
+  login/recovery/contact/registration flow only.
+
+## 7p. Premium theme, continued: opt-in flag + inventory-grid slot colour (2026-09-09)
+
+Continuing 7o's foundation with the first real (gated) migration, scoped to
+just the inventory grid per this file's own "validate inventory first"
+convention rather than a wide sweep.
+
+- [x] **`Config.C_PREMIUM_THEME`** (new, default `false`) — mirrors the
+  existing `C_CUSTOM_UI` opt-in-flag pattern. Off by default, so nothing
+  changes for anyone until it's explicitly turned on; no settings-menu UI
+  wired to it yet (flip the default or set it via existing `.conf`-style
+  config plumbing to test).
+- [x] **`Theme.slotFill()` / `Theme.slotHighlight()`** — return the
+  existing classic slot colours (`181,181,181` / `220,220,220`) when the
+  flag is off, or the new `PANEL_INSET`/`SELECTION` dark-fantasy tokens
+  when it's on. Rather than touch draw call sites directly, wired these
+  into the **existing** `clearBox`/`selectedBox` instance fields
+  (`mudclient.java:337-338`) that a handful of call sites already share
+  (equipment-tab panel background, stake-offer equip-mode toggle,
+  inventory/equipment sub-tab selector) — one point of control instead of
+  editing each site, lower risk of an inconsistent partial re-theme.
+- [x] **Inventory grid's own slot colour** (`drawUiTab1()`, `mudclient.java`
+  ~:8162) previously called `GenUtil.buildColor(181, 181, 181)` inline
+  instead of using the shared `clearBox` field like its neighbours -
+  switched it to `this.clearBox` so the inventory grid (checklist item #1)
+  now actually participates in the same toggle instead of being silently
+  left out.
+  Compiled clean (`ant compile`, `Client_Base`). **Not live-tested** - by
+  design this is a no-visual-change no-op with the flag at its default
+  `false`; testing the premium look requires manually flipping
+  `C_PREMIUM_THEME` to `true` and relaunching.
+- **Deliberately not migrated yet**: the settings-panel row backgrounds
+  (`mudclient.java` ~:9340-9491, same `181,181,181`/`201,201,201` literal
+  family, ~9 more call sites) and the rest of magic/social/bank tints -
+  next slice, once you've confirmed the inventory-grid + equipment-tab
+  behavior looks right with the flag on.
+
 ## 8. Suggested next session
 
 Pick based on what actually bothered you most after testing this build:
@@ -1205,6 +1293,12 @@ Pick based on what actually bothered you most after testing this build:
 6. New from this session: the welcome/tutorial dialog's `%%` literal-text
    bug and entity pop-in fade gap are fixed (7n) — worth confirming those
    read right in-game too.
+7. New (7o/7p): the `Theme` token class and an opt-in `Config.C_PREMIUM_THEME`
+   flag exist, wired into the login bronze scheme and the inventory-grid/
+   equipment-tab slot colours (`clearBox`/`selectedBox`). Flag is off by
+   default (zero visual change) - flip it to `true` and relaunch to see the
+   premium look, then report back so the settings-row/social/bank tints can
+   be migrated the same way next.
 
 See **Phase 2** below for the dedicated-server / server-browser / AI-players
 epics — those are tracked separately since they're a different kind of work

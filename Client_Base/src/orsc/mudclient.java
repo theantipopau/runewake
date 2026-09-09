@@ -334,8 +334,8 @@ public final class mudclient implements Runnable {
 	public LostOnDeathInterface lostOnDeathInterface;
 	public TerritorySignupInterface territorySignupInterface;
 	String m_p = null;
-	int clearBox = GenUtil.buildColor(181, 181, 181);
-	int selectedBox = GenUtil.buildColor(220, 220, 220);
+	int clearBox = Theme.slotFill();
+	int selectedBox = Theme.slotHighlight();
 	int instructContactDetails;
 	int controlContactName;
 	int controlContactZipCode;
@@ -1691,8 +1691,7 @@ public final class mudclient implements Runnable {
 
 	private void createRecoveryQuestionPanel() {
 		this.panelSetRecoveryQuestion = new Panel(this.getSurface(), 100);
-		this.panelSetRecoveryQuestion.setButtonColorScheme(GenUtil.buildColor(198, 170, 112), GenUtil.buildColor(150, 122, 76),
-			GenUtil.buildColor(96, 74, 44), GenUtil.buildColor(56, 42, 24));
+		Theme.applyBronzeButtonScheme(this.panelSetRecoveryQuestion);
 		int i1 = ui(8);
 		this.controlRecoveryInstruction = this.panelSetRecoveryQuestion.addCenteredText(halfGameWidth(), i1, "@yel@Please provide 5 security questions in case you lose your password", 1, true);
 		i1 += ui(22);
@@ -1869,8 +1868,7 @@ public final class mudclient implements Runnable {
 
 	private void createPasswordRecoveryPanel() {
 		this.panelRecovery = new Panel(this.getSurface(), 100);
-		this.panelRecovery.setButtonColorScheme(GenUtil.buildColor(198, 170, 112), GenUtil.buildColor(150, 122, 76),
-			GenUtil.buildColor(96, 74, 44), GenUtil.buildColor(56, 42, 24));
+		Theme.applyBronzeButtonScheme(this.panelRecovery);
 		int i1 = ui(10);
 		this.instructPassRecovery1 = this.panelRecovery.addCenteredText(halfGameWidth(), i1, "@yel@To prove this is your account please provide the answers to", 1, true);
 		i1 += ui(15);
@@ -1925,8 +1923,7 @@ public final class mudclient implements Runnable {
 
 	public void createContactDetailsPanel() {
 		this.panelContact = new Panel(this.getSurface(), 100);
-		this.panelContact.setButtonColorScheme(GenUtil.buildColor(198, 170, 112), GenUtil.buildColor(150, 122, 76),
-			GenUtil.buildColor(96, 74, 44), GenUtil.buildColor(56, 42, 24));
+		Theme.applyBronzeButtonScheme(this.panelContact);
 		int i = halfGameWidth();
 		int j = ui(400);
 		int k = ui(25);
@@ -2140,8 +2137,7 @@ public final class mudclient implements Runnable {
 		try {
 
 			this.panelLoginWelcome = new Panel(this.getSurface(), 50);
-			this.panelLoginWelcome.setButtonColorScheme(GenUtil.buildColor(198, 170, 112), GenUtil.buildColor(150, 122, 76),
-				GenUtil.buildColor(96, 74, 44), GenUtil.buildColor(56, 42, 24));
+			Theme.applyBronzeButtonScheme(this.panelLoginWelcome);
 			int yOffsetWelcome = ui(40);
 			int yOffsetLogin = 0;
 			if (isAndroid()) {
@@ -2176,8 +2172,7 @@ public final class mudclient implements Runnable {
 			}
 
 			this.panelLogin = new Panel(this.getSurface(), 50);
-			this.panelLogin.setButtonColorScheme(GenUtil.buildColor(198, 170, 112), GenUtil.buildColor(150, 122, 76),
-				GenUtil.buildColor(96, 74, 44), GenUtil.buildColor(56, 42, 24));
+			Theme.applyBronzeButtonScheme(this.panelLogin);
 			int androidHeightOffset = isAndroid() ? 30 : 230;
 			this.controlLoginStatus1 = this.panelLogin.addCenteredText(halfGameWidth(), halfGameHeight() + ui(35) + yOffsetLogin, "", 4, true);
 			this.controlLoginStatus2 = this.panelLogin.addCenteredText(halfGameWidth(), halfGameHeight() + ui(55) + yOffsetLogin,
@@ -2248,8 +2243,7 @@ public final class mudclient implements Runnable {
 			/* Registration setup */
 
 			menuNewUser = new Panel(getSurface(), 50);
-			menuNewUser.setButtonColorScheme(GenUtil.buildColor(198, 170, 112), GenUtil.buildColor(150, 122, 76),
-				GenUtil.buildColor(96, 74, 44), GenUtil.buildColor(56, 42, 24));
+			Theme.applyBronzeButtonScheme(menuNewUser);
 			if (isAndroid()) {
 				menuNewUser.addCenteredText(halfGameWidth() - ui(6), halfGameHeight() - ui(149), "@whi@To open keyboard press the back button", 5, false);
 			}
@@ -8165,7 +8159,7 @@ public final class mudclient implements Runnable {
 					if (!S_WANT_EQUIPMENT_TAB && this.inventoryItemCount > var4 && getInventoryItemEquippedID(var4) == 1) {
 						this.getSurface().drawBoxAlpha(var5, id, ui(49), ui(34), 0xFF0000, 210);
 					} else {
-						this.getSurface().drawBoxAlpha(var5, id, ui(49), ui(34), GenUtil.buildColor(181, 181, 181), 210);
+						this.getSurface().drawBoxAlpha(var5, id, ui(49), ui(34), this.clearBox, 210);
 					}
 
 					if (var4 < this.inventoryItemCount) {

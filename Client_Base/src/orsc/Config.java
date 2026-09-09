@@ -60,6 +60,7 @@ public class Config {
 	public static boolean C_HIDE_LOGIN_BOX = false;
 	public static boolean C_BLOCK_GLOBAL_FRIEND = false;
 	public static int C_MOVE_PER_FRAME = 4;
+	public static boolean C_PREMIUM_THEME = false; // Opt-in dark-fantasy panel re-theme (see orsc.graphics.gui.Theme); off keeps the classic look
 
 	/* Experience Config Menu */
 	public static int C_EXPERIENCE_COUNTER = 1;

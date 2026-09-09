@@ -439,3 +439,20 @@ improve what was there." Implemented both identified levers:
   bubbles — drawn outside this fade path) or (b) a server-side entity-visibility
   radius (network layer, not a client render setting) — flagging for the user
   to confirm what they're actually seeing before more (riskier) changes here.
+
+## Visual theme/token system (2026-09-09)
+
+Separate concern from scaling, tracked here briefly since it's part of the
+same "premium presentation" pass. Full details in `ROADMAP.md` section 7o.
+
+- Added `Client_Base/src/orsc/graphics/gui/Theme.java` — centralised colour
+  constants (background/panel/accent/text/status/interaction-state/border
+  tokens) plus `Theme.applyBronzeButtonScheme(Panel)`, wired into the 6
+  login/recovery/contact/registration panels that previously repeated the
+  same `GenUtil.buildColor(...)` literals inline. No visual change, just
+  consolidation. Compiled clean (`ant compile`, `Client_Base`).
+- Not yet done: migrating the broader in-game panel `drawBoxAlpha` tint
+  literals (inventory/settings/magic/social/bank, ~100 call sites) onto
+  `Theme` tokens — flagged as the next slice, not attempted here due to
+  blast radius across many already-tuned panels.
+
