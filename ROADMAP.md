@@ -1380,8 +1380,28 @@ guessed. Ordered easiest → hardest, which is also implementation order.
   orphan branch (classic branch-based Pages, no CI workflow added).
   `servers.json` still only has the localhost placeholder — that's for you
   to fill in once there's a real server running to list.
+- [x] **Found and documented a real gap before you hit it (2026-09-09):
+  GitHub Pages is HTTPS-only, and browsers block an HTTPS page from
+  fetching a plain `http://` status URL ("mixed content")** — so the
+  already-live page above would silently fail to show any server whose
+  `statusUrl` is `http://<ip>:43494/status` (the server's default, no-SSL
+  config per `SIMPLE_HOSTING.md`'s own documented simple path). Added a
+  free fix using tooling already installable on the hosting VM, no code
+  changes needed: a **Cloudflare Tunnel** (`cloudflared tunnel --url
+  http://localhost:43494` for a quick, free, no-account/no-domain HTTPS
+  URL, or a named tunnel for a stable one) exposes the status endpoint over
+  HTTPS without touching firewall/router config or requiring a
+  certificate. Documented step-by-step in
+  `server/SIMPLE_HOSTING.md` ("Free HTTPS via Cloudflare Tunnel") and
+  cross-linked from `web/server-browser/README.md`'s new "HTTPS
+  requirement" section. **Not yet done**: actually running `cloudflared`
+  against a real server and updating `servers.json`/`statusUrl` with the
+  resulting HTTPS URL — needs to happen on the machine hosting the server
+  (this session's environment has no server running to tunnel), so it's on
+  you to run once you're ready to list a real server.
 
 ## B. Simple dedicated server — done (plain JDK, no Docker)
+
 
 Direction received: plain JDK approach specifically, so it can run on a
 bare Windows server — no Docker. Matches the research finding that the

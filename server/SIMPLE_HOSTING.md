@@ -101,7 +101,49 @@ Then run `run-server.bat <your-conf-name-without-.conf>`.
 ## Listing your server publicly
 
 See `web/server-browser/README.md` — add an entry to `servers.json` there
-and open a pull request once your server is reachable.
+and open a pull request once your server is reachable. **Read that file's
+"HTTPS requirement" section first** — the hosted browser page won't be able
+to show your server at all until the status endpoint also speaks HTTPS, and
+a free Cloudflare Tunnel (below) is the easiest way to get that without a
+domain or a certificate to manage yourself.
+
+### Free HTTPS via Cloudflare Tunnel (needed for the server browser)
+
+The server-browser page is hosted on GitHub Pages (HTTPS-only), and browsers
+block an HTTPS page from fetching a plain `http://` URL ("mixed content") —
+so your server's JSON status endpoint needs to be reachable over HTTPS for
+it to show up there at all. `cloudflared` gives you that for free, with no
+port-forwarding or certificate changes to your server itself:
+
+1. Install `cloudflared` on the machine running the server (Windows:
+   `winget install --id Cloudflare.cloudflared`, or download the `.exe`
+   from Cloudflare's GitHub releases).
+2. Quickest option — a free "Quick Tunnel" (no Cloudflare account or domain
+   needed, but the URL changes each time you restart it):
+   ```powershell
+   cloudflared tunnel --url http://localhost:43494
+   ```
+   This prints a random `https://<random>.trycloudflare.com` URL — use
+   `https://<random>.trycloudflare.com/status` as the `statusUrl` in
+   `servers.json`.
+3. For a stable URL that survives restarts, use a free named tunnel instead
+   (requires a free Cloudflare account and a domain added to it — the
+   domain itself doesn't need to be bought through Cloudflare, just have its
+   nameservers pointed there): `cloudflared tunnel login`, then
+   `cloudflared tunnel create runewake-status`, then a config file routing
+   a subdomain (e.g. `status.yourdomain.com`) to `http://localhost:43494` —
+   see Cloudflare's own Tunnel docs for the exact config file syntax, since
+   that part is account/domain-specific.
+4. Either way, `connectHost`/`connectPort` in `servers.json` still point at
+   your server's real public IP/port for the game connection itself — the
+   tunnel is only needed for the `statusUrl` (HTTP JSON check), not the raw
+   game protocol port.
+
+Alternative if you'd rather manage your own certificate: the server already
+supports `SSL_SERVER_CERT_PATH`/`SSL_SERVER_KEY_PATH` config for a real
+Let's Encrypt certificate, but that needs a domain name pointed at the VM
+and ports 80/443 reachable for the ACME challenge — more moving parts than
+the tunnel option above.
 
 ## Sharing accounts across multiple servers
 

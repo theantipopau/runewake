@@ -26,6 +26,21 @@ spirit to the modern OSRS site's world list.
   `run-client.bat` and runs it — effectively "download once, click to play"
   from then on for that server.
 
+## HTTPS requirement (read this before adding your server)
+
+This page is served over HTTPS on GitHub Pages, and browsers block an HTTPS
+page from fetching a plain `http://` URL ("mixed content") — so a
+`statusUrl` of `http://your-ip:43494/status` will silently fail to load for
+every visitor, even though it works fine with `curl` or a plain HTTP page.
+Your server's status endpoint needs to be reachable over **HTTPS** for it to
+actually show up here. The easiest free way to get that without a domain or
+certificate to manage is a Cloudflare Tunnel — see
+`server/SIMPLE_HOSTING.md`'s "Free HTTPS via Cloudflare Tunnel" section for
+the exact steps. Once you have an `https://` URL for your status endpoint,
+use that as `statusUrl` below (`connectHost`/`connectPort` stay as your real
+server IP/port — those aren't fetched by the browser, just displayed/used
+for the downloaded connect script).
+
 ## Server-side requirement
 
 Each listed server needs to be running with `want_feature_websockets: true`
