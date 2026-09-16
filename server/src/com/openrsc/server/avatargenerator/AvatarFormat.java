@@ -177,8 +177,7 @@ public class AvatarFormat {
 				newWorkspace.changeName(name);
 
 				ByteArrayOutputStream out = new ByteArrayOutputStream();
-				try {
-					InputStream in = new GZIPInputStream(new FileInputStream(file));
+				try (InputStream in = new GZIPInputStream(new FileInputStream(file))) {
 					byte[] buffer = new byte[65536];
 					int noRead;
 					while ((noRead = in.read(buffer)) != -1) {
@@ -217,15 +216,12 @@ public class AvatarFormat {
 			try {
 				FileInputStream fis = new FileInputStream(file);
 				ByteArrayOutputStream out = new ByteArrayOutputStream();
-				try {
-					GZIPInputStream in = new GZIPInputStream(fis);
+				try (GZIPInputStream in = new GZIPInputStream(fis)) {
 					byte[] buffer = new byte[65536];
 					int noRead;
 					while ((noRead = in.read(buffer)) != -1) {
 						out.write(buffer, 0, noRead);
 					}
-
-					in.close();
 				} finally {
 					try { out.close(); fis.close();} catch (Exception e) {}
 				}

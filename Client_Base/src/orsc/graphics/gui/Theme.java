@@ -54,10 +54,14 @@ public final class Theme {
 		panel.setButtonColorScheme(BORDER_LIGHT, BORDER_LIGHT_MID, BORDER_DARK_MID, BORDER_DARK);
 	}
 
-	// Classic values these two replace when C_PREMIUM_THEME is off - kept as named
+	// Classic values these replace when C_PREMIUM_THEME is off - kept as named
 	// constants (not re-literals) so the "off" path is still self-documenting.
 	private static final int CLASSIC_SLOT_FILL = GenUtil.buildColor(181, 181, 181);
 	private static final int CLASSIC_SLOT_HIGHLIGHT = GenUtil.buildColor(220, 220, 220);
+	private static final int CLASSIC_SETTINGS_MAIN = GenUtil.buildColor(181, 181, 181);
+	private static final int CLASSIC_SETTINGS_ALT = GenUtil.buildColor(201, 201, 201);
+	private static final int CLASSIC_TAB_CHOSEN = GenUtil.buildColor(220, 220, 220);
+	private static final int CLASSIC_TAB_UNCHOSEN = GenUtil.buildColor(160, 160, 160);
 
 	/** Unselected/normal inventory-grid slot backing colour (inventory, equipment tab). */
 	public static int slotFill() {
@@ -67,5 +71,34 @@ public final class Theme {
 	/** Selected/highlighted slot or sub-tab backing colour. */
 	public static int slotHighlight() {
 		return Config.C_PREMIUM_THEME ? SELECTION : CLASSIC_SLOT_HIGHLIGHT;
+	}
+
+	/** Settings-panel main box fill (the 181-grey rows of the settings tab). */
+	public static int panelFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_INSET : CLASSIC_SETTINGS_MAIN;
+	}
+
+	/** Settings-panel alternate/bottom box fill (the 201-grey rows). */
+	public static int panelFillAlt() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_SETTINGS_ALT;
+	}
+
+	/** Backing colour of the selected settings sub-tab. */
+	public static int tabSelectedFill() {
+		return Config.C_PREMIUM_THEME ? SELECTION : CLASSIC_TAB_CHOSEN;
+	}
+
+	/** Backing colour of an unselected settings sub-tab. */
+	public static int tabUnselectedFill() {
+		return Config.C_PREMIUM_THEME ? DISABLED : CLASSIC_TAB_UNCHOSEN;
+	}
+
+	/**
+	 * Colour for plain section-header text drawn directly on settings-panel
+	 * boxes. Classic draws these black on light grey; the premium panels are
+	 * dark, so the header follows the theme to stay readable.
+	 */
+	public static int settingsHeaderColor() {
+		return Config.C_PREMIUM_THEME ? TEXT_PRIMARY : 0;
 	}
 }

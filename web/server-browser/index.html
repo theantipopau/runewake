@@ -313,6 +313,16 @@
       playBtn.title = 'Download a launcher that connects you to this server';
     } catch (e) {
       // leave the offline placeholder in place; Play stays disabled
+      // The most common cause of a fetch *throwing* (rather than a non-200)
+      // is this HTTPS page fetching a plain http:// statusUrl (browsers block
+      // the mixed-content request) - surface that hint instead of failing
+      // silently. See the README's "HTTPS requirement" section.
+      const isMixedContent = typeof server.statusUrl === 'string'
+        && server.statusUrl.startsWith('http://')
+        && window.location.protocol === 'https:';
+      stat.title = isMixedContent
+        ? 'Status URL is http:// but this page is https:// - browsers block the request (mixed content). A Cloudflare Tunnel on the status port fixes this; see the README.'
+        : 'No response from the status endpoint - the server may be offline, or ws_server_port is not reachable.';
     }
   }));
 

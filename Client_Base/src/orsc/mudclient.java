@@ -9323,8 +9323,8 @@ public final class mudclient implements Runnable {
 				var4 = maxY - ui(240);
 			int var5 = ui(196);
 
-			int chosenColor = GenUtil.buildColor(220, 220, 220);
-			int unchosenColor = GenUtil.buildColor(160, 160, 160);
+			int chosenColor = Theme.tabSelectedFill();
+			int unchosenColor = Theme.tabUnselectedFill();
 
 			// draw menu boxes
 			// android settings box & tabs
@@ -9337,10 +9337,10 @@ public final class mudclient implements Runnable {
 				// authentic settings GUI
 				if (this.authenticSettings) {
 					var4 = ui(36);
-					this.getSurface().drawBoxAlpha(var3, ui(36), var5, ui(65), GenUtil.buildColor(181, 181, 181), 160);
-					this.getSurface().drawBoxAlpha(var3, ui(101), var5, ui(65), GenUtil.buildColor(201, 201, 201), 160);
-					this.getSurface().drawBoxAlpha(var3, ui(166), var5, ui(95), GenUtil.buildColor(181, 181, 181), 160);
-					this.getSurface().drawBoxAlpha(var3, ui(261), var5, (this.insideTutorial || this.insideBlackHole) ? ui(55) : ui(40), GenUtil.buildColor(201, 201, 201), 160);
+					this.getSurface().drawBoxAlpha(var3, ui(36), var5, ui(65), Theme.panelFill(), 160);
+					this.getSurface().drawBoxAlpha(var3, ui(101), var5, ui(65), Theme.panelFillAlt(), 160);
+					this.getSurface().drawBoxAlpha(var3, ui(166), var5, ui(95), Theme.panelFill(), 160);
+					this.getSurface().drawBoxAlpha(var3, ui(261), var5, (this.insideTutorial || this.insideBlackHole) ? ui(55) : ui(40), Theme.panelFillAlt(), 160);
 				}
 
 				// custom settings GUI
@@ -9447,29 +9447,29 @@ public final class mudclient implements Runnable {
 	// custom settings menu with android tab
 	private void drawAndroidSettingsBox(int var3, int var4, int var5, int unchosenColor, int chosenColor) {
 		if (this.settingTab == 0) {
-			this.getSurface().drawBoxAlpha(var3, ui(36), var5, ui(25), GenUtil.buildColor(181, 181, 181), 160);
-			this.getSurface().drawBoxAlpha(var3, ui(61), var5, ui(105), GenUtil.buildColor(201, 201, 201), 160);
-			this.getSurface().drawBoxAlpha(var3, ui(166), var5, ui(95), GenUtil.buildColor(181, 181, 181), 160);
-			this.getSurface().drawBoxAlpha(var3, ui(261), var5, (this.insideTutorial || this.insideBlackHole) ? ui(55) : ui(40), GenUtil.buildColor(201, 201, 201), 160);
+			this.getSurface().drawBoxAlpha(var3, ui(36), var5, ui(25), Theme.panelFill(), 160);
+			this.getSurface().drawBoxAlpha(var3, ui(61), var5, ui(105), Theme.panelFillAlt(), 160);
+			this.getSurface().drawBoxAlpha(var3, ui(166), var5, ui(95), Theme.panelFill(), 160);
+			this.getSurface().drawBoxAlpha(var3, ui(261), var5, (this.insideTutorial || this.insideBlackHole) ? ui(55) : ui(40), Theme.panelFillAlt(), 160);
 		} else if (this.settingTab == 1) {
-			this.getSurface().drawBoxAlpha(var3, ui(36), var5, ui(25), GenUtil.buildColor(181, 181, 181), 160);
-			this.getSurface().drawBoxAlpha(var3, ui(61), var5, ui(105), GenUtil.buildColor(201, 201, 201), 160);
-			this.getSurface().drawBoxAlpha(var3, ui(166), var5, ui(95), GenUtil.buildColor(181, 181, 181), 160);
-			this.getSurface().drawBoxAlpha(var3, ui(261), var5, (this.insideTutorial || this.insideBlackHole) ? ui(55) : ui(40), GenUtil.buildColor(201, 201, 201), 160);
+			this.getSurface().drawBoxAlpha(var3, ui(36), var5, ui(25), Theme.panelFill(), 160);
+			this.getSurface().drawBoxAlpha(var3, ui(61), var5, ui(105), Theme.panelFillAlt(), 160);
+			this.getSurface().drawBoxAlpha(var3, ui(166), var5, ui(95), Theme.panelFill(), 160);
+			this.getSurface().drawBoxAlpha(var3, ui(261), var5, (this.insideTutorial || this.insideBlackHole) ? ui(55) : ui(40), Theme.panelFillAlt(), 160);
 		} else if (this.settingTab == 2) {
-			this.getSurface().drawBoxAlpha(var3, ui(36), var5, ui(25), GenUtil.buildColor(181, 181, 181), 160);
-			this.getSurface().drawBoxAlpha(var3, ui(61), var5, ui(105), GenUtil.buildColor(201, 201, 201), 160);
-			this.getSurface().drawBoxAlpha(var3, ui(166), var5, ui(95), GenUtil.buildColor(181, 181, 181), 160);
-			this.getSurface().drawBoxAlpha(var3, ui(261), var5, (this.insideTutorial || this.insideBlackHole) ? ui(55) : ui(40), GenUtil.buildColor(201, 201, 201), 160);
+			this.getSurface().drawBoxAlpha(var3, ui(36), var5, ui(25), Theme.panelFill(), 160);
+			this.getSurface().drawBoxAlpha(var3, ui(61), var5, ui(105), Theme.panelFillAlt(), 160);
+			this.getSurface().drawBoxAlpha(var3, ui(166), var5, ui(95), Theme.panelFill(), 160);
+			this.getSurface().drawBoxAlpha(var3, ui(261), var5, (this.insideTutorial || this.insideBlackHole) ? ui(55) : ui(40), Theme.panelFillAlt(), 160);
 		}
 
 		this.getSurface().drawLineHoriz(var3, ui(24) + var4 - ui(25), var5, 0);
 		this.getSurface().drawLineVert(var3 + var5 / 3, 0 + var4 - ui(25), 0, ui(24));
 		this.getSurface().drawLineVert(var3 + 2 * (var5 / 3) + 1, 0 + var4 - ui(25), 0, ui(24));
 
-		this.getSurface().drawColoredStringCentered(var5 / 4 + var3 - ui(16), "Social", 0, 0, 4, ui(16) + var4 - ui(25));
-		this.getSurface().drawColoredStringCentered(var3 + var5 / 4 + var5 / 3 - ui(16), "General", 0, 0, 4, ui(16) + var4 - ui(25));
-		this.getSurface().drawColoredStringCentered(var3 + var5 / 4 + 2 * var5 / 3 - ui(15), "Android", 0, 0, 4, ui(16) + var4 - ui(25));
+		this.getSurface().drawColoredStringCentered(var5 / 4 + var3 - ui(16), "Social", Theme.settingsHeaderColor(), 0, 4, ui(16) + var4 - ui(25));
+		this.getSurface().drawColoredStringCentered(var3 + var5 / 4 + var5 / 3 - ui(16), "General", Theme.settingsHeaderColor(), 0, 4, ui(16) + var4 - ui(25));
+		this.getSurface().drawColoredStringCentered(var3 + var5 / 4 + 2 * var5 / 3 - ui(15), "Android", Theme.settingsHeaderColor(), 0, 4, ui(16) + var4 - ui(25));
 	}
 
 	// custom settings menu
@@ -9485,11 +9485,11 @@ public final class mudclient implements Runnable {
 		this.getSurface().drawLineHoriz(var3, ui(24) + var4 - ui(25), var5, 0);
 		this.getSurface().drawLineVert(var3 + var5 / 2, 0 + var4 - ui(25), 0, ui(24));
 
-		this.getSurface().drawColoredStringCentered(var5 / 4 + var3, "Social", 0, 0, 4, ui(16) + var4 - ui(25));
-		this.getSurface().drawColoredStringCentered(var3 + var5 / 4 + var5 / 2, "General", 0, 0, 4, ui(16) + var4 - ui(25));
+		this.getSurface().drawColoredStringCentered(var5 / 4 + var3, "Social", Theme.settingsHeaderColor(), 0, 4, ui(16) + var4 - ui(25));
+		this.getSurface().drawColoredStringCentered(var3 + var5 / 4 + var5 / 2, "General", Theme.settingsHeaderColor(), 0, 4, ui(16) + var4 - ui(25));
 
-		this.getSurface().drawBoxAlpha(var3, var4, var5, ui(200), GenUtil.buildColor(181, 181, 181), 160);
-		this.getSurface().drawBoxAlpha(var3, var4 + ui(200), var5, ui(40), GenUtil.buildColor(201, 201, 201), 160);
+		this.getSurface().drawBoxAlpha(var3, var4, var5, ui(200), Theme.panelFill(), 160);
+		this.getSurface().drawBoxAlpha(var3, var4 + ui(200), var5, ui(40), Theme.panelFillAlt(), 160);
 	}
 
 	// custom social settings tab
@@ -9497,7 +9497,7 @@ public final class mudclient implements Runnable {
 		int var4 = y - ui(15);
 		// security settings text
 		y += ui(5);
-		this.getSurface().drawString("Security settings", ui(3) + baseX, y, 0, 1);
+		this.getSurface().drawString("Security settings", ui(3) + baseX, y, Theme.settingsHeaderColor(), 1);
 
 		// change password
 		y += ui(15);
@@ -9527,7 +9527,7 @@ public final class mudclient implements Runnable {
 
 		// privacy settings text
 		y += ui(20);
-		this.getSurface().drawString("Privacy settings", ui(3) + baseX, y, 0, 1);
+		this.getSurface().drawString("Privacy settings", ui(3) + baseX, y, Theme.settingsHeaderColor(), 1);
 
 		// block chat
 		y += ui(15);
@@ -9641,7 +9641,7 @@ public final class mudclient implements Runnable {
 		y = ui(275);
 		if (C_CUSTOM_UI)
 			y = var4 + ui(214);
-		this.getSurface().drawString("Always logout when you finish", x, y, 0, 1);
+		this.getSurface().drawString("Always logout when you finish", x, y, Theme.settingsHeaderColor(), 1);
 		logoutColor = 0xFFFFFF;
 
 		// logout menu option
@@ -9657,7 +9657,7 @@ public final class mudclient implements Runnable {
 		int var4 = y - ui(15);
 		this.panelSettings.clearList(this.controlSettingPanel);
 		int index = 0;
-		this.getSurface().drawString("Game options", ui(3) + baseX, y, 0, 1);
+		this.getSurface().drawString("Game options", ui(3) + baseX, y, Theme.settingsHeaderColor(), 1);
 
 		// camera angle mode - byte index 1
 		if (this.optionCameraModeAuto) {
@@ -10007,7 +10007,7 @@ public final class mudclient implements Runnable {
 			this.getSurface().drawString("Items on death", baseX + 3, y, onDeathColor, 1);
 		} else
 			*/
-		this.getSurface().drawString("Always logout when you finish", x, y, 0, 1);
+		this.getSurface().drawString("Always logout when you finish", x, y, Theme.settingsHeaderColor(), 1);
 
 		// logout menu option
 		y += ui(15);
@@ -10024,7 +10024,7 @@ public final class mudclient implements Runnable {
 	private void drawAndroidSettingsOptions(int baseX, int boxWidth, int x, int y) {
 		this.panelSettings.clearList(this.controlSettingPanel);
 		int index = 0;
-		this.getSurface().drawString("Android options", ui(3) + baseX, y, 0, 1);
+		this.getSurface().drawString("Android options", ui(3) + baseX, y, Theme.settingsHeaderColor(), 1);
 
 		// Status Bar
 		if (osConfig.C_STATUS_BAR == 0) {
@@ -10150,7 +10150,7 @@ public final class mudclient implements Runnable {
 
 		// logout text
 		y += ui(199);
-		this.getSurface().drawString("Always logout when you finish", x, y, 0, 1);
+		this.getSurface().drawString("Always logout when you finish", x, y, Theme.settingsHeaderColor(), 1);
 		int logoutColor = 0xFFFFFF;
 
 		// logout menu option
@@ -10741,7 +10741,7 @@ public final class mudclient implements Runnable {
 
 	// authentic settings / social tab
 	private void drawAuthenticSettingsOptions(int baseX, int var4, int boxWidth, int x, int y, int chosenColor, int unchosenColor) {
-		this.getSurface().drawString("Game options - click to toggle", ui(3) + baseX, y, 0, 1);
+		this.getSurface().drawString("Game options - click to toggle", ui(3) + baseX, y, Theme.settingsHeaderColor(), 1);
 
 		// camera angle mode - byte index 0
 		y += ui(15);
@@ -10772,7 +10772,7 @@ public final class mudclient implements Runnable {
 		// security settings section
 		y += ui(15);
 		y += ui(5);
-		this.getSurface().drawString("Security settings", ui(3) + baseX, y, 0, 1);
+		this.getSurface().drawString("Security settings", ui(3) + baseX, y, Theme.settingsHeaderColor(), 1);
 
 		// change password
 		y += ui(15);
@@ -10814,9 +10814,9 @@ public final class mudclient implements Runnable {
 
 		// privacy setting text
 		y += ui(20);
-		this.getSurface().drawString("Privacy settings. May be applied to all", ui(3) + baseX, y, 0, 1);
+		this.getSurface().drawString("Privacy settings. May be applied to all", ui(3) + baseX, y, Theme.settingsHeaderColor(), 1);
 		y += ui(15);
-		this.getSurface().drawString("people including those on your friends list", ui(3) + baseX, y, 0, 1);
+		this.getSurface().drawString("people including those on your friends list", ui(3) + baseX, y, Theme.settingsHeaderColor(), 1);
 
 		// block chat toggle
 		y += ui(15);
@@ -10880,7 +10880,7 @@ public final class mudclient implements Runnable {
 
 		// logout section text
 		y += ui(20);
-		this.getSurface().drawString("Always logout when you finish", x, y, 0, 1);
+		this.getSurface().drawString("Always logout when you finish", x, y, Theme.settingsHeaderColor(), 1);
 
 		// logout menu option
 		y += ui(15);

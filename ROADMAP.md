@@ -1544,3 +1544,55 @@ environment. Concretely, the plan is now:
    simplify server-side handling at the cost of the "indistinguishable"
    goal.
 
+## 7q. Theme migration: settings panel + more server-side fixes (2026-09-16)
+
+Fresh review of the whole repo against this file; worked the two named
+next slices. Everything below compile-verified (client `ant compile`,
+server `ant compile_core` + `compile_plugins`, all BUILD SUCCESSFUL with
+the bundled Portable_Windows JDK/Ant).
+
+- [x] **Settings panel migrated to `Theme` tokens (7p's named next
+  slice).** All 19 gray box fills in the wrench/settings tab
+  (`drawUiTabOptions` box drawing, `drawAndroidSettingsBox`,
+  `drawCustomSettingsBox`, plus the authentic-mode boxes) now go through
+  two new theme accessors: `Theme.panelFill()` (the `181,181,181` family,
+  → `PANEL_INSET` when `C_PREMIUM_THEME` is on) and `Theme.panelFillAlt()`
+  (the `201,201,201` family, → `PANEL_ELEVATED`). The sub-tab backing
+  colors moved to `Theme.tabSelectedFill()`/`Theme.tabUnselectedFill()`.
+  **Text parity handled too**: the settings tab's section headers
+  ("Game options", "Security settings", "Privacy settings", "Always logout
+  when you finish", the Social/General/Android tab labels, Android
+  options) are drawn in black directly on those boxes — dark premium
+  panels would have made them unreadable, so they now use
+  `Theme.settingsHeaderColor()` (`TEXT_PRIMARY` when the flag is on,
+  classic black when off). The `@whi@/@gre@`-coded toggle rows were
+  already light and needed nothing. Flag still defaults to `false`:
+  zero visual change until it's flipped.
+- [x] **Server-side leak sweep (continuing 7i/7k), 5 more files fixed:**
+  - `net/rsc/Crypto.java` — `pemParser()` leaked the `BufferedReader` on
+    `client.pem`/`server.pem` (runs at every boot; only its success path
+    closed), and `generateRSAKeys()` leaked both key `FileWriter`s on any
+    write/close exception. Both try-with-resources now.
+  - `util/FileUtil.java` — `writeFull()` leaked its `DataOutputStream` on
+    a write exception (the `close()` was inside the `try`), and
+    `copyFile()` leaked both `FileChannel`s if `transferFrom` threw (the
+    `finally` called `.close()` on channels that were still `null` in that
+    case, throwing a fresh NPE and masking the original error). Both
+    fixed.
+  - `io/JContent.java` + `io/JContentFile.java` — both `dump()` methods
+    leaked their stream on write failure (world-content dump utility).
+  - `avatargenerator/AvatarFormat.java` — both unpack entry points leaked
+    the `GZIPInputStream`/`FileInputStream` if the read loop threw
+    (only the success path closed them).
+- [x] **Server browser: mixed-content failure now self-explains.** When a
+  server's status fetch fails from the deployed HTTPS page, the offline
+  entry now shows a hover tooltip; if the listed `statusUrl` is `http://`
+  it explicitly names the mixed-content block and points at the
+  Cloudflare Tunnel fix in the README, instead of failing silently and
+  looking like a dead server.
+- Not touched this session, per the file's own convention: the
+  social/clan tab `160/220` box literals (different panel family — the
+  natural next `Theme` slice), and everything listed as pending live
+  confirmation in sections 3/5/7/7p (needs a display).
+
+

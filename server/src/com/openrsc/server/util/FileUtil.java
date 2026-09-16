@@ -14,10 +14,8 @@ public class FileUtil {
     }
 
     public static boolean writeFull(String fname, byte[] data) {
-        try {
-            DataOutputStream os = new DataOutputStream(new FileOutputStream(fname));
+        try (DataOutputStream os = new DataOutputStream(new FileOutputStream(fname))) {
             os.write(data);
-            os.close();
             return true;
         } catch (Exception e) {
             return false;
@@ -36,15 +34,9 @@ public class FileUtil {
         if (source.getAbsolutePath().equals(dest.getAbsolutePath())) {
             return;
         }
-        FileChannel sourceChannel = null;
-        FileChannel destChannel = null;
-        try {
-            sourceChannel = new FileInputStream(source).getChannel();
-            destChannel = new FileOutputStream(dest).getChannel();
+        try (FileChannel sourceChannel = new FileInputStream(source).getChannel();
+             FileChannel destChannel = new FileOutputStream(dest).getChannel()) {
             destChannel.transferFrom(sourceChannel, 0, sourceChannel.size());
-        } finally {
-            sourceChannel.close();
-            destChannel.close();
         }
     }
 

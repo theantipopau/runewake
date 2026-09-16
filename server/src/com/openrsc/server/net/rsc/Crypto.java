@@ -105,13 +105,13 @@ public class Crypto {
                 keyPairGenerator.initialize(512);
                 KeyPair keyPair = keyPairGenerator.genKeyPair();
 
-                FileWriter publicKeyFile = new FileWriter("client.pem");
+            try (FileWriter publicKeyFile = new FileWriter("client.pem")) {
                 publicKeyFile.write(certToString(keyPair.getPublic().getEncoded(), "PUBLIC"));
-                publicKeyFile.close();
+            }
 
-                FileWriter privateKeyFile = new FileWriter("server.pem");
+            try (FileWriter privateKeyFile = new FileWriter("server.pem")) {
                 privateKeyFile.write(certToString(keyPair.getPrivate().getEncoded(), "PRIVATE"));
-                privateKeyFile.close();
+            }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -129,14 +129,12 @@ public class Crypto {
 
     private static byte[] pemParser(String filename) {
         String fileString = "";
-        try {
 
-            BufferedReader br = new BufferedReader(new FileReader(filename));
+        try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
             String line;
             while ((line = br.readLine()) != null) {
                 fileString += line + "\n";
             }
-            br.close();
         } catch (Exception e) {
             LOGGER.error("Unable to read " + filename + " while parsing PEM files.");
             LOGGER.error("Server will be unable to run.");
