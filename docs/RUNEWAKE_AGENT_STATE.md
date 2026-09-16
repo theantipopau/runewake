@@ -112,3 +112,37 @@ that was not actually run.
 2. Verify Input-X "resize while open" staleness matters in practice; if yes,
    recompute dims on reposition.
 3. Next scaling slices per plan: bank interface audit; login/character-creation polish.
+
+---
+
+## Session: 2026-09-16 (Input-X hardening + bank interface pass)
+
+### What was done
+1. **Input-X resize hardening (commit 1a91c772f).** The quantity dialog
+   computed its box once at open time; resizing (or cycling the interface
+   scale cap) while it was open left stale unscaled dimensions that could
+   clip the input text. `drawInputX` now derives the identical sizing every
+   frame, so the box always matches live font metrics. No input/limit changes.
+2. **Bank interface audit.** Both implementations recompute their bounds
+   from `ui()` every render (width/height from BASE_WIDTH/BASE_HEIGHT),
+   and every click region is the same rect as the draw (slot grid
+   ui(49)xui(34), quantity-button rows, page buttons, right-click menu
+   boxes all pair draw-side and hit-test-side geometry). No bound defects
+   found - no corrections required.
+3. **Bank theme polish (commit 7f357a088).** Header `192` / body `0x989898`
+   / inset-slot `0xd0d0d0` family literals in BankInterface and
+   CustomBankInterface (main panel + Assign Presets dialog) now route
+   through the shared Theme accessors, consistent with the trade/duel/shop
+   pass. CustomBank's own interaction palette (0x5A5A55/0x7E1F1C/0x5C5548
+   etc., 33 sites) deliberately left for a dedicated pass - it is a
+   different, self-consistent scheme.
+
+### Commands run (results)
+- `Client_Base ant compile` (covers PC_Client/src too): PASSED x2
+- `git diff --check`: clean
+- NOT run: any visual inspection; networked bank withdraw/deposit tests
+
+### Exact next tasks
+1. Manual visual pass of the theme-on bank/trade/duel/shop modals.
+2. Dedicated CustomBank interaction-palette theme slice (33 literals).
+3. Next scaling slices per plan: login/character-creation polish.
