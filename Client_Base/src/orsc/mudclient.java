@@ -3005,9 +3005,9 @@ public final class mudclient implements Runnable {
 
 			for (int row = 0; row < 5; ++row) {
 				if (1 + this.combatStyle == row) {
-					this.getSurface().drawBoxAlpha(sx, sy + row * ui(20), width, ui(20), GenUtil.buildColor(255, 0, 0), 210);
+					this.getSurface().drawBoxAlpha(sx, sy + row * ui(20), width, ui(20), Theme.combatStyleSelected(), 210);
 				} else {
-					this.getSurface().drawBoxAlpha(sx, sy + row * ui(20), width, ui(20), GenUtil.buildColor(190, 190, 190),
+					this.getSurface().drawBoxAlpha(sx, sy + row * ui(20), width, ui(20), Theme.combatStyleRow(),
 						128);
 				}
 
@@ -7430,7 +7430,7 @@ public final class mudclient implements Runnable {
 			int stringWid = getSurface().stringWidth(3, "Total: " + totalXp);
 			int x = halfGameWidth() - (stringWid / 2) - 10;
 			int width = stringWid + 6;
-			this.getSurface().drawBoxAlpha(x, 0, width, 20, 0x989898, 90);
+			this.getSurface().drawBoxAlpha(x, 0, width, 20, Theme.xpCounterFill(), 90);
 			//this.getSurface().drawBoxBorder(x, width, 0, 20, 0x000000);
 
 			if (textColor == 0xFFFFFF) {
@@ -7461,7 +7461,7 @@ public final class mudclient implements Runnable {
 					timePassed = System.currentTimeMillis() - this.totalXpGainedStartTime;
 					xpPerHour = this.playerXpGainedTotal / (((double) timePassed) / 3600000);
 				}
-				this.getSurface().drawBoxAlpha(x, 19, width, 31, 0x989898, 90);
+				this.getSurface().drawBoxAlpha(x, 19, width, 31, Theme.xpCounterFill(), 90);
 				//this.getSurface().drawBoxBorder(x, width, 19, 31, 0x000000);
 
 				if (textColor == 0xFFFFFF) {
@@ -7476,7 +7476,7 @@ public final class mudclient implements Runnable {
 			int stringWid = getSurface().stringWidth(3, skillNames[skill] + ": " + playerStatBase[skill] + ": " + playerExperience[skill]);
 			int x = (getGameWidth() / 2) - (stringWid / 2) - 10;
 			int width = stringWid + 6;
-			this.getSurface().drawBoxAlpha(x, 0, width, 20, 0x989898, 90);
+			this.getSurface().drawBoxAlpha(x, 0, width, 20, Theme.xpCounterFill(), 90);
 			//this.getSurface().drawBoxBorder(x, width, 0, 20, 0x000000);
 
 			int tilLvl = 0, baseTilLvl = 0, progressWidth = 0;
@@ -7519,7 +7519,7 @@ public final class mudclient implements Runnable {
 					timePassed = System.currentTimeMillis() - this.xpGainedStartTime[skill];
 					xpPerHour = this.playerStatXpGained[skill] / (((double) timePassed) / 3600000);
 				}
-				this.getSurface().drawBoxAlpha(x, 20, width, 61, 0x989898, 90);
+				this.getSurface().drawBoxAlpha(x, 20, width, 61, Theme.xpCounterFill(), 90);
 				//this.getSurface().drawBoxBorder(x, width, 19, 61, 0x000000);
 
 				if (textColor == 0xFFFFFF) {
@@ -8209,7 +8209,7 @@ public final class mudclient implements Runnable {
 					var5 = var3 + var4 % 5 * ui(49);
 					id = var4 / 5 * ui(34) + yOffset;
 					if (!S_WANT_EQUIPMENT_TAB && this.inventoryItemCount > var4 && getInventoryItemEquippedID(var4) == 1) {
-						this.getSurface().drawBoxAlpha(var5, id, ui(49), ui(34), 0xFF0000, 210);
+						this.getSurface().drawBoxAlpha(var5, id, ui(49), ui(34), Theme.inventoryEquippedWarning(), 210);
 					} else {
 						this.getSurface().drawBoxAlpha(var5, id, ui(49), ui(34), this.clearBox, 210);
 					}
@@ -8505,52 +8505,52 @@ public final class mudclient implements Runnable {
 			if (S_WANT_CLANS) {
 				int clanTab;
 				int colorB;
-				int colorA = colorB = clanTab = GenUtil.buildColor(160, 160, 160);
+				int colorA = colorB = clanTab = Theme.tabUnselectedFill();
 				if (this.panelSocialTab == 1) {
-					clanTab = GenUtil.buildColor(220, 220, 220);
+					clanTab = Theme.tabSelectedFill();
 					if (C_CUSTOM_UI)
 						var4 -= ui(19);
 					if (clan.inClan()) {
-						this.getSurface().drawBoxAlpha(var3, ui(24) + var4, var5, ui(49), GenUtil.buildColor(220, 220, 220), 192);
+						this.getSurface().drawBoxAlpha(var3, ui(24) + var4, var5, ui(49), Theme.socialBodyFill(), 192);
 						this.getSurface().drawLineHoriz(var3, var4 + ui(72), var5, 0);
-						this.getSurface().drawBoxAlpha(var3, var4 + var6 - ui(16) + ui(34), var5, ui(49), GenUtil.buildColor(220, 220, 220), 192);
+						this.getSurface().drawBoxAlpha(var3, var4 + var6 - ui(16) + ui(34), var5, ui(49), Theme.socialBodyFill(), 192);
 					} else {
-						this.getSurface().drawBoxAlpha(var3, var4 + var6 - ui(30), var5, ui(49), GenUtil.buildColor(220, 220, 220), 192);
+						this.getSurface().drawBoxAlpha(var3, var4 + var6 - ui(30), var5, ui(49), Theme.socialBodyFill(), 192);
 					}
 				} else if (this.panelSocialTab == 0) {
-					colorA = GenUtil.buildColor(220, 220, 220);
+					colorA = Theme.tabSelectedFill();
 				} else {
-					colorB = GenUtil.buildColor(220, 220, 220);
+					colorB = Theme.tabSelectedFill();
 				}
 
 				this.getSurface().drawBoxAlpha(var3, var4, ui(65), ui(24), colorA, 210);
 				this.getSurface().drawBoxAlpha(var3 + var5 / 2 - ui(32), var4, ui(65), ui(24), clanTab, 210);
 				this.getSurface().drawBoxAlpha(var3 + var5 / 2 + ui(33), var4, ui(65), ui(24), colorB, 210);
-				this.getSurface().drawBoxAlpha(var3, (this.panelSocialTab == 1 && clan.inClan() ? ui(49) : 0) + ui(24) + var4, var5, (this.panelSocialTab == 1 ? ui(127) : var6 - ui(24)), GenUtil.buildColor(220, 220, 220), 210);
-				this.getSurface().drawLineHoriz(var3, var4 + ui(24), var5, 0);
-				this.getSurface().drawLineVert(var5 / 2 + var3 - ui(33), 0 + var4, 0, ui(24));
-				this.getSurface().drawLineVert(var5 / 2 + var3 + ui(33), 0 + var4, 0, ui(24));
-				this.getSurface().drawLineHoriz(var3, var4 + var6 - ui(16) + (this.panelSocialTab == 1 ? clan.inClan() ? ui(34) : -ui(15) : 0), var5, 0);
-				this.getSurface().drawColoredStringCentered(var3 + var5 / 4 - ui(16), "Friends", 0, 0, 4, ui(16) + var4);
-				this.getSurface().drawColoredStringCentered(var5 / 4 + var3 + var5 / 2 - ui(33) - ui(16), "Clan", 0, 0, 4, var4 + ui(16));
-				this.getSurface().drawColoredStringCentered(var5 / 4 + var3 + var5 / 2 + ui(16), "Ignore", 0, 0, 4, var4 + ui(16));
+				this.getSurface().drawBoxAlpha(var3, (this.panelSocialTab == 1 && clan.inClan() ? ui(49) : 0) + ui(24) + var4, var5, (this.panelSocialTab == 1 ? ui(127) : var6 - ui(24)), Theme.socialBodyFill(), 210);
+				this.getSurface().drawLineHoriz(var3, var4 + ui(24), var5, Theme.sidePanelSeparator());
+				this.getSurface().drawLineVert(var5 / 2 + var3 - ui(33), 0 + var4, Theme.sidePanelSeparator(), ui(24));
+				this.getSurface().drawLineVert(var5 / 2 + var3 + ui(33), 0 + var4, Theme.sidePanelSeparator(), ui(24));
+				this.getSurface().drawLineHoriz(var3, var4 + var6 - ui(16) + (this.panelSocialTab == 1 ? clan.inClan() ? ui(34) : -ui(15) : 0), var5, Theme.sidePanelSeparator());
+				this.getSurface().drawColoredStringCentered(var3 + var5 / 4 - ui(16), "Friends", Theme.sidePanelTabText(), 0, 4, ui(16) + var4);
+				this.getSurface().drawColoredStringCentered(var5 / 4 + var3 + var5 / 2 - ui(33) - ui(16), "Clan", Theme.sidePanelTabText(), 0, 4, var4 + ui(16));
+				this.getSurface().drawColoredStringCentered(var5 / 4 + var3 + var5 / 2 + ui(16), "Ignore", Theme.sidePanelTabText(), 0, 4, var4 + ui(16));
 				this.panelSocial.clearList(this.controlSocialPanel);
 				this.panelClan.clearList(this.controlClanPanel);
 			} else { // clans disabled
 				int l;
-				int k = l = GenUtil.buildColor(160, 160, 160);
+				int k = l = Theme.tabUnselectedFill();
 				if (this.panelSocialTab == 0)
-					k = GenUtil.buildColor(220, 220, 220);
+					k = Theme.tabSelectedFill();
 				else
-					l = GenUtil.buildColor(220, 220, 220);
+					l = Theme.tabSelectedFill();
 				this.getSurface().drawBoxAlpha(var3, var4, var5 / 2, ui(24), k, 210);
 				this.getSurface().drawBoxAlpha(var3 + var5 / 2, var4, var5 / 2, ui(24), l, 210);
-				this.getSurface().drawBoxAlpha(var3, var4 + ui(24), var5, var6 - ui(24), GenUtil.buildColor(220, 220, 220), 210);
-				this.getSurface().drawLineHoriz(var3, var4 + ui(24), var5, 0);
-				this.getSurface().drawLineVert(var3 + var5 / 2, var4, 0, ui(24));
-				this.getSurface().drawLineHoriz(var3, var4 + var6 - ui(16), var5, 0);
-				this.getSurface().drawColoredStringCentered(var3 + var5 / 4, "Friends", 0, 0, 4, var4 + ui(16));
-				this.getSurface().drawColoredStringCentered(var3 + var5 / 4 + var5 / 2, "Ignore", 0, 0, 4, var4 + ui(16));
+				this.getSurface().drawBoxAlpha(var3, var4 + ui(24), var5, var6 - ui(24), Theme.socialBodyFill(), 210);
+				this.getSurface().drawLineHoriz(var3, var4 + ui(24), var5, Theme.sidePanelSeparator());
+				this.getSurface().drawLineVert(var3 + var5 / 2, var4, Theme.sidePanelSeparator(), ui(24));
+				this.getSurface().drawLineHoriz(var3, var4 + var6 - ui(16), var5, Theme.sidePanelSeparator());
+				this.getSurface().drawColoredStringCentered(var3 + var5 / 4, "Friends", Theme.sidePanelTabText(), 0, 4, var4 + ui(16));
+				this.getSurface().drawColoredStringCentered(var3 + var5 / 4 + var5 / 2, "Ignore", Theme.sidePanelTabText(), 0, 4, var4 + ui(16));
 				this.panelSocial.clearList(this.controlSocialPanel);
 			}
 
@@ -8614,7 +8614,7 @@ public final class mudclient implements Runnable {
 				if (C_CUSTOM_UI)
 					listY = var4 + ui(39);
 
-				int buttonColorA = 0x0A2B56, buttonColorB = 0x0A2B56;
+				int buttonColorA = Theme.clanActionFill(false), buttonColorB = Theme.clanActionFill(false);
 
 				if (clan.inClan()) {
 					this.getSurface().drawString("Clan: @cla@" + clan.getClanName(), listX, listY, 0xFFFFFF, 1);
@@ -8642,7 +8642,7 @@ public final class mudclient implements Runnable {
 					}
 					if (this.mouseX > var3 + ui(20) && this.mouseX < var3 + ui(94) && this.mouseY > var6 + (var4 + ui(26))
 						&& this.mouseY < var6 + var4 + ui(60)) {
-						buttonColorA = 0x263751;
+						buttonColorA = Theme.clanActionFill(true);
 						if (getMouseClick() == 1) {
 							if (!C_CUSTOM_UI)
 								this.showUiTab = 0;
@@ -8652,13 +8652,13 @@ public final class mudclient implements Runnable {
 						}
 					}
 					this.getSurface().drawBoxAlpha(listX + ui(17), listY + ui(141), ui(74), ui(34), buttonColorA, 192);
-					this.getSurface().drawBoxBorder(listX + ui(17), ui(74), listY + ui(141), ui(34), 0xBFA086);
-					this.getSurface().drawString("Leave Clan", listX + ui(17) + (ui(74) / 2 - this.getSurface().stringWidth(0, "Leave Clan") / 2), listY + ui(141) + ui(34) / 2 + ui(4), 0xffffff, 0);
+					this.getSurface().drawBoxBorder(listX + ui(17), ui(74), listY + ui(141), ui(34), Theme.clanActionBorder());
+					this.getSurface().drawString("Leave Clan", listX + ui(17) + (ui(74) / 2 - this.getSurface().stringWidth(0, "Leave Clan") / 2), listY + ui(141) + ui(34) / 2 + ui(4), Theme.clanActionText(), 0);
 
 
 					if (this.mouseX > var3 + ui(88) + ui(13) && this.mouseX < var3 + ui(88) + ui(88) && this.mouseY > var6 + (var4 + ui(26))
 						&& this.mouseY < var6 + var4 + ui(60)) {
-						buttonColorB = 0x263751;
+						buttonColorB = Theme.clanActionFill(true);
 						if (getMouseClick() == 1) {
 							clan.showClanSetupInterface(clan.inClan());
 							if (!C_CUSTOM_UI)
@@ -8667,8 +8667,8 @@ public final class mudclient implements Runnable {
 						}
 					}
 					this.getSurface().drawBoxAlpha(listX + ui(17) + ui(82), listY + ui(141), ui(74), ui(34), buttonColorB, 192);
-					this.getSurface().drawBoxBorder(listX + ui(17) + ui(82), ui(74), listY + ui(141), ui(34), 0xBFA086);
-					this.getSurface().drawString("Clan Setup", listX + ui(14) + ui(85) + (ui(74) / 2 - this.getSurface().stringWidth(0, "Clan Setup") / 2), listY + ui(141) + ui(34) / 2 + ui(4), 0xffffff, 0);
+					this.getSurface().drawBoxBorder(listX + ui(17) + ui(82), ui(74), listY + ui(141), ui(34), Theme.clanActionBorder());
+					this.getSurface().drawString("Clan Setup", listX + ui(14) + ui(85) + (ui(74) / 2 - this.getSurface().stringWidth(0, "Clan Setup") / 2), listY + ui(141) + ui(34) / 2 + ui(4), Theme.clanActionText(), 0);
 
 				} else {
 					this.getSurface().drawString("You are not currently in a Clan", listX + ui(10), listY, 0xFFFFFF, 1);
@@ -8676,7 +8676,7 @@ public final class mudclient implements Runnable {
 					this.getSurface().drawWrappedCenteredString("Click on Clan Setup to create your own clan.% %If you are looking to join an existing Clan, click on Clan Search.", listX + ui(94), listY, ui(196) - ui(12), 1, 0xF38F30, true);
 					if (this.mouseX > var3 + ui(20) && this.mouseX < var3 + ui(94) && this.mouseY > var6 + (var4 - ui(23))
 						&& this.mouseY < var6 + var4 + ui(12)) {
-						buttonColorA = 0x263751;
+						buttonColorA = Theme.clanActionFill(true);
 						if (getMouseClick() == 1) {
 							clan.showClanSetupInterface(clan.inClan());
 							clan.getClanInterface().clanActivePanel = 3;
@@ -8688,12 +8688,12 @@ public final class mudclient implements Runnable {
 						}
 					}
 					this.getSurface().drawBoxAlpha(listX + ui(17), listY + ui(93), ui(74), ui(34), buttonColorA, 192);
-					this.getSurface().drawBoxBorder(listX + ui(17), ui(74), listY + ui(93), ui(34), 0xBFA086);
-					this.getSurface().drawString("Clan Search", listX + ui(17) + (ui(74) / 2 - this.getSurface().stringWidth(0, "Clan Search") / 2), listY + ui(93) + ui(34) / 2 + ui(4), 0xffffff, 0);
+					this.getSurface().drawBoxBorder(listX + ui(17), ui(74), listY + ui(93), ui(34), Theme.clanActionBorder());
+					this.getSurface().drawString("Clan Search", listX + ui(17) + (ui(74) / 2 - this.getSurface().stringWidth(0, "Clan Search") / 2), listY + ui(93) + ui(34) / 2 + ui(4), Theme.clanActionText(), 0);
 
 					if (this.mouseX > var3 + ui(88) + ui(13) && this.mouseX < var3 + ui(88) + ui(88) && this.mouseY > var6 + (var4 - ui(23))
 						&& this.mouseY < var6 + var4 + ui(12)) {
-						buttonColorB = 0x263751;
+						buttonColorB = Theme.clanActionFill(true);
 						if (getMouseClick() == 1) {
 							clan.showClanSetupInterface(clan.inClan());
 							if (!C_CUSTOM_UI)
@@ -8702,8 +8702,8 @@ public final class mudclient implements Runnable {
 						}
 					}
 					this.getSurface().drawBoxAlpha(listX + ui(17) + ui(82), listY + ui(93), ui(74), ui(34), buttonColorB, 192);
-					this.getSurface().drawBoxBorder(listX + ui(17) + ui(82), ui(74), listY + ui(93), ui(34), 0xBFA086);
-					this.getSurface().drawString("Clan Setup", listX + ui(14) + ui(85) + (ui(74) / 2 - this.getSurface().stringWidth(0, "Clan Setup") / 2), listY + ui(93) + ui(34) / 2 + ui(4), 0xffffff, 0);
+					this.getSurface().drawBoxBorder(listX + ui(17) + ui(82), ui(74), listY + ui(93), ui(34), Theme.clanActionBorder());
+					this.getSurface().drawString("Clan Setup", listX + ui(14) + ui(85) + (ui(74) / 2 - this.getSurface().stringWidth(0, "Clan Setup") / 2), listY + ui(93) + ui(34) / 2 + ui(4), Theme.clanActionText(), 0);
 				}
 
 				this.panelClan.drawPanel();
@@ -8927,24 +8927,24 @@ public final class mudclient implements Runnable {
 				magicPanelYStart = maxY - ui(182);
 			int magicPanelWidth = ui(196);
 			int var8;
-			int var7 = var8 = GenUtil.buildColor(160, 160, 160);
+			int var7 = var8 = Theme.tabUnselectedFill();
 			if (this.magicOrPrayerList != 0) {
-				var8 = GenUtil.buildColor(220, 220, 220);
+				var8 = Theme.tabSelectedFill();
 			} else {
-				var7 = GenUtil.buildColor(220, 220, 220);
+				var7 = Theme.tabSelectedFill();
 			}
 
 			this.getSurface().drawBoxAlpha(magicPanelX, magicPanelYStart, magicPanelWidth / 2, ui(24), var7, 210);
 			this.getSurface().drawBoxAlpha(magicPanelWidth / 2 + magicPanelX, magicPanelYStart, magicPanelWidth / 2, ui(24), var8, 210);
-			this.getSurface().drawBoxAlpha(magicPanelX, magicPanelYStart + ui(24), magicPanelWidth, ui(90), GenUtil.buildColor(220, 220, 220), 210);
-			this.getSurface().drawBoxAlpha(magicPanelX, ui(114) + magicPanelYStart, magicPanelWidth, ui(68), GenUtil.buildColor(160, 160, 160),
+			this.getSurface().drawBoxAlpha(magicPanelX, magicPanelYStart + ui(24), magicPanelWidth, ui(90), Theme.socialBodyFill(), 210);
+			this.getSurface().drawBoxAlpha(magicPanelX, ui(114) + magicPanelYStart, magicPanelWidth, ui(68), Theme.spellInfoFill(),
 				128);
-			this.getSurface().drawLineHoriz(magicPanelX, ui(24) + magicPanelYStart, magicPanelWidth, 0);
-			this.getSurface().drawLineVert(magicPanelX + magicPanelWidth / 2, 0 + magicPanelYStart, 0, ui(24));
+			this.getSurface().drawLineHoriz(magicPanelX, ui(24) + magicPanelYStart, magicPanelWidth, Theme.sidePanelSeparator());
+			this.getSurface().drawLineVert(magicPanelX + magicPanelWidth / 2, 0 + magicPanelYStart, Theme.sidePanelSeparator(), ui(24));
 			this.getSurface().drawLineHoriz(magicPanelX, magicPanelYStart + ui(113), magicPanelWidth, 0);
 			if (var2 == -74) {
-				this.getSurface().drawColoredStringCentered(magicPanelWidth / 4 + magicPanelX, "Magic", 0, var2 + 74, 4, ui(16) + magicPanelYStart);
-				this.getSurface().drawColoredStringCentered(magicPanelX + magicPanelWidth / 4 + magicPanelWidth / 2, "Prayers", 0, 0, 4, ui(16) + magicPanelYStart);
+				this.getSurface().drawColoredStringCentered(magicPanelWidth / 4 + magicPanelX, "Magic", Theme.sidePanelTabText(), var2 + 74, 4, ui(16) + magicPanelYStart);
+				this.getSurface().drawColoredStringCentered(magicPanelX + magicPanelWidth / 4 + magicPanelWidth / 2, "Prayers", Theme.sidePanelTabText(), 0, 4, ui(16) + magicPanelYStart);
 				int spellIndex;
 				int magicLevel;
 				String var11;
@@ -11135,20 +11135,20 @@ public final class mudclient implements Runnable {
 				height = ui(186);
 			}
 			int var8;
-			int yFromTopDistance = var8 = GenUtil.buildColor(160, 160, 160);
+			int yFromTopDistance = var8 = Theme.tabUnselectedFill();
 			if (this.uiTabPlayerInfoSubTab != 0) {
-				var8 = GenUtil.buildColor(220, 220, 220);
+				var8 = Theme.tabSelectedFill();
 			} else {
-				yFromTopDistance = GenUtil.buildColor(220, 220, 220);
+				yFromTopDistance = Theme.tabSelectedFill();
 			}
 
 			this.surface.drawBoxAlpha(x, y, width / 2, ui(24), yFromTopDistance, 210);
 			this.surface.drawBoxAlpha(x + width / 2, y, width / 2, ui(24), var8, 210);
-			this.surface.drawBoxAlpha(x, ui(24) + y, width, height - ui(12), GenUtil.buildColor(220, 220, 220), 210);
-			this.surface.drawLineHoriz(x, y + ui(24), width, 0);
-			this.surface.drawLineVert(x + width / 2, y, 0, ui(24));
-			this.surface.drawColoredStringCentered(x + width / 4, "Stats", 0, 0, 4, y + ui(16));
-			this.surface.drawColoredStringCentered(x + width / 4 + width / 2, "Quests", 0, 0, 4, y + ui(16));
+			this.surface.drawBoxAlpha(x, ui(24) + y, width, height - ui(12), Theme.socialBodyFill(), 210);
+			this.surface.drawLineHoriz(x, y + ui(24), width, Theme.sidePanelSeparator());
+			this.surface.drawLineVert(x + width / 2, y, Theme.sidePanelSeparator(), ui(24));
+			this.surface.drawColoredStringCentered(x + width / 4, "Stats", Theme.sidePanelTabText(), 0, 4, y + ui(16));
+			this.surface.drawColoredStringCentered(x + width / 4 + width / 2, "Quests", Theme.sidePanelTabText(), 0, 4, y + ui(16));
 			int heightMargin;
 
 			// stats menu tab

@@ -286,4 +286,79 @@ public final class Theme {
 	public static int appearanceSwatchBorder() {
 		return Config.C_PREMIUM_THEME ? TEXT_PRIMARY : -1;
 	}
+
+	// ------------------------------------------------------------------
+	// Side-panel / HUD tints (social + clan tabs, stats, magic, combat
+	// styles, xp counter). Classic values are the inherited 220/160-grey
+	// tab language drawn translucent over the world - distinct from the
+	// transaction-dialog family, so they get their own tokens.
+	// ------------------------------------------------------------------
+	private static final int CLASSIC_SOCIAL_BODY = GenUtil.buildColor(220, 220, 220);
+	private static final int CLASSIC_SOCIAL_INSET = GenUtil.buildColor(220, 220, 220);
+	private static final int CLASSIC_SPELL_INFO = GenUtil.buildColor(160, 160, 160);
+	private static final int CLASSIC_COMBAT_ROW = GenUtil.buildColor(190, 190, 190);
+	private static final int CLASSIC_COMBAT_SELECTED = GenUtil.buildColor(255, 0, 0);
+
+	/**
+	 * Translucent list-body backdrop of the social/clan and stats side panels
+	 * (drawn over the world; alpha is applied at the call site).
+	 */
+	public static int socialBodyFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_INSET : CLASSIC_SOCIAL_BODY;
+	}
+
+	/** Inset sub-panel inside a side panel (clan info boxes). */
+	public static int socialInsetFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_SOCIAL_INSET;
+	}
+
+	/** 1px structural separators between side-panel tabs and rows. */
+	public static int sidePanelSeparator() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : 0;
+	}
+
+	/** Tab label text on the side-panel tab strips (drawn black on the light classic tabs). */
+	public static int sidePanelTabText() {
+		return Config.C_PREMIUM_THEME ? TEXT_PRIMARY : 0;
+	}
+
+	/** Fill of the clan action buttons (Leave Clan / Clan Setup / Clan Search); hover lightens the idle navy. */
+	public static int clanActionFill(boolean hovered) {
+		return Config.C_PREMIUM_THEME ? (hovered ? HOVER : PANEL_ELEVATED) : (hovered ? 0x263751 : 0x0A2B56);
+	}
+
+	/** Bronze border around the clan action buttons. */
+	public static int clanActionBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_LIGHT_MID : 0xBFA086;
+	}
+
+	/** Label text of the clan action buttons. */
+	public static int clanActionText() {
+		return Config.C_PREMIUM_THEME ? TEXT_PRIMARY : 0xFFFFFF;
+	}
+
+	/** Recessed spell-description area of the magic panel. */
+	public static int spellInfoFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_SPELL_INFO;
+	}
+
+	/** Highlighted combat-style row. */
+	public static int combatStyleSelected() {
+		return Config.C_PREMIUM_THEME ? DANGER : CLASSIC_COMBAT_SELECTED;
+	}
+
+	/** Unhighlighted combat-style row. */
+	public static int combatStyleRow() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_COMBAT_ROW;
+	}
+
+	/** Red overlay marking an inventory slot whose item is equipped (equipment-tab legacy view). */
+	public static int inventoryEquippedWarning() {
+		return Config.C_PREMIUM_THEME ? DANGER : 0xFF0000;
+	}
+
+	/** Translucent backdrop of the xp-counter pill and its submenu. */
+	public static int xpCounterFill() {
+		return Config.C_PREMIUM_THEME ? OVERLAY_SCRIM : 0x989898;
+	}
 }
