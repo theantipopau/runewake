@@ -27,7 +27,7 @@ public class Discord {
 	private static final Runnable presenceTask = new PresenceCheck();
 	private static final Runnable discordTask = new DiscordUpdate();
 	private static ScheduledFuture scheduled;
-	private static String lastUpdate = "Open source RSC MMO";
+	private static String lastUpdate = "RuneWake";
 
 	/**
 	 * Write whether or not Discord is currently in use. This prevents race conditions when multiple clients are

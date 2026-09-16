@@ -27,6 +27,9 @@ public class Config {
 	public static boolean MEMBER_WORLD = false;
 	public static boolean DISPLAY_LOGO_SPRITE = false;
 	private static final boolean CUSTOM_CACHE_DIR_ENABLED = false;
+	// Path retains the historical "OpenRSC" folder name for cache-location
+	// compatibility with existing installs; rename only alongside a migration
+	// (see docs/RUNEWAKE_BRANDING_AUDIT.md, Category C).
 	private static final String CUSTOM_CACHE_DIR = System.getProperty("user.home") + File.separator + "OpenRSC";
 	public static String F_CACHE_DIR = "";
 

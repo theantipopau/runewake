@@ -120,13 +120,13 @@ public class ORSCApplet extends Applet implements ComponentListener, ImageObserv
 				this.drawCenteredString(this.loadingFont, state, 10 + y, 138 + x, this.loadingGraphics);
 
 				if (!this.m_hb) {
-					this.drawCenteredString(this.createdbyFont, "Powered by Open RSC", 30 + y,
+					this.drawCenteredString(this.createdbyFont, "Powered by RuneWake", 30 + y,
 						x + 138, this.loadingGraphics);
-					this.drawCenteredString(this.createdbyFont, "We support open source development.", y + 44, x + 138,
+					this.drawCenteredString(this.createdbyFont, "A community revival of RSC.", y + 44, x + 138,
 						this.loadingGraphics);
 				} else {
 					this.loadingGraphics.setColor(new Color(132, 132, 152));
-					this.drawCenteredString(this.copyrightFont2, "We support open source development.", this.height - 20,
+					this.drawCenteredString(this.copyrightFont2, "A community revival of RSC.", this.height - 20,
 						138 + x, this.loadingGraphics);
 				}
 
