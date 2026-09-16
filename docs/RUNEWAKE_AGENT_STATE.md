@@ -58,3 +58,57 @@ that was not actually run.
 - The cap row intentionally reuses the desktop-only gating of the rendering
   scalar rows (`isAndroid()` excluded) — Android density is its own system.
 - `.env` values remain in git history; history rewrite was out of scope.
+
+---
+
+## Session: 2026-09-16 (chat/transaction scaling audit + theme polish)
+
+### What was done
+1. **Scale-cap code verification (complete, no changes needed).** Confirmed:
+   Auto = no clamp; caps only shrink the fit-derived `min(w/512, h/334)`;
+   invalid persisted values fall back to Auto; draw row + click handler both
+   use list id 48; cycling re-runs `reposition()` via the resize path; all
+   cap values (1.0/1.25/1.5/1.75/2.0/2.5) are exactly representable floats so
+   label math is exact. `saveClientSetting/loadClientSettings` verified in
+   mudclient.java (~line 780-816).
+2. **Smoke launch (logs only).** `orsc.OpenRSC` launches cleanly on the
+   bundled Zulu8 JDK: window created, cache loaded, no exceptions from prior
+   sessions' changes. Exits at `getServerConfig` with `Connection refused:
+   localhost:43594` (no local server running) -> `error_game_crash`. Pixel
+   inspection is not possible from the agent environment (no screen capture
+   of the native window), so in-game visual checks remain a manual pass.
+3. **Chat/message-tab scaling audit (no code changes needed).**
+   - `createMessageTabPanel()` bounds are re-applied on every resize by
+     `repositionCustomUI()`/`repositionAuthenticUI()` - fresh after cap/resize.
+   - `Panel.renderScrollingList2()` derives visible rows, scroll clamp,
+     scrollbar geometry AND row hit-testing from `controlHeight` +
+     `graphics.fontHeight(font)` - render and input share bounds.
+   - Tab label centres (ui +-100/200) match click-region centres within ~1px.
+   - Font metrics consistent: `fontHeight()`, `stringWidth()` and
+     `plotCharacter()` all use the same `fontScale()` (sqrt(uiScale), 1.0 at
+     <=1x), so glyph size, measured widths and layout line height agree.
+   - Known inherited visual limitation (documented, not fixed): the CHATTABS/
+     BLUEBAR sprites are unscaled bitmaps under scaled labels; needs eyes to
+     tune and is deferred.
+4. **Transaction UI audit (trade/duel/shop/confirm/Input-X).** All draw and
+   click bounds are `ui()`-scaled and symmetric (slot pitch ui(49) x ui(34),
+   same region rects on both paths). Input-X box dims computed from scaled
+   font metrics at open time; noted transient: dims are stale if the window
+   resizes while the dialog is open (next open recomputes).
+5. **Theme polish (committed 24cd194cc).** New Theme accessors
+   dialogHeaderBar/dialogBodyFill/dialogInsetFill/dialogSelectedSlot; all
+   8 transaction-modal sites routed through them; fixed the duel-offer
+   header using 13175581 instead of the family-standard 192.
+
+### Commands run (results)
+- `Client_Base ant compile` (also compiles PC_Client/src): PASSED (x3 this session)
+- `git diff --check`: clean
+- Launch `orsc.OpenRSC` 40s: starts, fails at server-config fetch (no local server) - expected
+- NOT run: any visual inspection, networked two-client trade/duel/shop tests
+
+### Exact next tasks
+1. Manual visual pass: cycle cap values at 2-3 resolutions; check chat tab
+   label/sprite alignment at 250% (the known limitation).
+2. Verify Input-X "resize while open" staleness matters in practice; if yes,
+   recompute dims on reposition.
+3. Next scaling slices per plan: bank interface audit; login/character-creation polish.
