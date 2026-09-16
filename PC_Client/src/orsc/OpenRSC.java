@@ -46,6 +46,18 @@ public class OpenRSC extends ORSCApplet {
 				// Load scaling settings
 				String scalingTypeString = props.getProperty("scaling_type");
 				String scalarString = props.getProperty("scaling_scalar");
+				String uiScaleCapString = props.getProperty("ui_scale_cap");
+				if (uiScaleCapString != null && !uiScaleCapString.isEmpty()) {
+					// Invalid values fall back to Auto (0.0f); a bad setting must never prevent startup.
+					try {
+						float cap = Float.parseFloat(uiScaleCapString);
+						if (cap > 0.0f) {
+							mudclient.uiScaleCap = cap;
+						}
+					} catch (NumberFormatException e) {
+						System.out.println("Invalid ui_scale_cap value, defaulting to Auto");
+					}
+				}
 				if (scalingTypeString != null && !scalingTypeString.isEmpty()) {
 					int scalingTypeOrdinal = Integer.parseInt(scalingTypeString);
 					mudclient.scalingType = ScaledWindow.ScalingAlgorithm.values()[scalingTypeOrdinal];

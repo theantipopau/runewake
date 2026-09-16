@@ -456,3 +456,26 @@ same "premium presentation" pass. Full details in `ROADMAP.md` section 7o.
   `Theme` tokens — flagged as the next slice, not attempted here due to
   blast radius across many already-tuned panels.
 
+
+## Interface scale cap setting (2026-09-16)
+
+Implemented the user-selectable UI scale options the plan called for (Auto /
+100% / 125% / 150% / 175% / 200% / 250%) as a **cap** rather than a free-form
+multiplier, which preserves the layout fit invariant by construction:
+
+- `mudclient.uiScaleCap` (float, 0 = Auto) clamps the auto-derived
+  `uiScale = min(gameWidth/512, gameHeight/334)` in `reposition()` — the cap can
+  only *shrink* the scale, never grow it past window fit, so panels can never
+  overflow the window at any setting (addresses the plan's ultrawide concern).
+- Cycled via a new **"Interface scale"** row in Settings → General (desktop
+  only, like the existing rendering-scalar rows, list id 48 — a free id);
+  cycles Auto → 100% → … → 250% → Auto.
+- Persisted as `ui_scale_cap` in `clientSettings.conf` alongside
+  `scaling_type`/`scaling_scalar`; loaded in `PC_Client` `OpenRSC.java` with
+  invalid values falling back to Auto (a bad setting cannot prevent startup).
+- Changing it re-runs `reposition()` through the same path a live resize uses,
+  so all panels/hitboxes re-derive from the new scale together.
+
+Verified: `Client_Base` `ant compile` (which also compiles `PC_Client/src`)
+passes. Not yet visually verified in-game across resolutions — needs the
+manual matrix pass (see docs/RUNEWAKE_VISUAL_TEST_MATRIX.md).

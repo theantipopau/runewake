@@ -465,6 +465,10 @@ public final class mudclient implements Runnable {
 	private final int[] gameObjectInstanceZ = new int[5000];
 	private int gameWidth = 1280;
 	private float uiScale = Math.min(1280 / 512.0f, 720 / 334.0f);
+	// User cap on the auto-derived design-space scale. 0 = Auto (always fit the window);
+	// a positive value shrinks oversized UI on very large windows but never grows the UI
+	// past the fit invariant, so panels can never overflow. Persisted as "ui_scale_cap".
+	public static float uiScaleCap = 0.0f;
 	private int groundItemCount = 0;
 	private boolean inputX_Focused = true;
 	private int inputX_Height = 0;
@@ -9766,6 +9770,11 @@ public final class mudclient implements Runnable {
 
 			this.panelSettings.setListEntry(this.controlSettingPanel, index++,
 				"@whi@Scaling type - @gre@" + scalingTypeDescription, 46, null, null);
+
+			// interface scale cap - client-local (list id 48), desktop only like the scalar row
+			final String capLabel = uiScaleCap <= 0.0f ? "@gre@Auto" : "@whi@" + (int) (uiScaleCap * 100) + "%";
+			this.panelSettings.setListEntry(this.controlSettingPanel, index++,
+				"@whi@Interface scale - " + capLabel, 48, null, null);
 		}
 
 		// mouse button(s) - byte index 1
@@ -10222,6 +10231,11 @@ public final class mudclient implements Runnable {
 		// scaling type - byte index 46
 		if (settingIndex == 46 && this.mouseButtonClick == 1) {
 			cycleScalingType();
+		}
+
+		// interface scale cap - list id 48, client-local (no server sync needed)
+		if (settingIndex == 48 && this.mouseButtonClick == 1) {
+			cycleUiScaleCap();
 		}
 
 		// one or two mouse button(s) - byte index 1
@@ -11544,12 +11558,10 @@ public final class mudclient implements Runnable {
 			}
 		}
 
-		newRenderingScalar = scalars.get(idx);
+		newRenderingScalar = scalars.get(idx);			saveScalingSettings(scalingType, newRenderingScalar);
+		}
 
-		saveScalingSettings(scalingType, newRenderingScalar);
-	}
-
-	void cycleScalingType() {
+		void cycleScalingType() {
 		if (scalingType == ScalingAlgorithm.INTEGER_SCALING) {
 			scalingType = ScalingAlgorithm.BILINEAR_INTERPOLATION;
 		} else if (scalingType == ScalingAlgorithm.BILINEAR_INTERPOLATION) {
@@ -11561,12 +11573,31 @@ public final class mudclient implements Runnable {
 			if (renderingScalar != (int) renderingScalar) {
 				newRenderingScalar = (int) renderingScalar;
 			}
+		}			saveScalingSettings(scalingType, newRenderingScalar);
 		}
 
-		saveScalingSettings(scalingType, newRenderingScalar);
-	}
+		// Interface scale cap: Auto -> 100% -> ... -> 250% -> Auto. The cap only ever
+		// shrinks the auto-derived scale, so panels always fit the window regardless.
+		private static final float[] UI_SCALE_CAPS = {0.0f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f, 2.5f};
 
-	private void fetchContainerSize() {
+		private void cycleUiScaleCap() {
+			int idx = 0;
+			for (int i = 0; i < UI_SCALE_CAPS.length; ++i) {
+				if (Float.compare(UI_SCALE_CAPS[i], uiScaleCap) == 0) {
+					idx = i;
+					break;
+				}
+			}
+			uiScaleCap = UI_SCALE_CAPS[(idx + 1) % UI_SCALE_CAPS.length];
+			saveClientSetting("ui_scale_cap", String.valueOf(uiScaleCap));
+
+			// Re-derive uiScale for the current window through the same path a resize uses.
+			resizeWidth = gameWidth;
+			resizeHeight = gameHeight + 12;
+			reposition();
+		}
+
+		private void fetchContainerSize() {
 		try {
 
 			//getSurface().resize(this.gameWidth, this.gameHeight + 12);
@@ -11638,6 +11669,9 @@ public final class mudclient implements Runnable {
 		gameWidth = resizeWidth;
 		gameHeight = resizeHeight - 12;
 		uiScale = Math.min(gameWidth / 512.0f, gameHeight / 334.0f);
+		if (uiScaleCap > 0.0f && uiScale > uiScaleCap) {
+			uiScale = uiScaleCap;
+		}
 
 		resizeWidth = resizeHeight = -1;
 
