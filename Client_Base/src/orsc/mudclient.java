@@ -2248,8 +2248,10 @@ public final class mudclient implements Runnable {
 
 			menuNewUser = new Panel(getSurface(), 50);
 			Theme.applyBronzeButtonScheme(menuNewUser);
+			// Section heading: anchors the registration form's grouped rows.
+			menuNewUser.addCenteredText(halfGameWidth(), halfGameHeight() - ui(150), "Create Your Character's Account", 4, false);
 			if (isAndroid()) {
-				menuNewUser.addCenteredText(halfGameWidth() - ui(6), halfGameHeight() - ui(149), "@whi@To open keyboard press the back button", 5, false);
+				menuNewUser.addCenteredText(halfGameWidth() - ui(6), halfGameHeight() - ui(121), "@whi@To open keyboard press the back button", 5, false);
 			}
 			menuNewUser.addCenteredText(halfGameWidth() - ui(6), halfGameHeight() - ui(127), "@whi@Enter a username between 2 and 12 characters long", 1, false);
 			menuNewUser.addCenteredText(halfGameWidth() - ui(6), halfGameHeight() - ui(116), "@red@(Only regular letters, numbers and spaces are allowed)", 0, false);
@@ -6352,7 +6354,13 @@ public final class mudclient implements Runnable {
 			if (this.loginScreenNumber == 2) {
 				String var4 = this.panelLogin.getControlText(this.controlLoginStatus1);
 				if (null != var4 && var4.length() > 0) {
-					this.getSurface().drawBoxAlpha(0, halfGameHeight() + ui(18), this.getGameWidth(), ui(30), 0, 100);
+					// Status scrim sized to the status rows it protects (two font-4 lines
+					// at the controlLoginStatus1/2 anchors), instead of the old fixed
+					// 30px strip that scaled-font text could outgrow. Height is halved
+					// against the anchors' +35/+55 offsets so the panel fields still
+					// start on clean background.
+					int statusScrimHeight = ui(18) + getSurface().fontHeight(4) / 2;
+					this.getSurface().drawBoxAlpha(0, halfGameHeight() + ui(22), this.getGameWidth(), statusScrimHeight, 0, 100);
 				}
 
 				this.panelLogin.drawPanel();
@@ -6364,7 +6372,7 @@ public final class mudclient implements Runnable {
 				this.panelRecovery.drawPanel();
 			}
 
-			this.getSurface().drawSpriteClipping(spriteSelect(GUIPARTS.BLUEBAR.getDef()), 0, getGameHeight(), getGameWidth(), 10, 0, 0, 0, false, 0, 1);
+			this.getSurface().drawSpriteClipping(spriteSelect(GUIPARTS.BLUEBAR.getDef()), 0, getGameHeight(), getGameWidth(), ui(10), 0, 0, 0, false, 0, 1);
 			// this.getSurface().draw(this.graphics, this.screenOffsetX, 256,
 			// this.screenOffsetY);
 			clientPort.draw();

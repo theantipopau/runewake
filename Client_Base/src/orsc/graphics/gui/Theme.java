@@ -244,4 +244,17 @@ public final class Theme {
 	public static int bankCloseText(boolean hovered) {
 		return Config.C_PREMIUM_THEME ? (hovered ? DANGER : TEXT_PRIMARY) : (hovered ? 16711680 : 0xFFFFFF);
 	}
+
+	// ------------------------------------------------------------------
+	// Login / character-creation (onboarding) presentation.
+	// ------------------------------------------------------------------
+
+	/**
+	 * Underline drawn under the keyboard-focused text entry (login username /
+	 * password, registration fields). Classic mode keeps the inherited asterisk
+	 * only (no underline); premium mode marks focus with the rune-blue accent.
+	 */
+	public static int textEntryFocusUnderline() {
+		return Config.C_PREMIUM_THEME ? ACCENT_PRIMARY : -1; // -1 = draw nothing (classic behaviour)
+	}
 }

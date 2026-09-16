@@ -5,6 +5,7 @@ import com.openrsc.client.model.Sprite;
 
 import orsc.MiscFunctions;
 import orsc.enumerations.PanelControlType;
+import orsc.graphics.gui.Theme;
 import orsc.graphics.two.Fonts;
 import orsc.graphics.two.GraphicsController;
 import orsc.util.FastMath;
@@ -1200,6 +1201,12 @@ public final class Panel {
 
 	private void renderTextEntry(int controlIndex, int x, int y, int width, int height, int font, String text) {
 		try {
+			// Field left edge before the centred-entry x adjustment below, so the
+			// focused-field underline spans the whole entry box, not just the text.
+			int fieldLeft = x;
+			if (this.controlType[controlIndex] == PanelControlType.CENTERED_TEXT_ENTRY) {
+				fieldLeft = x - width / 2;
+			}
 
 			if (this.controlFlag[controlIndex]) {
 				int len = text.length();
@@ -1227,6 +1234,10 @@ public final class Panel {
 
 			if (this.focusControlIndex == controlIndex) {
 				text = text + "*";
+				int focusColour = Theme.textEntryFocusUnderline();
+				if (focusColour != -1) {
+					this.graphics.drawLineHoriz(fieldLeft + 1, y + height / 2 - 2, width - 2, focusColour);
+				}
 			}
 			int realY = this.graphics.fontHeight(font) / 3 + y;
 			this.renderString(controlIndex, x, realY, font, 0, text);
