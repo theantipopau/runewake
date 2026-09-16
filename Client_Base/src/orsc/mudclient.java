@@ -5782,6 +5782,22 @@ public final class mudclient implements Runnable {
 					this.inputTextCurrent = str;
 				}
 
+				// Recompute the box size every frame so a window resize while the
+				// dialog is open cannot leave stale unscaled dimensions. This mirrors
+				// the sizing in showItemModX exactly (width fits the longest line,
+				// height fits text + input + OK/Cancel rows at current font metrics).
+				if (this.inputX_Lines != null) {
+					this.inputX_Width = ui(400);
+					for (int i = 0; this.inputX_Lines.length > i; ++i) {
+						int width = this.getSurface().stringWidth(1, this.inputX_Lines[i]) + ui(10);
+						if (this.inputX_Width < width) {
+							this.inputX_Width = width;
+						}
+					}
+					this.inputX_Height = ui(15) + (this.getSurface().fontHeight(1) + ui(2)) * (1 + this.inputX_Lines.length)
+						+ this.getSurface().fontHeight(4);
+				}
+
 				//int xr = (getGameWidth() - var2) / 2;
 				//int yr = (getGameHeight() - var3) / 2;
 				int xr = (getGameWidth() - this.inputX_Width) / 2;
