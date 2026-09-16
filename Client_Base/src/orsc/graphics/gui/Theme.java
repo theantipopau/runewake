@@ -54,6 +54,12 @@ public final class Theme {
 		panel.setButtonColorScheme(BORDER_LIGHT, BORDER_LIGHT_MID, BORDER_DARK_MID, BORDER_DARK);
 	}
 
+	// Classic modal-dialog literals (trade/duel/shop family). Kept as named
+	// constants so the "off" path is still self-documenting.
+	private static final int CLASSIC_DIALOG_HEADER = GenUtil.buildColor(0, 0, 192);
+	private static final int CLASSIC_DIALOG_BODY = 10000536; // 0x989898 grey
+	private static final int CLASSIC_DIALOG_INSET = 13684944; // 0xD0D0D0 light grey
+
 	// Classic values these replace when C_PREMIUM_THEME is off - kept as named
 	// constants (not re-literals) so the "off" path is still self-documenting.
 	private static final int CLASSIC_SLOT_FILL = GenUtil.buildColor(181, 181, 181);
@@ -100,5 +106,25 @@ public final class Theme {
 	 */
 	public static int settingsHeaderColor() {
 		return Config.C_PREMIUM_THEME ? TEXT_PRIMARY : 0;
+	}
+
+	/** Transaction-dialog (trade/duel/shop) title-bar fill. */
+	public static int dialogHeaderBar() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_DIALOG_HEADER;
+	}
+
+	/** Transaction-dialog translucent body fill drawn over the game world. */
+	public static int dialogBodyFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_INSET : CLASSIC_DIALOG_BODY;
+	}
+
+	/** Transaction-dialog item-grid / inset panel fill. */
+	public static int dialogInsetFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_DIALOG_INSET;
+	}
+
+	/** Highlight fill for the currently selected item slot in a transaction dialog. */
+	public static int dialogSelectedSlot() {
+		return Config.C_PREMIUM_THEME ? SELECTION : 0xFF0000;
 	}
 }

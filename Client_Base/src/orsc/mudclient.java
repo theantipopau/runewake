@@ -3305,8 +3305,8 @@ public final class mudclient implements Runnable {
 			if (this.showDialogDuel) {
 				int xr = ui(22);
 				int yr = ui(36);
-				this.getSurface().drawBox(xr, yr, ui(468), ui(12), 13175581);
-				int colorA = 10000536;
+				this.getSurface().drawBox(xr, yr, ui(468), ui(12), Theme.dialogHeaderBar());
+				int colorA = Theme.dialogBodyFill();
 				this.getSurface().drawBoxAlpha(xr, ui(12) + yr, ui(468), ui(18), colorA, 160);
 				this.getSurface().drawBoxAlpha(xr, ui(30) + yr, ui(8), ui(248), colorA, 160);
 				this.getSurface().drawBoxAlpha(xr + ui(205), ui(30) + yr, ui(11), ui(248), colorA, 160);
@@ -3315,7 +3315,7 @@ public final class mudclient implements Runnable {
 				this.getSurface().drawBoxAlpha(ui(8) + xr, ui(192) + yr, ui(197), ui(23), colorA, 160);
 				this.getSurface().drawBoxAlpha(xr + ui(8), yr + ui(258), ui(197), ui(20), colorA, 160);
 				this.getSurface().drawBoxAlpha(xr + ui(216), yr + ui(235), ui(246), ui(43), colorA, 160);
-				int colorB = 13684944;
+				int colorB = Theme.dialogInsetFill();
 				this.getSurface().drawBoxAlpha(ui(8) + xr, yr + ui(30), ui(197), ui(69), colorB, 160);
 				this.getSurface().drawBoxAlpha(xr + ui(8), ui(123) + yr, ui(197), ui(69), colorB, 160);
 				this.getSurface().drawBoxAlpha(ui(8) + xr, yr + ui(215), ui(197), ui(43), colorB, 160);
@@ -3561,8 +3561,8 @@ public final class mudclient implements Runnable {
 
 			int xr = ui(22);
 			int yr = ui(36);
-			this.getSurface().drawBox(xr, yr, ui(468), ui(16), 192);
-			int color = 10000536;
+			this.getSurface().drawBox(xr, yr, ui(468), ui(16), Theme.dialogHeaderBar());
+			int color = Theme.dialogBodyFill();
 			this.getSurface().drawBoxAlpha(xr, yr + ui(16), ui(468), ui(246), color, 160);
 			this.getSurface().drawColoredStringCentered(xr + ui(234),
 				"Please confirm your duel with @yel@" + this.duelOpponentName, 0xFFFFFF, 0, 1, yr + ui(12));
@@ -3930,9 +3930,8 @@ public final class mudclient implements Runnable {
 			}
 			int xr = (getGameWidth() - ui(408)) / 2;
 			int yr = (getGameHeight() - ui(246)) / 2;
-
-			this.getSurface().drawBox(xr, yr, ui(408), ui(12), 192);
-			int color = 10000536;
+			this.getSurface().drawBox(xr, yr, ui(408), ui(12), Theme.dialogHeaderBar());
+			int color = Theme.dialogBodyFill();
 			this.getSurface().drawBoxAlpha(xr, ui(12) + yr, ui(408), ui(17), color, 160);
 			this.getSurface().drawBoxAlpha(xr, yr + ui(29), ui(8), ui(170), color, 160);
 			this.getSurface().drawBoxAlpha(xr + ui(399), ui(29) + yr, ui(9), ui(170), color, 160);
@@ -3956,9 +3955,9 @@ public final class mudclient implements Runnable {
 						int sx = column * ui(49) + ui(7) + xr;
 						int sy = yr + ui(28) + row * ui(34);
 						if (this.shopSelectedItemIndex == slot) {
-							this.getSurface().drawBoxAlpha(sx, sy, ui(49), ui(34), 0xFF0000, 160);
+							this.getSurface().drawBoxAlpha(sx, sy, ui(49), ui(34), Theme.dialogSelectedSlot(), 160);
 						} else {
-							this.getSurface().drawBoxAlpha(sx, sy, ui(49), ui(34), 13684944, 160);
+							this.getSurface().drawBoxAlpha(sx, sy, ui(49), ui(34), Theme.dialogInsetFill(), 160);
 						}
 
 						this.getSurface().drawBoxBorder(sx, ui(50), sy, ui(35), 0);
@@ -4380,8 +4379,8 @@ public final class mudclient implements Runnable {
 			if (this.showDialogTrade) {
 				int xr = ui(22);
 				int yr = ui(36);
-				this.getSurface().drawBox(xr, yr, ui(468), ui(12), 192);
-				int color = 10000536;
+				this.getSurface().drawBox(xr, yr, ui(468), ui(12), Theme.dialogHeaderBar());
+				int color = Theme.dialogBodyFill();
 				this.getSurface().drawBoxAlpha(xr, yr + ui(12), ui(468), ui(18), color, 160);
 				this.getSurface().drawBoxAlpha(xr, yr + ui(30), ui(8), ui(248), color, 160);
 
@@ -4390,7 +4389,7 @@ public final class mudclient implements Runnable {
 				this.getSurface().drawBoxAlpha(xr + ui(8), yr + ui(133), ui(197), ui(22), color, 160);
 				this.getSurface().drawBoxAlpha(xr + ui(8), yr + ui(258), ui(197), ui(20), color, 160);
 				this.getSurface().drawBoxAlpha(xr + ui(216), yr + ui(235), ui(246), ui(43), color, 160);
-				int id = 13684944;
+				int id = Theme.dialogInsetFill();
 				this.getSurface().drawBoxAlpha(xr + ui(8), yr + ui(30), ui(197), ui(103), id, 160);
 				this.getSurface().drawBoxAlpha(ui(8) + xr, yr + ui(155), ui(197), ui(103), id, 160);
 				this.getSurface().drawBoxAlpha(ui(216) + xr, ui(30) + yr, ui(246), ui(205), id, 160);
@@ -7259,8 +7258,8 @@ public final class mudclient implements Runnable {
 
 			int var2 = ui(22);
 			int var3 = ui(36);
-			this.getSurface().drawBox(var2, var3, ui(468), ui(16), 192);
-			int var4 = 10000536;
+			this.getSurface().drawBox(var2, var3, ui(468), ui(16), Theme.dialogHeaderBar());
+			int var4 = Theme.dialogBodyFill();
 			this.getSurface().drawBoxAlpha(var2, var3 + ui(16), ui(468), ui(246), var4, 160);
 			this.getSurface().drawColoredStringCentered(ui(234) + var2,
 				"Please confirm your trade with @yel@" + this.tradeRecipientConfirmName, 0xFFFFFF, 0, 1, var3 + ui(12));
