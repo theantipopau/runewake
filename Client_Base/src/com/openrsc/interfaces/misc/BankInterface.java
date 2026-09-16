@@ -7,6 +7,7 @@ import orsc.Config;
 import orsc.enumerations.InputXAction;
 import orsc.graphics.gui.InputXPrompt;
 import orsc.graphics.gui.Panel;
+import orsc.graphics.gui.Theme;
 import orsc.mudclient;
 import orsc.util.BankUtil;
 
@@ -237,8 +238,8 @@ public class BankInterface {
 	private void drawBankComponents(int currMouseX, int currMouseY) {
 		int relativeX = mc.getGameWidth() / 2 - width / 2; // WAS 256
 		int relativeY = mc.getGameHeight() / 2 - height / 2 + mc.ui(20); // WAS 170
-		mc.getSurface().drawBox(relativeX, relativeY, width, mc.ui(12), 192);
-		int backgroundColour = 0x989898;
+		mc.getSurface().drawBox(relativeX, relativeY, width, mc.ui(12), Theme.dialogHeaderBar());
+		int backgroundColour = Theme.dialogBodyFill();
 		mc.getSurface().drawBoxAlpha(relativeX, relativeY + mc.ui(12), width, mc.ui(17), backgroundColour, 160);
 		mc.getSurface().drawBoxAlpha(relativeX, relativeY + mc.ui(29), mc.ui(8), mc.ui(204), backgroundColour, 160);
 		mc.getSurface().drawBoxAlpha(relativeX + mc.ui(399), relativeY + mc.ui(29), mc.ui(9), mc.ui(204), backgroundColour, 160);
@@ -328,9 +329,9 @@ public class BankInterface {
 
 				// Background Colour of Bank Tile
 				if (this.selectedBankSlot == inventorySlot) { // Selected
-					mc.getSurface().drawBoxAlpha(slotX, slotY, mc.ui(49), mc.ui(34), 0xff0000, 160);
+					mc.getSurface().drawBoxAlpha(slotX, slotY, mc.ui(49), mc.ui(34), Theme.dialogSelectedSlot(), 160);
 				} else { // Not Selected
-					mc.getSurface().drawBoxAlpha(slotX, slotY, mc.ui(49), mc.ui(34), 0xd0d0d0, 160);
+					mc.getSurface().drawBoxAlpha(slotX, slotY, mc.ui(49), mc.ui(34), Theme.dialogInsetFill(), 160);
 				}
 
 				mc.getSurface().drawBoxBorder(slotX, mc.ui(50), slotY, mc.ui(35), 0);

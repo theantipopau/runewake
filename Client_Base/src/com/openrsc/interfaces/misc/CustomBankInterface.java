@@ -7,6 +7,7 @@ import com.openrsc.client.model.Sprite;
 import orsc.Config;
 import orsc.enumerations.InputXAction;
 import orsc.graphics.gui.InputXPrompt;
+import orsc.graphics.gui.Theme;
 import orsc.mudclient;
 import orsc.util.BankUtil;
 import orsc.util.GenUtil;
@@ -108,8 +109,8 @@ public final class CustomBankInterface extends BankInterface {
 		hotkey = -1;
 
 
-		mc.getSurface().drawBox(x, y, width, mc.ui(21), 192);
-		int colour = 0x989898;
+		mc.getSurface().drawBox(x, y, width, mc.ui(21), Theme.dialogHeaderBar());
+		int colour = Theme.dialogBodyFill();
 		mc.getSurface().drawBoxAlpha(x, y + mc.ui(21), width, mc.ui(309), colour, 160);
 		mc.getSurface().drawBoxBorder(x, width, y, height, 0x000000);
 
@@ -221,7 +222,7 @@ public final class CustomBankInterface extends BankInterface {
 		mc.getSurface().drawBoxBorder(x + mc.ui(371) + mc.ui(6), mc.ui(120), y + mc.ui(36), mc.ui(18), 0x474843);
 
 		//mc.getSurface().drawString("Number in bank in green", x + 7, 34 + y, '\uff00', 1);
-		int boxColour = 0xd0d0d0;
+		int boxColour = Theme.dialogInsetFill();
 		int boxColourGreyed = 0x101010;
 		int modeWidth = Config.S_WANT_EQUIPMENT_TAB ? mc.ui(55) : mc.ui(75);
 		int modeOffset = x + (Config.S_WANT_EQUIPMENT_TAB ? mc.ui(162) : mc.ui(112));
@@ -1323,8 +1324,8 @@ public final class CustomBankInterface extends BankInterface {
 		int inventoryXOffset = x + width - invcolumns * mc.ui(49) - mc.ui(2);
 		int inventoryYOffset = y + mc.ui(21);
 		int presetButtonWidth = width / presetCount;
-		mc.getSurface().drawBox(x, y, width, mc.ui(21), 192);
-		mc.getSurface().drawBoxAlpha(x, y + mc.ui(21), width, mc.ui(309), 0x989898, 160);
+		mc.getSurface().drawBox(x, y, width, mc.ui(21), Theme.dialogHeaderBar());
+		mc.getSurface().drawBoxAlpha(x, y + mc.ui(21), width, mc.ui(309), Theme.dialogBodyFill(), 160);
 		mc.getSurface().drawBoxBorder(x, width, y, height, 0x000000);
 		drawString("Assign Presets", x + mc.ui(208), y + mc.ui(15), 1, 0xFFFFFF);
 		int color = 0xFFFFFFFF;
