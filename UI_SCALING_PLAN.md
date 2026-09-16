@@ -479,3 +479,24 @@ multiplier, which preserves the layout fit invariant by construction:
 Verified: `Client_Base` `ant compile` (which also compiles `PC_Client/src`)
 passes. Not yet visually verified in-game across resolutions — needs the
 manual matrix pass (see docs/RUNEWAKE_VISUAL_TEST_MATRIX.md).
+
+## Chat/transaction audit (2026-09-16)
+
+Code-level audit (no visual verification possible in agent environment):
+
+- Chat/message tabs: panel bounds are re-applied on every resize
+  (`repositionCustomUI`/`repositionAuthenticUI` both re-lay out all five
+  chat lists); `Panel.renderScrollingList2` derives visible rows, scroll
+  clamping, scrollbar and row hit-testing from `controlHeight` +
+  `fontHeight(font)`, so rendering and input share bounds; tab label
+  centres match their click regions; `fontHeight`/`stringWidth`/
+  `plotCharacter` all scale by the same `fontScale()`, keeping glyph
+  metrics and layout metrics consistent. No corrections required.
+- Trade / trade-confirm / duel / duel-confirm / shop: all draw and click
+  bounds are `ui()`-scaled symmetrically (slot pitch ui(49) x ui(34) on
+  both paths). Input-X dimensions are computed from scaled font metrics
+  when the dialog opens. No corrections required.
+- Inherited visual limitation (deferred): chat tab strip sprites are
+  unscaled bitmaps beneath scaled labels - noticeable only at high scale.
+- Input-X edge case (deferred): dimensions are stale if the window is
+  resized while the dialog is open; next open recomputes.
