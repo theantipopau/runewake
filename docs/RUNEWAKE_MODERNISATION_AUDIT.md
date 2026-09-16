@@ -43,8 +43,12 @@ space via `ui()` helpers; input coordinates transformed by the same factor
 4. Launcher visual identity still inherited OpenRSC artwork (open, needs
    art); launcher compile not verified this pass (Android/launcher Gradle
    toolchain not exercised).
-5. Social/clan tab + remaining `drawBoxAlpha` tints not yet on `Theme`
-   tokens (next code slice).
+5. ~~Social/clan tab + remaining `drawBoxAlpha` tints not yet on `Theme`
+   tokens~~ DONE this pass (`16f025d27`): social/clan, Stats/Quests and
+   Magic/Prayer tab strips, clan action buttons, combat-style rows,
+   equipped-slot warning, xp-counter pill, tab labels and separators are
+   on Theme tokens. Android-only boxes (keyboard button, cast-last-spell)
+   deliberately left for a future slice.
 6. Discrete UI-scale selector (Auto/100–250%) not implemented; current
    scale is auto-derived only.
 
@@ -52,7 +56,9 @@ space via `ui()` helpers; input coordinates transformed by the same factor
 
 1. Human visual pass per `RUNEWAKE_VISUAL_TEST_MATRIX.md` (settings tab,
    login, Android cold start first).
-2. Theme migration: social/clan tab, then bank/magic tints.
+2. ~~Theme migration: social/clan tab, then bank/magic tints~~ DONE
+   (bank `1e46ff66c`, onboarding `23fb70257`+`d71159921`, side panels
+   `16f025d27`).
 3. Launcher artwork + identity (blocked on art).
 4. Discrete UI-scale setting with persisted safe fallback (design-space
    scale separate from `renderingScalar`).

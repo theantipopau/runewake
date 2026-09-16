@@ -208,3 +208,71 @@ that was not actually run.
    so risk is low but unverified visually).
 3. Next slices per plan: social/clan tab theme tokens; launcher identity
    (blocked on art).
+
+---
+
+## Session (side-panel theme slice) — completed 2026-09-17
+
+### Scope
+"Social/clan tab + remaining `drawBoxAlpha` tints" slice from the modernisation
+audit. Draw-layer only; no packet, input, hitbox or layout changes.
+
+### Literals classified and migrated (mudclient.java)
+- Social/clan tab strip (clans enabled + disabled branches): tab fills
+  160/220-grey → `Theme.tabUnselectedFill()` / `tabSelectedFill()` (reused,
+  values already matched); body backdrop 220-grey → `socialBodyFill()`.
+- Stats/Quests tab strip: identical pattern → same tab + body accessors.
+- Magic/Prayer tab strip: tabs → same accessors; list body → `socialBodyFill()`;
+  recessed spell-description area → `spellInfoFill()`.
+- Clan action buttons (Leave Clan / Clan Setup / Clan Search, both in-clan and
+  no-clan layouts): idle 0x0A2B56 / hover 0x263751 / border 0xBFA086 /
+  label 0xffffff → `clanActionFill(hovered)` / `clanActionBorder()` /
+  `clanActionText()`. Hover assignment sites migrated together with draws.
+- Combat-style rows: selected red 255,0,0 / row 190,190,190 →
+  `combatStyleSelected()` / `combatStyleRow()`.
+- Equipment-tab legacy equipped-item slot warning 0xFF0000 →
+  `inventoryEquippedWarning()`.
+- XP-counter pill + gain submenu backdrops 0x989898 (x4 sites) →
+  `xpCounterFill()`.
+- Tab label text (Friends/Clan/Ignore/Stats/Quests/Magic/Prayers, drawn 0) and
+  the 1px structural separator lines (drawn 0) → `sidePanelTabText()` /
+  `sidePanelSeparator()`. Classic stays black (unchanged output); premium tabs
+  are dark so labels follow TEXT_PRIMARY and separators BORDER_DARK_MID.
+
+### Not migrated (classified, intentionally left)
+- Android keyboard/status button boxes and the Android cast-last-spell box
+  (0x989898 / 0x659CDE / 0x6b8e23) — Android-only, isolated; future slice.
+- World HP bar red/green, XP progress bar red/green, spell rune-status text
+  colours — gameplay-standard colours shared with the wider HUD.
+- Shop dialog already on `dialog*` tokens from the earlier transaction pass.
+- Out-of-scope untouched: duel/trade menus (already themed), settings panels
+  (already themed), Android status bar.
+
+### Theme additions
+`socialBodyFill`, `socialInsetFill` (reserved), `sidePanelSeparator`,
+`sidePanelTabText`, `clanActionFill(hovered)`, `clanActionBorder`,
+`clanActionText`, `spellInfoFill`, `combatStyleSelected`, `combatStyleRow`,
+`inventoryEquippedWarning`, `xpCounterFill`. Classic path returns the
+inherited literals exactly; premium path uses the established palette
+(PANEL_INSET/PANEL_ELEVATED/OVERLAY_SCRIM/SELECTION/HOVER/DANGER/BORDER_*).
+
+### Verification
+- `Client_Base ant compile`: PASSED (twice — mid-slice and final).
+- `git diff --check`: clean.
+- Diff reviewed line-by-line: colour-only substitutions; the combat-style
+  loop suffered temporary brace/formatting damage during replacement and was
+  restored to the exact original structure before commit.
+- Grep confirms zero remaining in-scope literals in mudclient.java.
+- No visual inspection; no smoke launch this session (previous result stands).
+
+### Commit
+- `16f025d27` — ui: theme social/clan tabs and side-panel tints
+  (Theme.java, mudclient.java)
+
+### Exact next tasks
+1. Human visual pass (unchanged, still the top blocker): social/clan tabs
+   classic-vs-premium, tab-label contrast, clan button hover states.
+2. Android-side button/box tints (keyboard button, cast-last-spell box) —
+   small isolated future slice.
+3. Launcher identity work (blocked on artwork).
+4. Discrete UI-scale selector (audit item 6).
