@@ -257,4 +257,33 @@ public final class Theme {
 	public static int textEntryFocusUnderline() {
 		return Config.C_PREMIUM_THEME ? ACCENT_PRIMARY : -1; // -1 = draw nothing (classic behaviour)
 	}
+
+	/**
+	 * On-screen picker list entries (player-mode / xp-rate selectors on the
+	 * character-creation screen). Classic mode preserves the inherited literal
+	 * colours exactly; premium mode reads selected in the rune-blue accent and
+	 * hovered rows brighter than idle ones.
+	 */
+	public static int appearanceListEntry(boolean altColor, boolean hovered, boolean selected) {
+		if (!Config.C_PREMIUM_THEME) {
+			// Classic: inherited values, in both colour schemes.
+			if (selected) {
+				return altColor ? 16711680 : 12582912;
+			}
+			return hovered ? (altColor ? 8421504 : 16777215) : (altColor ? 16777215 : 0);
+		}
+		if (selected) {
+			return ACCENT_PRIMARY;
+		}
+		return hovered ? TEXT_PRIMARY : TEXT_MUTED;
+	}
+
+	/**
+	 * Border of the character-creation colour chips (display-only swatches of
+	 * the current hair/top/bottom/skin choice). -1 = draw nothing, so classic
+	 * keeps the inherited arrow-only presentation.
+	 */
+	public static int appearanceSwatchBorder() {
+		return Config.C_PREMIUM_THEME ? TEXT_PRIMARY : -1;
+	}
 }

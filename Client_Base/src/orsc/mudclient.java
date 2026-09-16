@@ -2036,6 +2036,7 @@ public final class mudclient implements Runnable {
 		int factor = type > 0 ? 2 : 1;
 		try {
 			this.panelAppearance = new Panel(this.getSurface(), 100);
+			Theme.applyBronzeButtonScheme(this.panelAppearance);
 
 			this.panelAppearance.addCenteredText(halfGameWidth(), ui(10), "Please design Your Character", 4, true);
 			int var2 = ui(140);
@@ -2251,8 +2252,11 @@ public final class mudclient implements Runnable {
 			// Section heading: anchors the registration form's grouped rows.
 			menuNewUser.addCenteredText(halfGameWidth(), halfGameHeight() - ui(150), "Create Your Character's Account", 4, false);
 			if (isAndroid()) {
-				menuNewUser.addCenteredText(halfGameWidth() - ui(6), halfGameHeight() - ui(121), "@whi@To open keyboard press the back button", 5, false);
-			}
+					// Sits in the gap below the heading, above the two instruction
+					// rows (-ui(127)/-ui(116)); the old -ui(149) slot is now taken
+					// by the heading, and -ui(121) collided with those rows.
+					menuNewUser.addCenteredText(halfGameWidth() - ui(6), halfGameHeight() - ui(136), "@whi@To open keyboard press the back button", 5, false);
+				}
 			menuNewUser.addCenteredText(halfGameWidth() - ui(6), halfGameHeight() - ui(127), "@whi@Enter a username between 2 and 12 characters long", 1, false);
 			menuNewUser.addCenteredText(halfGameWidth() - ui(6), halfGameHeight() - ui(116), "@red@(Only regular letters, numbers and spaces are allowed)", 0, false);
 			menuNewUser.addButtonBackground(halfGameWidth() - ui(6), halfGameHeight() - ui(90), ui(420), ui(34));
@@ -2712,6 +2716,27 @@ public final class mudclient implements Runnable {
 
 			int var3 = ui(50);
 			int y = var3 - ui(25);
+
+			// Display-only chips of the currently selected colour, one per colour
+			// picker, drawn inside its decorated box just below the two label rows
+			// (labels sit at row -/+ ui(8), box interior extends to row + ui(20)).
+			// Coordinates mirror the picker geometry in createAppearancePanel
+			// (columns var5 -/+ ui(54); rows ui(24) + ui(145) then +ui(50) each).
+			// Drawn after drawPanel() so they sit on the boxes; no hitbox, purely
+			// visual (classic mode draws no chip border).
+			{
+				int chipSize = ui(10);
+				int chipY = ui(14);
+				int colLeft = var5 - ui(54);
+				int colRight = var5 + ui(54);
+				int row1 = ui(24) + ui(145);
+				int row2 = row1 + ui(50);
+				int row3 = row2 + ui(50);
+				this.panelAppearance.addColorChip(colRight, row1 + chipY, this.getPlayerHairColors()[this.appearanceHairColour], chipSize);
+				this.panelAppearance.addColorChip(colRight, row2 + chipY, this.getPlayerClothingColors()[this.characterTopColour], chipSize);
+				this.panelAppearance.addColorChip(colLeft, row3 + chipY, this.getPlayerSkinColors()[this.appearanceSkinColour], chipSize);
+				this.panelAppearance.addColorChip(colRight, row3 + chipY, this.getPlayerClothingColors()[this.characterBottomColour], chipSize);
+			}
 
 			// pants
 			this.getSurface().spriteClip3(var5 - ui(87), this.getPlayerClothingColors()[this.characterBottomColour],

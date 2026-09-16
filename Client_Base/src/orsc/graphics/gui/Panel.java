@@ -719,33 +719,17 @@ public final class Panel {
 			int lineY = y - (count - 1) * this.graphics.fontHeight(font) / 2;
 
 			for (int i = 0; count > i; ++i) {
-				int color;
-				if (this.controlUseAlternativeColour[controlIndex]) {
-					color = 16777215;
-				} else {
-					color = 0;
-				}
-
 				int width = this.graphics.stringWidth(font, entries[i]);
-				if (this.currMouseX >= x - width / 2 && this.currMouseX <= x + width / 2 && this.currMouseY - 2 <= lineY
-					&& lineY - this.graphics.fontHeight(font) < this.currMouseY - 2) {
-					if (this.controlUseAlternativeColour[controlIndex]) {
-						color = 8421504;
-					} else {
-						color = 16777215;
-					}
+				boolean altColor = this.controlUseAlternativeColour[controlIndex];
+				boolean hovered = this.currMouseX >= x - width / 2 && this.currMouseX <= x + width / 2
+					&& this.currMouseY - 2 <= lineY && lineY - this.graphics.fontHeight(font) < this.currMouseY - 2;
+				boolean selected = i == this.controlClickedListIndex[controlIndex];
+				int color = Theme.appearanceListEntry(altColor, hovered, selected);
 
+				if (hovered) {
 					if (this.lastMouseButtonDown == 1) {
 						this.controlClickedListIndex[controlIndex] = i;
 						this.controlClicked[controlIndex] = true;
-					}
-				}
-
-				if (i == this.controlClickedListIndex[controlIndex]) {
-					if (!this.controlUseAlternativeColour[controlIndex]) {
-						color = 12582912;
-					} else {
-						color = 16711680;
 					}
 				}
 
@@ -756,6 +740,28 @@ public final class Panel {
 		} catch (RuntimeException var13) {
 			throw GenUtil.makeThrowable(var13, "qa.FA(" + (entries != null ? "{...}" : "null") + ',' + controlIndex
 				+ ',' + "dummy" + ',' + font + ',' + x + ',' + y + ')');
+		}
+	}
+
+	/**
+	 * Display-only colour chip: a solid swatch of the given tint with an
+	 * optional border, used by the character-creation screen to show the
+	 * currently selected hair/top/bottom/skin colour next to its arrows.
+	 * Purely presentational - no hitbox, no click state. Size is passed in
+	 * (already scaled by the caller) since Panel has no ui() of its own.
+	 */
+	public final void addColorChip(int x, int y, int color, int size) {
+		try {
+			size = Math.max(6, size);
+			int border = Theme.appearanceSwatchBorder();
+			x -= size / 2;
+			y -= size / 2;
+			this.graphics.drawBox(x, y, size, size, color);
+			if (border != -1) {
+				this.graphics.drawBoxBorder(x, size, y, size, border);
+			}
+		} catch (RuntimeException var5) {
+			throw GenUtil.makeThrowable(var5, "qa.V(" + y + ',' + "dummy" + ',' + x + ',' + color + ')');
 		}
 	}
 
@@ -827,9 +833,9 @@ public final class Panel {
 
 				if (var11 == this.controlClickedListIndex[controlIndex]) {
 					if (this.controlUseAlternativeColour[controlIndex]) {
-						color = 16711680;
+						color = Theme.appearanceListEntry(true, false, true);
 					} else {
-						color = 12582912;
+						color = Theme.appearanceListEntry(false, false, true);
 					}
 				}
 
