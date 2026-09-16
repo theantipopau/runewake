@@ -163,3 +163,6 @@ server/inc/sqlite/*.db
 # Local dev run logs
 Client_Base/client_log*.txt
 server/server_log.txt
+
+# Local environment (contains real credentials; see .env.example)
+.env
