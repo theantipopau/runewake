@@ -1,104 +1,130 @@
-[![pipeline status](https://gitlab.com/open-runescape-classic/core/badges/master/pipeline.svg)](https://gitlab.com/open-runescape-classic/core/-/commits/master)
+<p align="center">
+  <img src="assets/runewakelogo.png" alt="RuneWake logo" width="420">
+</p>
 
-# OpenRSC
+# RuneWake
 
-# Table of contents <a name="top"></a>
-1. [Project Information](#general)
-2. [Hosting Your Own Server](#hosting)
-3. [How to Play](#play)
-4. [Minimum Requirements](#requirements)
-5. [Bug Reports, Discord, and Reddit](#bugs)
-6. [In-Game Commands](#commands)
-7. [Thank you](#thankyou)
+A community-driven revival of RuneScape Classic, built on the
+[OpenRSC Core-Framework](https://gitlab.com/open-runescape-classic/core).
+RuneWake is free and open source — everything needed to play and to host
+your own server lives in this repository, and it always will be a hobby
+project: no donations, no pay-to-win, nobody profiting from somebody
+else's work.
 
-## Project Information<a name="general"></a>
-The original RSC was closed down and abandoned after nearly 18 years on August 6th, 2018. Through open-source cooperation & black box reverse engineering, the OpenRSC project has made it once again possible for fans to enjoy playing this game. In this repository is everything needed to run the closest to authentic version of RSC available. Efforts are continually ongoing to further improve authenticity and to add new features. This project has been built upon the efforts of the RSC private server developer community spanning from 2006 to 2018. From the inception of the Open RSC project in June 2018, the team has reviewed thousands of hours of RSC+ replays to ensure an accurate and authentic in-game experience. We have rewritten the core server framework and expanded it to scale far beyond the original abilities of the original RSC game. Included are several server configurations that allow many new game features to be activated without needing to change any code. Example: Runecrafting, custom sprites, faster game speeds, higher experience rates, new quests, auction house, clans, parties, pets, holiday events, and so much more. We primarily use Discord to stay in touch and welcome anyone that would like to learn and help contribute code to the project. We host free to play public worlds as well - see our website for more information. One last thing: we do not accept any monetary donations whatsoever. This is a hobby and will only ever be a hobby. We don't believe anyone should profit using somebody else's work, even if it is considered abandonware.
+## Table of contents
 
+1. [About RuneWake](#about)
+2. [Playing locally](#play)
+3. [Hosting your own server](#hosting)
+4. [Downloads](#downloads)
+5. [Server browser](#browser)
+6. [Minimum requirements](#requirements)
+7. [In-game commands](#commands)
+8. [Bug reports & community](#community)
+9. [License & credits](#credits)
 
-## How to Play<a name="play"></a>
-The OpenRSC team suggests that before hosting a public server, developers learn the ins and outs of everything by running the game locally first.
+## About RuneWake <a name="about"></a>
 
-<b>To run your own server locally, please see our guides:</b>
-- **Windows**: [Windows Getting Started Guide](https://github.com/Open-RSC/Core-Framework/blob/develop/Windows%20Getting%20Started%20Guide.md)
-- **Mac**: [Mac Getting Started Guide](https://github.com/Open-RSC/Core-Framework/blob/develop/MacOS%20Getting%20Started%20Guide.md)
-- **Linux**: [Linux Getting Started Guide](https://github.com/Open-RSC/Core-Framework/blob/develop/Linux%20Getting%20Started%20Guide.md)
+RuneWake continues the work of the OpenRSC project, which made RuneScape
+Classic playable again after its closure in August 2018 through
+open-source cooperation and black-box reverse engineering. In this
+repository you'll find:
 
-Feel free to join our Discord if you need help: <a href="https://discord.gg/KGvudZ9">https://discord.gg/KGvudZ9</a>
+- A **faithful, authentic game experience**, verified against thousands of
+  hours of RSC+ replays.
+- **Optional custom game modes** switchable per-server via configuration
+  files — auction house, clans, parties, pets, bank presets, holiday
+  events, faster game speeds, higher experience rates, and more — without
+  changing any code.
+- A rewritten **server framework** that scales far beyond the original
+  game, plus a **desktop client** with widescreen/UI-scaling support, a
+  modern opt-in theme, and a self-updating launcher.
+- A **Windows installer** (`Packaging/`) so players don't need Java
+  installed at all.
 
+## Playing locally <a name="play"></a>
 
-## Hosting Your Own Server<a name="hosting"></a>
+The suggested path is to run the game locally first and learn the
+ins and outs before hosting anything public. Platform guides:
 
-[Check out this wiki page.](https://rsc.vet/wiki/index.php?title=Running_your_own_server)
+- **Windows**: [Windows Getting Started Guide](Windows%20Getting%20Started%20Guide.md)
+  — or just double-click `run-client.bat` at the repo root, which builds
+  the client and boots a local server for it automatically.
+- **Mac**: [MacOS Getting Started Guide](MacOS%20Getting%20Started%20Guide.md)
+- **Linux**: [Linux Getting Started Guide](Linux%20Getting%20Started%20Guide.md)
 
+## Hosting your own server <a name="hosting"></a>
 
-## Minimum Requirements<a name="requirements"></a>
+- **Simplest path (Windows, no Docker)**: double-click `run-server.bat`
+  or follow [server/SIMPLE_HOSTING.md](server/SIMPLE_HOSTING.md) — it
+  covers port forwarding, making your server reachable from outside your
+  network, and listing it publicly.
+- **Centralized accounts across multiple worlds**:
+  [server/CENTRALIZED_DATABASE.md](server/CENTRALIZED_DATABASE.md)
+- **Docker**: `docker-compose.yml` at the repo root provisions a MariaDB
+  container; the wiki page
+  [Running your own server](https://rsc.vet/wiki/index.php?title=Running_your_own_server)
+  covers the traditional setup.
+- **Makefile**: database create/import/backup/rank/name-change helpers —
+  run `make` and see the target comments for usage.
 
-* Windows XP, MacOS, or Ubuntu 18.04 Linux (or newer)
+## Downloads <a name="downloads"></a>
 
-* 2GB RAM in order to run both server and client or 1GB RAM to just run the game server
+The `PC_Launcher` project builds `OpenRSC.jar`, a self-updating launcher
+that downloads and keeps the client and its asset cache in sync via MD5
+diffing. Published client builds are hosted on this repository's
+`game-files` branch; the republish recipe is documented in
+[Packaging/README.md](Packaging/README.md). A Windows installer
+(`RuneWake-Setup.exe`, bundled JRE, no admin rights required) can be
+built from [Packaging/](Packaging/).
 
-* Java Development Kit 8 (JDK 1.8) or newer (Preferably OpenJDK)
+## Server browser <a name="browser"></a>
 
+A zero-backend, static [web server browser](web/server-browser/README.md)
+shows live player counts and ping for known RuneWake servers by querying
+each server's own `/status` endpoint directly — deployed at
+<https://theantipopau.github.io/runewake/>. Server operators add their
+server via a pull request to `servers.json`; HTTPS status URLs (e.g. via
+a free Cloudflare Tunnel) are required for the hosted page — see
+[server/SIMPLE_HOSTING.md](server/SIMPLE_HOSTING.md).
 
-For the latest version of Open JDK: (Windows users will want to pick the MSI installer version)
+## Minimum requirements <a name="requirements"></a>
 
-<a href="https://www.azul.com/downloads/zulu-community/?architecture=x86-64-bit&package=jdk">Download Zulu Builds of OpenJDK</a>
+- Windows, MacOS, or Linux
+- 2GB RAM to run both server and client, or 1GB for the server alone
+- Java Development Kit 8 (JDK 1.8) or newer — preferably OpenJDK. The
+  repository bundles a portable JDK + Ant under `Portable_Windows/`, and
+  the Windows installer ships its own JRE, so many setups need nothing
+  installed at all.
 
-- or
+## In-game commands <a name="commands"></a>
 
-<a href="https://adoptopenjdk.net/releases.html?variant=openjdk13&jvmVariant=hotspot">Download Adopt OpenJDK</a>
+See [Commands.md](Commands.md) for in-game command documentation.
 
+## Bug reports & community <a name="community"></a>
 
-## Bug Reports, Discord, and Reddit<a name="bugs"></a>
-Feel free to submit bug reports in the repository issues section! If you would like to chat with developers and players of this project, join our Discord server!
+- Bug reports: [GitHub Issues](https://github.com/theantipopau/runewake/issues)
+- The upstream OpenRSC project's Discord, Reddit, and website remain the
+  hub for the wider community:
+  - <a href="https://discord.com/invite/openrsc">Discord</a>
+  - <a href="https://www.reddit.com/r/rsc">Reddit</a>
+  - <a href="https://rsc.vet">OpenRSC Website</a>
 
-- <a href="https://gitlab.com/open-runescape-classic/core/issues">GitLab Issue Submission</a>
+## License & credits <a name="credits"></a>
 
-- <a href="https://discord.com/invite/openrsc">Discord</a>
+RuneWake is licensed under the
+[GNU Affero General Public License v3](LICENSE).
 
-- <a href="https://www.reddit.com/r/rsc">Reddit</a>
+This project stands on the shoulders of the RSC private-server
+development community (2006–2018) and the OpenRSC project and its many
+contributors — thank you. RuneWake was originally based on:
 
-- <a href="https://rsc.vet">OpenRSC Website</a>
-
-
-## In-Game Commands<a name="commands"></a>
-
-#### <a href="https://gitlab.com/open-runescape-classic/core/-/blob/develop/Commands.md">Click here for in-game command documentation.</a>
-
-
-## Thank You<a name="thankyou"></a>
-This project has been made possible thanks to the time and efforts of countless individuals. Here is a short list:
-- Kenix, Marwolf, Luis, Aenge, Logg, Ipkpjersi, Rick IBM, Lucki, Extendo28, Kristof, Ryan, Pyramin, Mige, RSC2001, Red Bracket, Retrogamer02, Zoso_, Fah Qu, Aurora, Leclerc, Christofosho, Frogdoubler, Kepler, Orbrun, Yumeko, Seatta, IanWONeill, Jamosaur, Bl0dzy, Cleaned, Hixk, Neq, Ceikry, Heleor, Beast Fable, Morgue, Conker, and many more!
-
-Additionally, we'd like to thank the following people for consulting on performance and other issues:
-- Kris, Graham, and Blakeman8192
-
-OpenRSC was originally based on the following RSC replication & private server projects:
-- Tooling, reverse engineering, and general concept (2004-2005) by wL and saevion.
+- Tooling, reverse engineering, and general concept (2004–2005) by wL and saevion.
 - RSCDaemon (2006-2007) by eXemplar, SeanWT, pd, Mediator, and Reines.
 - RSCAngel (2007-2010) by Peeter, xEnt, and KO9.
 - RSCRevolution (2013-2016) by Fate, Kevin, and n0m.
 - RSCLegacy (2016-2018) by Fate and Kevin.
 
-Several organizations and companies have helped us out along the way and we are forever grateful to them:
-- <a href="https://rsc.plus/">RSC+</a>
-- <a href="https://www.cloudflare.com/">CloudFlare</a>
-- <a href="https://www.digitalocean.com/">DigitalOcean</a>
-- <a href="https://www.vultr.com/">Vultr</a>
-- <a href="https://www.jetbrains.com/">JetBrains IntelliJ-based IDEs</a>
-- <a href="https://www.yourkit.com/java/profiler">YourKit Java Profiler</a>
-- <a href="https://www.docker.com/">Docker</a>
-- <a href="https://www.nginx.com/">Nginx</a>
-- <a href="https://mariadb.org/">MariaDB</a> 
-- <a href="https://openjdk.java.net/">OpenJDK</a>
-- <a href="https://gitlab.com/">GitLab</a>
-- <a href="https://github.com/">GitHub</a>
-- <a href="https://ubuntu.com/">Ubuntu Linux</a>
-- <a href="https://www.rune-server.ee/">Rune-Server.ee</a>
- 
- ----------
-YourKit supports open source projects with innovative and intelligent tools
-for monitoring and profiling Java and .NET applications.
-YourKit is the creator of <a href="https://www.yourkit.com/java/profiler/">YourKit Java Profiler</a>,
-<a href="https://www.yourkit.com/.net/profiler/">YourKit .NET Profiler</a>,
-and <a href="https://www.yourkit.com/youmonitor/">YourKit YouMonitor</a>.
+Additional thanks to RSC+, CloudFlare, DigitalOcean, Vultr, JetBrains,
+YourKit, Docker, Nginx, MariaDB, OpenJDK, GitLab, GitHub, Ubuntu Linux,
+and Rune-Server.ee for supporting the upstream project along the way.
