@@ -146,3 +146,65 @@ that was not actually run.
 1. Manual visual pass of the theme-on bank/trade/duel/shop modals.
 2. Dedicated CustomBank interaction-palette theme slice (33 literals).
 3. Next scaling slices per plan: login/character-creation polish.
+
+---
+
+## Session: 2026-09-17 (CustomBank palette + login/character-creation polish)
+
+### What was done
+1. **CustomBank interaction palette (commit 1e46ff66c).** All 33 deferred
+   CustomBank-specific colour literals mapped and classified by semantic
+   role (slot fills/hover/selected, tab chrome, mode toggles, preset tabs,
+   quantity controls, context menu, text accents). Added ~25 `Theme.bank*`
+   accessors returning the inherited classic literal exactly when
+   `C_PREMIUM_THEME` is off and the Runewake dark-fantasy token when on.
+   Bonus states that were previously hard-coded: search-field focus border
+   (accent while focused) and selected-control border. Draw-layer only —
+   packets, hitboxes and geometry untouched (121 call sites now reference
+   Theme.bank*).
+2. **Login presentation (commit 23fb70257).**
+   - `Panel`: visible focused-field state — rune-blue underline under the
+     keyboard-focused text entry in premium mode (classic keeps the
+     inherited asterisk only, no underline).
+   - `mudclient.drawLogin`: the BLUEBAR bottom strip now scales with
+     `ui(10)`; the status scrim grew from a fixed 30px strip to
+     `ui(18) + fontHeight(4)/2` so scaled-font error/status text can no
+     longer outgrow it.
+   - `menuNewUser` registration form gained a proper heading ("Create Your
+     Character's Account") to anchor the grouped rows.
+   - Auth behaviour untouched: packets, focus/keyboard handling, remembered
+     credentials, password masking all unchanged.
+3. **Character creation (commit d71159921).**
+   - `panelAppearance` now uses `Theme.applyBronzeButtonScheme` like the
+     other onboarding panels (was the only onboarding panel on default
+     scheme).
+   - New `Theme.appearanceListEntry(altColor, hovered, selected)`: classic
+     mode preserves the inherited white/grey/red literals exactly; premium
+     reads selected as rune-blue accent, hovered TEXT_PRIMARY, idle
+     TEXT_MUTED. Used by `renderCenteredList`/`renderHorizontalList`
+     (verified: only the appearance panel uses these two renderers).
+   - New `Panel.addColorChip(x, y, color, size)`: display-only swatch of the
+     currently selected hair/top/bottom/skin tint drawn inside each picker's
+     decorated box; border only in premium mode (classic draws nothing, so
+     classic output is unchanged). No hitbox added.
+   - Fixed the Android registration keyboard-hint position introduced by the
+     heading in the login commit (-ui(121) sat between the two instruction
+     rows; now -ui(136), clear of both).
+
+### Commands run (results)
+- `Client_Base ant compile` (covers PC_Client/src too): PASSED x3
+  (once per slice; env: portable zulu8 JDK8.0.275 + ant 1.10.5, JAVA_HOME
+  must be absolute).
+- `git diff --check`: clean before each commit.
+- Smoke launch NOT run this session (previous session's result stands:
+  window starts, exits at getServerConfig — connection refused, expected).
+- NOT run: any visual inspection; no networked/bank/auth tests.
+
+### Exact next tasks
+1. Manual visual pass: bank (classic + premium), login focus underline,
+   character-creation chips/list states, at 1080p and an ultrawide width.
+2. Verify the new colour chips don't collide with picker sprites at
+   extreme cap values (chip geometry is derived from the same ui() scale,
+   so risk is low but unverified visually).
+3. Next slices per plan: social/clan tab theme tokens; launcher identity
+   (blocked on art).

@@ -500,3 +500,32 @@ Code-level audit (no visual verification possible in agent environment):
   unscaled bitmaps beneath scaled labels - noticeable only at high scale.
 - Input-X edge case (deferred): dimensions are stale if the window is
   resized while the dialog is open; next open recomputes.
+
+## Bank/onboarding theme + polish pass (2026-09-17)
+
+Three draw-layer slices, all committed after clean compiles; no geometry,
+packet or input-handling changes:
+
+1. **CustomBank interaction palette** (commit 1e46ff66c): the 33 deferred
+   CustomBank literals routed through ~25 new semantic `Theme.bank*`
+   accessors. Classic mode returns the inherited literal unchanged; premium
+   mode uses the established Runewake tokens. Scaling regression re-checked
+   by code inspection: all drawing still derives from `ui()`, draw and
+   hit-test bounds remain paired, right-click menus still derive from
+   scaled font metrics, no bounds were touched.
+2. **Login presentation** (commit 23fb70257): focused-entry underline
+   (premium only), BLUEBAR strip scaled by `ui(10)`, status scrim sized
+   from scaled font metrics so it can no longer be outgrown by status text,
+   registration form heading. Classic-mode login output unchanged except the
+   BLUEBAR strip scaling (behaviour-neutral).
+3. **Character creation** (commit d71159921): bronze button scheme applied
+   to `panelAppearance`; picker list colours through
+   `Theme.appearanceListEntry` (classic literals preserved exactly); new
+   display-only `Panel.addColorChip` swatches inside each colour picker box
+   (border only in premium mode); fixed Android hint overlap on the
+   registration screen.
+
+Not visually verified (no display): all of the above needs the manual
+matrix pass; chip/label collision at extreme interface-scale cap values is
+the only new geometry-adjacent risk and it uses the same `ui()` scale as
+everything else in the panel.

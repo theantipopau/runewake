@@ -57,3 +57,22 @@ worth checking first after this pass's changes:
 2. Loading screen + Discord presence — branding strings changed.
 3. Android cold start — manifest label changed (reinstall required to see).
 4. Bank + inventory drag at ≥2560 wide — flagged higher-risk in ROADMAP 7.
+
+## Additions from the 2026-09-17 pass (all unverified visually)
+
+First priorities for the human pass after the bank/login/character-creation
+slices (commits 1e46ff66c, 23fb70257, d71159921):
+
+1. **Bank (custom interface)**: classic mode should look unchanged; premium
+   mode check slot/selected/hover/destructive contrast, context menu
+   legibility, search focus border.
+2. **Login**: focused-field rune-blue underline (premium only); status/error
+   text fits the (now taller) status scrim at high font scale; BLUEBAR
+   bottom strip scaling.
+3. **Registration**: heading + Android keyboard hint no longer overlap
+   instruction rows (Android only for the hint).
+4. **Character creation**: bronze panel chrome; player-mode/xp-rate picker
+   states (accent selected, muted idle) in premium; colour chips visible
+   inside each picker box and not colliding with the box sprites; classic
+   mode should render exactly as before (no chips, inherited list colours).
+5. Per-resolution matrix above still applies to these screens.
