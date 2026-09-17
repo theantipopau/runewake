@@ -5595,7 +5595,7 @@ public final class mudclient implements Runnable {
 						int uiWidth = 40;
 						int uiHeight = 32;
 
-						this.getSurface().drawBoxAlpha(uiX, uiY, uiWidth, uiHeight, 0x989898, 160);
+						this.getSurface().drawBoxAlpha(uiX, uiY, uiWidth, uiHeight, Theme.androidControlFill(), 160);
 						this.getSurface().drawString("@bla@Key-", uiX + 9, uiY + 14, 0xffffff, 1);
 						this.getSurface().drawString("@bla@board", uiX + 5, uiY + 27, 0xffffff, 1);
 						if (this.mouseButtonClick != 0) {
@@ -5636,8 +5636,8 @@ public final class mudclient implements Runnable {
 							int uiWidth = 60;
 							int uiHeight = 30;
 
-							this.getSurface().drawBoxAlpha(uiX, uiY, uiWidth, uiHeight, 0x659CDE, 160);
-							this.getSurface().drawBoxBorder(uiX, uiWidth, uiY, uiHeight, 0);
+							this.getSurface().drawBoxAlpha(uiX, uiY, uiWidth, uiHeight, Theme.androidCommandFill(), 160);
+							this.getSurface().drawBoxBorder(uiX, uiWidth, uiY, uiHeight, Theme.androidControlBorder());
 							this.getSurface().drawString("@whi@Global", uiX + 12, uiY + 20, 0xffffff, 1);
 							if (this.mouseButtonClick != 0) {
 								if (this.mouseX >= uiX && this.mouseX <= uiX + uiWidth && this.mouseY >= uiY && this.mouseY <= uiY + uiHeight) {
@@ -5646,8 +5646,8 @@ public final class mudclient implements Runnable {
 								}
 							}
 							uiX += uiWidth + 15;
-							this.getSurface().drawBoxAlpha(uiX, uiY, uiWidth, uiHeight, 0x659CDE, 160);
-							this.getSurface().drawBoxBorder(uiX, uiWidth, uiY, uiHeight, 0);
+							this.getSurface().drawBoxAlpha(uiX, uiY, uiWidth, uiHeight, Theme.androidCommandFill(), 160);
+							this.getSurface().drawBoxBorder(uiX, uiWidth, uiY, uiHeight, Theme.androidControlBorder());
 							this.getSurface().drawString("@whi@Wiki", uiX + 18, uiY + 20, 0xffffff, 1);
 							if (this.mouseButtonClick != 0) {
 								if (this.mouseX >= uiX && this.mouseX <= uiX + uiWidth && this.mouseY >= uiY && this.mouseY <= uiY + uiHeight) {
@@ -9018,16 +9018,16 @@ public final class mudclient implements Runnable {
 
 					// Android "cast last spell" box
 					if (lastSelectedSpell != -1 && isAndroid()) {
-						getSurface().drawBoxAlpha(lastSpellX, lastSpellY, lastSpellWidth, lastSpellHeight, 0x989898, 210);
-						getSurface().drawBoxBorder(lastSpellX, lastSpellWidth, lastSpellY, lastSpellHeight, 0);
+						getSurface().drawBoxAlpha(lastSpellX, lastSpellY, lastSpellWidth, lastSpellHeight, Theme.androidControlFill(), 210);
+						getSurface().drawBoxBorder(lastSpellX, lastSpellWidth, lastSpellY, lastSpellHeight, Theme.androidControlBorder());
 
 						SpellDef spellDef = EntityHandler.getSpellDef(lastSelectedSpell);
 						if (spellDef != null) {
-							getSurface().drawBoxAlpha(lastSpellX, lastSpellY, lastSpellWidth, ui(16), 0x6b8e23, 210);
-							getSurface().drawBoxBorder(lastSpellX, lastSpellWidth, lastSpellY, ui(16), 0);
+							getSurface().drawBoxAlpha(lastSpellX, lastSpellY, lastSpellWidth, ui(16), Theme.androidCastHeaderFill(), 210);
+							getSurface().drawBoxBorder(lastSpellX, lastSpellWidth, lastSpellY, ui(16), Theme.androidControlBorder());
 
-							getSurface().drawBoxAlpha(lastSpellX, lastSpellY + ui(49), lastSpellWidth, ui(20), GenUtil.buildColor(255, 0, 0), 210);
-							getSurface().drawBoxBorder(lastSpellX, lastSpellWidth, lastSpellY + ui(49), ui(20), 0);
+							getSurface().drawBoxAlpha(lastSpellX, lastSpellY + ui(49), lastSpellWidth, ui(20), Theme.androidCastRemoveFill(), 210);
+							getSurface().drawBoxBorder(lastSpellX, lastSpellWidth, lastSpellY + ui(49), ui(20), Theme.androidControlBorder());
 
 							getSurface().drawColoredStringCentered(lastSpellX + (lastSpellWidth / 2), "@whi@Remove", 0, 0, 1, lastSpellY + ui(63));
 

@@ -361,4 +361,35 @@ public final class Theme {
 	public static int xpCounterFill() {
 		return Config.C_PREMIUM_THEME ? OVERLAY_SCRIM : 0x989898;
 	}
+
+	// ------------------------------------------------------------------
+	// Android on-screen control overlays (keyboard toggle, chat-command
+	// buttons, cast-last-spell widget). Drawn translucent over the world
+	// on touch devices only; classic values are the inherited literals.
+	// ------------------------------------------------------------------
+
+	/** Keyboard-toggle button and cast-last-spell widget body fill. */
+	public static int androidControlFill() {
+		return Config.C_PREMIUM_THEME ? OVERLAY_SCRIM : 0x989898;
+	}
+
+	/** Black outline around the Android overlay controls (invisible on the premium dark fills). */
+	public static int androidControlBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : 0;
+	}
+
+	/** On-screen chat-command buttons (Global / Wiki / ...) on Android. */
+	public static int androidCommandFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : 0x659CDE;
+	}
+
+	/** "Tap to Cast" header band of the cast-last-spell widget. */
+	public static int androidCastHeaderFill() {
+		return Config.C_PREMIUM_THEME ? SELECTION : 0x6b8e23;
+	}
+
+	/** "Remove" button of the cast-last-spell widget (destructive action). */
+	public static int androidCastRemoveFill() {
+		return Config.C_PREMIUM_THEME ? DANGER : GenUtil.buildColor(255, 0, 0);
+	}
 }
