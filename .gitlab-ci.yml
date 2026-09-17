@@ -5,8 +5,14 @@ before_script:
   - apt-get --quiet install --yes ant
 
 stages:
+  - verify
   - build
   - upload
+
+themeGuard:
+  stage: verify
+  script:
+    - bash scripts/check_theme_literals.sh
 
 build:
   stage: build
