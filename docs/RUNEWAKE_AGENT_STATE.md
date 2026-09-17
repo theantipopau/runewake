@@ -276,3 +276,36 @@ inherited literals exactly; premium path uses the established palette
    small isolated future slice.
 3. Launcher identity work (blocked on artwork).
 4. Discrete UI-scale selector (audit item 6).
+
+---
+## Session: Android overlay theme slice (2026-09-17)
+
+Migrated the last classified draw-layer literals in `mudclient.java`: the
+Android on-screen overlays. Theme additions: `androidControlFill`,
+`androidControlBorder`, `androidCommandFill`, `androidCastHeaderFill`,
+`androidCastRemoveFill`. Sites migrated (draw + paired border calls only;
+hitboxes, command text and click behaviour untouched):
+- keyboard toggle button box (was `0x989898` @160)
+- Global / Wiki chat-command buttons (was `0x659CDE` @160, black border)
+- cast-last-spell widget: body (`0x989898` @210), "Tap to Cast" header
+  (`0x6b8e23` @210), "Remove" button (`GenUtil.buildColor(255,0,0)` @210)
+
+Classic path returns the inherited literals exactly; premium path uses
+OVERLAY_SCRIM / PANEL_ELEVATED / SELECTION / DANGER and swaps the black
+overlay borders for BORDER_DARK_MID so they remain visible on dark fills.
+The commented-out Clan/Online buttons inside `/*if (S_WANT_CLANS)*/` were
+intentionally left untouched. No desktop-visible pixels change: every site
+is guarded by `isAndroid()`. No visual inspection possible (no Android
+device / no display).
+
+Verification: `Client_Base ant compile` PASSED; `git diff --check` clean;
+diff reviewed — colour-only substitutions plus the new Theme section.
+
+Commit: `b3ae7c791` — ui: theme Android on-screen control overlays
+(Theme.java, mudclient.java)
+
+### Exact next tasks
+1. Human visual pass (unchanged, still the top blocker): now includes
+   Android overlays premium-vs-classic if a device is available.
+2. Discrete UI-scale selector (audit item 6) — last remaining code slice.
+3. Launcher identity work (blocked on artwork).

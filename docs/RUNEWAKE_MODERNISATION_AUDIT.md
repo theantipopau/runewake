@@ -46,9 +46,9 @@ space via `ui()` helpers; input coordinates transformed by the same factor
 5. ~~Social/clan tab + remaining `drawBoxAlpha` tints not yet on `Theme`
    tokens~~ DONE this pass (`16f025d27`): social/clan, Stats/Quests and
    Magic/Prayer tab strips, clan action buttons, combat-style rows,
-   equipped-slot warning, xp-counter pill, tab labels and separators are
-   on Theme tokens. Android-only boxes (keyboard button, cast-last-spell)
-   deliberately left for a future slice.
+   equipped-slot warning, xp-counter pill, tab labels and separators, and
+   the Android on-screen overlays (keyboard button, chat-command buttons,
+   cast-last-spell widget) are all on Theme tokens.
 6. Discrete UI-scale selector (Auto/100–250%) not implemented; current
    scale is auto-derived only.
 
@@ -58,7 +58,7 @@ space via `ui()` helpers; input coordinates transformed by the same factor
    login, Android cold start first).
 2. ~~Theme migration: social/clan tab, then bank/magic tints~~ DONE
    (bank `1e46ff66c`, onboarding `23fb70257`+`d71159921`, side panels
-   `16f025d27`).
+   `16f025d27`, Android overlays `b3ae7c791`).
 3. Launcher artwork + identity (blocked on art).
 4. Discrete UI-scale setting with persisted safe fallback (design-space
    scale separate from `renderingScalar`).
