@@ -49,8 +49,12 @@ space via `ui()` helpers; input coordinates transformed by the same factor
    equipped-slot warning, xp-counter pill, tab labels and separators, and
    the Android on-screen overlays (keyboard button, chat-command buttons,
    cast-last-spell widget) are all on Theme tokens.
-6. Discrete UI-scale selector (Auto/100–250%) not implemented; current
-   scale is auto-derived only.
+6. ~~Discrete UI-scale selector (Auto/100–250%)~~ DONE in
+   `ebfc99afe`: settings row cycles Auto→100→125→150→175→200→250%,
+   persists `ui_scale_cap` in `clientSettings.conf`, loads with a safe
+   Auto fallback on invalid values, and clamps the auto-derived scale in
+   `reposition()`. The cap only shrinks the scale, so panels always fit
+   the window.
 
 ## Remaining priorities (ordered)
 
