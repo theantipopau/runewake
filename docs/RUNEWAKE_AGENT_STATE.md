@@ -309,3 +309,42 @@ Commit: `b3ae7c791` — ui: theme Android on-screen control overlays
    Android overlays premium-vs-classic if a device is available.
 2. Discrete UI-scale selector (audit item 6) — last remaining code slice.
 3. Launcher identity work (blocked on artwork).
+
+---
+## Session: audit reconciliation + theme-literal tripwire (2026-09-17)
+
+Two follow-ups after the Android overlay slice:
+
+1. Audit item 6 (discrete UI-scale selector) was found already implemented
+   in `ebfc99afe` — settings row 48 cycles Auto→100→125→150→175→200→250%,
+   persists `ui_scale_cap` via `saveClientSetting`, loads in
+   `OpenRSC.java` with a safe Auto fallback on invalid values, and clamps
+   the auto-derived scale in `reposition()` (cap only shrinks, so panels
+   always fit). The audit doc was stale; item now closed there. No code
+   change was needed.
+
+2. Added `scripts/check_theme_literals.sh`: a baseline-diff tripwire over
+   the client UI layer (`Client_Base/src/orsc`, `com/openrsc/interfaces`,
+   `PC_Client/src/orsc`, excluding Theme.java). It fails when any
+   0xRRGGBB / 0xAARRGGBB literal is added, removed or changed without a
+   baseline update, forcing conscious classification (Theme accessor or
+   documented baseline regeneration via `--update-baseline`). Baseline:
+   343 unique file:literal pairs, generated from the current tree.
+   Detection verified with a temporary injected literal (failed with a
+   precise diff, then passed after revert). Wired into `.gitlab-ci.yml`
+   as a `verify` stage running before the build.
+
+Verification: tripwire OK on clean tree; `Client_Base ant compile`
+PASSED. No visual work this session.
+
+Commits:
+- `a441cbf23` — ci: add theme-literal tripwire and close stale audit item
+  (scripts/check_theme_literals.sh, scripts/theme_literal_baseline.txt,
+  .gitlab-ci.yml, docs/RUNEWAKE_MODERNISATION_AUDIT.md)
+
+### Exact next tasks
+1. Human visual pass (unchanged, still the top blocker).
+2. Launcher identity work (blocked on artwork).
+3. Optional: migrate baseline-pairs toward Theme accessors slice by slice
+   (bank of classified-but-unmigrated literals is inventoried in the
+   baseline file for exactly this purpose).
