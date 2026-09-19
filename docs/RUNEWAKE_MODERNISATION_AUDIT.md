@@ -55,6 +55,18 @@ space via `ui()` helpers; input coordinates transformed by the same factor
    Auto fallback on invalid values, and clamps the auto-derived scale in
    `reposition()`. The cap only shrinks the scale, so panels always fit
    the window.
+7. Social GUI family (clan `ClanInterface` + forked
+   `PartyInterface`, ~90 draw-layer literals) DONE in `11f31b6ba`:
+   one shared `Theme.socialGui*` family now serves both files — window
+   structure, table headers, alternating list rows, search-result rows,
+   text roles and the five-button scheme (nav / input / search-entry /
+   select / submit). Classic mode returns the inherited literals;
+   premium uses the established tokens. Note: the search text entry
+   keeps a light fill in premium because its Panel text is black
+   (`useAltColor=false`) and flipping that flag would break classic.
+   Remaining baseline population is the smaller misc panels
+   (AuctionHouse, IronMan, SkillGuide, AchievementGUI, ...), inventoried
+   in `scripts/theme_literal_baseline.txt`.
 
 ## Remaining priorities (ordered)
 
@@ -62,7 +74,8 @@ space via `ui()` helpers; input coordinates transformed by the same factor
    login, Android cold start first).
 2. ~~Theme migration: social/clan tab, then bank/magic tints~~ DONE
    (bank `1e46ff66c`, onboarding `23fb70257`+`d71159921`, side panels
-   `16f025d27`, Android overlays `b3ae7c791`).
+   `16f025d27`, Android overlays `b3ae7c791`, clan/party GUIs
+   `11f31b6ba`).
 3. Launcher artwork + identity (blocked on art).
 4. Discrete UI-scale setting with persisted safe fallback (design-space
    scale separate from `renderingScalar`).

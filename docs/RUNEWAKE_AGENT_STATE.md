@@ -348,3 +348,53 @@ Commits:
 3. Optional: migrate baseline-pairs toward Theme accessors slice by slice
    (bank of classified-but-unmigrated literals is inventoried in the
    baseline file for exactly this purpose).
+
+---
+
+## Session: clan/party social-GUI theme family (`11f31b6ba`)
+
+Continued the baseline-driven migration with the largest coherent family:
+`ClanInterface` (45 literals) and its byte-level fork `PartyInterface`
+(44 literals, plus `0xffffff` close-button label) share one template, so
+a single Theme section serves both.
+
+- **Theme additions**: `CLASSIC_SOCIALGUI_*` constants + 42
+  `socialGui*` accessors — body/backdrop/table-header fills, alternating
+  list rows + hover highlight + borders (mates and search variants),
+  header band, inner card, card shadow, outer border, three separators,
+  nine text roles (title/body/bright/accent/label-accent/detail/hint/
+  muted/search-title/value/submit/secondary), and the five-button
+  scheme (`NavFill(checked,hovered)`, `InputFill(checked)`,
+  `SearchEntryFill/Border`, `SelectFill/Border`,
+  `SubmitFill(hovered)/Border`, `CloseFill(hovered)`).
+- **Migration**: 219 substitution sites (105 clan + 114 party); only
+  the commented-out `SocialLists.partyListCount` dead line keeps its
+  literal (same treatment as clan's commented blocks).
+- **Premium defect caught pre-commit**: search text entries are created
+  with `useAltColor=false` → Panel draws black text; the original
+  premium fill (near-black `OVERLAY_SCRIM`) would have hidden typed
+  text. Fixed to a light parchment fill (`TEXT_PRIMARY`) with the
+  constraint documented on the accessor.
+- **Process note**: the first migration pass (multiline str_replace)
+  consumed newline runs and merged adjacent statements; restored the
+  file and redid the migration with exact-token `sed` substitutions,
+  then verified whitespace neutrality via whitespace-stripped diff
+  against HEAD before compiling. ClanInterface (migrated pre-restart
+  with the same batch approach) was re-checked the same way and found
+  clean.
+- **Tripwire**: baseline regenerated 343 → 254 pairs; check passes.
+- **Verification**: `ant compile` passed (3 runs), `git diff --check`
+  clean, full diff reviewed. No visual inspection (no display).
+
+Commits:
+- `11f31b6ba` — ui: theme clan and party interfaces
+  (Theme.java, ClanInterface.java, PartyInterface.java,
+  scripts/theme_literal_baseline.txt)
+
+### Exact next tasks
+1. Human visual pass (unchanged, still the top blocker).
+2. Launcher identity work (blocked on artwork).
+3. Continue baseline-driven migration slice by slice — next largest
+   coherent families: `AuctionHouse` (~30 literals, blue-tinted family),
+   `IronManInterface` (~25, own button family), then the remaining
+   smaller misc panels.
