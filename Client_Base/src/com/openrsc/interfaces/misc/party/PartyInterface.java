@@ -7,6 +7,7 @@ import orsc.graphics.gui.InputXPrompt;
 import orsc.graphics.gui.Menu;
 import orsc.graphics.gui.Panel;
 import orsc.graphics.gui.SocialLists;
+import orsc.graphics.gui.Theme;
 import orsc.graphics.two.GraphicsController;
 import orsc.mudclient;
 
@@ -107,27 +108,27 @@ public final class PartyInterface {
 		int tableBoxW = 65;
 
 		if (selectedPartyMate != -1 && mc.party.isAllowed(0)) {
-			graphics.drawBoxAlpha(x + 3, y + 48 + 12, leftBoxW, leftBoxH - 4, 0x1D1915, 192); //5F5147
-			graphics.drawBoxBorder(x + 3, leftBoxW, y + 48 + 11, leftBoxH - 4, 0x5F5147);
+			graphics.drawBoxAlpha(x + 3, y + 48 + 12, leftBoxW, leftBoxH - 4, Theme.socialGuiBackdropFill(), 192);
+			graphics.drawBoxBorder(x + 3, leftBoxW, y + 48 + 11, leftBoxH - 4, Theme.socialGuiOuterCardBorder());
 		} else {
-			graphics.drawBoxAlpha(x + 3, y + 48 + 12, leftBoxW, leftBoxH + 59, 0x1D1915, 192); //5F5147
-			graphics.drawBoxBorder(x + 3, leftBoxW, y + 48 + 11, leftBoxH + 59, 0x5F5147);
+			graphics.drawBoxAlpha(x + 3, y + 48 + 12, leftBoxW, leftBoxH + 59, Theme.socialGuiBackdropFill(), 192);
+			graphics.drawBoxBorder(x + 3, leftBoxW, y + 48 + 11, leftBoxH + 59, Theme.socialGuiOuterCardBorder());
 		}
 
 		for (int i = 0; i < 5; i++) {
 			if (i == 0) {
-				graphics.drawBoxAlpha(tableBox, y + 48 + 11 + 2, tableBoxW + 69, 20, 0x432C26, 192); //5F5147
-				graphics.drawBoxBorder(tableBox, tableBoxW + 69, y + 48 + 11 + 2, 20, 0x4C4445);
-				graphics.drawString(partyMateTable[i], tableBox + 4, y + 75, 0xf1f1f1, 1);
+				graphics.drawBoxAlpha(tableBox, y + 48 + 11 + 2, tableBoxW + 69, 20, Theme.socialGuiTableHeaderFill(), 192);
+				graphics.drawBoxBorder(tableBox, tableBoxW + 69, y + 48 + 11 + 2, 20, Theme.socialGuiTableHeaderBorder());
+				graphics.drawString(partyMateTable[i], tableBox + 4, y + 75, Theme.socialGuiText(), 1);
 			} else {
-				graphics.drawBoxAlpha(tableBox + 135, y + 48 + 11 + 2, tableBoxW, 20, 0x432C26, 192); //5F5147
-				graphics.drawBoxBorder(tableBox + 135, tableBoxW, y + 48 + 11 + 2, 20, 0x4C4445);
-				graphics.drawString(partyMateTable[i], tableBox + 4 + 135, y + 75, 0xf1f1f1, 1);
+				graphics.drawBoxAlpha(tableBox + 135, y + 48 + 11 + 2, tableBoxW, 20, Theme.socialGuiTableHeaderFill(), 192);
+				graphics.drawBoxBorder(tableBox + 135, tableBoxW, y + 48 + 11 + 2, 20, Theme.socialGuiTableHeaderBorder());
+				graphics.drawString(partyMateTable[i], tableBox + 4 + 135, y + 75, Theme.socialGuiText(), 1);
 				tableBox += 66;
 			}
 		}
 
-		int color = 0x232220;
+		int color = Theme.socialGuiRowFill(false);
 		int listStartPoint = partySetupPanel.getScrollPosition(partyGUIScroll);
 		int listEndPoint = listStartPoint + (selectedPartyMate != -1 && mc.party.isAllowed(0) ? 3 : 6);
 		int showing = 0;
@@ -144,14 +145,14 @@ public final class PartyInterface {
 			if (mc.party.isAllowed(0)) {
 				if (mc.getMouseX() >= (newX) && mc.getMouseY() >= (newY) && mc.getMouseX() <= newX + 384
 					&& mc.getMouseY() <= (newY - 5) + boxHeight && mc.inputX_Action == InputXAction.ACT_0) {
-					graphics.drawBoxAlpha(newX + 1, newY, boxWidth + 1, boxHeight - 1, 0x202F39, 192);
+					graphics.drawBoxAlpha(newX + 1, newY, boxWidth + 1, boxHeight - 1, Theme.socialGuiRowHighlight(), 192);
 					if (mc.getMouseClick() == 1) {
 						selectedPartyMate = i;
 						mc.setMouseClick(0);
 					}
 				} else {
 					if (selectedPartyMate == i) {
-						graphics.drawBoxAlpha(newX + 1, newY, boxWidth + 1, boxHeight - 1, 0x202F39, 192);
+						graphics.drawBoxAlpha(newX + 1, newY, boxWidth + 1, boxHeight - 1, Theme.socialGuiRowHighlight(), 192);
 
 					} else {
 						graphics.drawBoxAlpha(newX + 1, newY, boxWidth + 1, boxHeight - 1, color, 192);
@@ -160,33 +161,33 @@ public final class PartyInterface {
 			}
 
 			if (i % 2 == 0) {
-				color = 0x1C1B19;
+				color = Theme.socialGuiRowFill(true);
 			} else {
-				color = 0x232220;
+				color = Theme.socialGuiRowFill(false);
 			}
-			graphics.drawBoxBorder(newX, 400, newY, boxHeight, 0x343434);
-			graphics.drawColoredString(newX + 3, newY + 16, mc.party.username[i], 2, 0xffffff, 0);
-			graphics.drawColoredString(newX + 3 + 137, newY + 16, "" + mc.party.getPartyRankNames(mc.party.partyRank[i]), 2, 0xffffff, 0);
-			graphics.drawColoredString(newX + 3 + 135 + 67, newY + 16, "" + mc.party.curHp[i] + "/" + mc.party.maxHp[i], 2, 0xffffff, 0);
-			graphics.drawColoredString(newX + 3 + 135 + 67 + 67, newY + 16, "" + mc.party.getCbLvl(i), 2, 0xffffff, 0);
-			graphics.drawColoredString(newX + 3 + 135 + 67 + 67 + 67, newY + 16, "" + mc.party.getExpShared(i), 2, 0xffffff, 0);
+			graphics.drawBoxBorder(newX, 400, newY, boxHeight, Theme.socialGuiRowBorder());
+			graphics.drawColoredString(newX + 3, newY + 16, mc.party.username[i], 2, Theme.socialGuiBrightText(), 0);
+			graphics.drawColoredString(newX + 3 + 137, newY + 16, "" + mc.party.getPartyRankNames(mc.party.partyRank[i]), 2, Theme.socialGuiBrightText(), 0);
+			graphics.drawColoredString(newX + 3 + 135 + 67, newY + 16, "" + mc.party.curHp[i] + "/" + mc.party.maxHp[i], 2, Theme.socialGuiBrightText(), 0);
+			graphics.drawColoredString(newX + 3 + 135 + 67 + 67, newY + 16, "" + mc.party.getCbLvl(i), 2, Theme.socialGuiBrightText(), 0);
+			graphics.drawColoredString(newX + 3 + 135 + 67 + 67 + 67, newY + 16, "" + mc.party.getExpShared(i), 2, Theme.socialGuiBrightText(), 0);
 			newY += boxHeight - 1;
 		}
 
 
-		graphics.drawString("Total partymates: (" + showing + " / 5)", newX, y + 55, 0xEFB063, 0);
+		graphics.drawString("Total partymates: (" + showing + " / 5)", newX, y + 55, Theme.socialGuiAccentText(), 0);
 		if (mc.party.shareLoot[0] == 0) {
-			graphics.drawString("Share Loot: @red@OFF", newX + 175, y + 55, 0xEFB063, 0);
+			graphics.drawString("Share Loot: @red@OFF", newX + 175, y + 55, Theme.socialGuiAccentText(), 0);
 		} else {
-			graphics.drawString("Share Loot: @gre@ON", newX + 175, y + 55, 0xEFB063, 0);
+			graphics.drawString("Share Loot: @gre@ON", newX + 175, y + 55, Theme.socialGuiAccentText(), 0);
 		}
 		if (mc.party.shareExp[0] == 0) {
-			graphics.drawString("Share Exp: @red@OFF", newX + 310, y + 55, 0xEFB063, 0);
+			graphics.drawString("Share Exp: @red@OFF", newX + 310, y + 55, Theme.socialGuiAccentText(), 0);
 		} else {
-			graphics.drawString("Share Exp: @gre@ON", newX + 310, y + 55, 0xEFB063, 0);
+			graphics.drawString("Share Exp: @gre@ON", newX + 310, y + 55, Theme.socialGuiAccentText(), 0);
 		}
 		if (selectedPartyMate != -1 && mc.party.isAllowed(0)) {
-			graphics.drawString("Settings for: " + mc.party.username[selectedPartyMate], newX, y + 180, 0xB39684, 0);
+			graphics.drawString("Settings for: " + mc.party.username[selectedPartyMate], newX, y + 180, Theme.socialGuiMutedText(), 0);
 			drawSubmitButton(graphics, newX + 250, y + 194, 130, 28, 18, 1, "Kick user", false, new ButtonHandler() {
 				@Override
 				void handle() {
@@ -224,13 +225,12 @@ public final class PartyInterface {
 		partySetupPanel.hide(partySearchScroll);
 		int leftBoxW = width - 88;
 		int leftBoxH = 138;
-		graphics.drawBox(x + 88 / 2, y - 10, leftBoxW, 20, 0x957357);
-		graphics.drawBoxAlpha(x + 88 / 2, y + 10, leftBoxW, leftBoxH, 0x1D1915, 192); //5F5147
-		graphics.drawBoxBorder(x + 88 / 2, leftBoxW, y - 10, leftBoxH + 20, 0x5F5147);
-		graphics.drawColoredStringCentered(width / 2 + x, "Party Invitation!", 0xE5D8C0, 0, 1, y + 5);
-		graphics.drawColoredStringCentered(width / 2 + x, invitationBy, 0xf1f1f1, 0, 1, y + 28);
+		graphics.drawBox(x + 88 / 2, y - 10, leftBoxW, 20, Theme.socialGuiHeaderBandFill());
+		graphics.drawBoxAlpha(x + 88 / 2, y + 10, leftBoxW, leftBoxH, Theme.socialGuiBackdropFill(), 192);
+		graphics.drawBoxBorder(x + 88 / 2, leftBoxW, y - 10, leftBoxH + 20, Theme.socialGuiOuterCardBorder());
+		graphics.drawColoredStringCentered(width / 2 + x, "Party Invitation!", Theme.socialGuiTitleText(), 0, 1, y + 5);        graphics.drawColoredStringCentered(width / 2 + x, invitationBy, Theme.socialGuiText(), 0, 1, y + 28);
 		//graphics.drawColoredStringCentered(width / 2 + x, "" + SocialLists.partyListCount, 0xffffff, 0, 5, y + 58);
-		graphics.drawColoredStringCentered(width / 2 + x, "Would you like to join this party?", 0xf1f1f1, 0, 1, y + 90);
+		graphics.drawColoredStringCentered(width / 2 + x, "Would you like to join this party?", Theme.socialGuiText(), 0, 1, y + 90);
 
 		drawSubmitButton(graphics, x + 133, y + 40, 142, 28, 18, 1, "Ignore for 2.5 min", false, new ButtonHandler() {
 			@Override
@@ -264,14 +264,14 @@ public final class PartyInterface {
 		partySetupPanel.hide(partyName_field);
 		partySetupPanel.hide(partyTag_field);
 		partySetupPanel.hide(partySearch_field);
-		int boxColor = 0x1D1711;
-		int headerColor = 0x957357;
+		int boxColor = Theme.socialGuiBodyFill();
+		int headerColor = Theme.socialGuiHeaderBandFill();
 		// HEADER
 		graphics.drawBox(x, y, width, 15, headerColor);
 		graphics.drawBoxAlpha(x, y + 15, width, height, boxColor, 192);
-		graphics.drawBoxBorder(x - 1, width + 2, y - 1, height + 42, 0x5F5147);
-		graphics.drawColoredStringCentered(width / 2 + x, "Party Settings", 0xE5D8C0, 0, 1, y + 12);
-		graphics.drawLineHoriz(x, y + 43, width, 0x6E5D4E);
+		graphics.drawBoxBorder(x - 1, width + 2, y - 1, height + 42, Theme.socialGuiOuterCardBorder());
+		graphics.drawColoredStringCentered(width / 2 + x, "Party Settings", Theme.socialGuiTitleText(), 0, 1, y + 12);
+		graphics.drawLineHoriz(x, y + 43, width, Theme.socialGuiSeparator());
 		// CONTENT
 		if (!mc.party.inParty()) {
 			drawButton(graphics, x + 3, y + 18, 125, 22, "Party Search", this.partyActivePanel == 3, new ButtonHandler() {
@@ -388,33 +388,33 @@ public final class PartyInterface {
 			partySetupPanel.setFocus(-1);
 			partySetupPanel.hide(partySearch_field);
 			final PartyResult vc = filteredList.get(selectedPartyInSearch);
-			int horizColor = 0x4C4638;
+			int horizColor = Theme.socialGuiDetailSeparator();
 			int horizWidth = 400;
-			graphics.drawShadowText(vc.getPartyName() + " < " + vc.getPartyTag() + " >", x + 7, newY - 32, 0xFBFBF9, 5, false);
+			graphics.drawShadowText(vc.getPartyName() + " < " + vc.getPartyTag() + " >", x + 7, newY - 32, Theme.socialGuiDetailText(), 5, false);
 			graphics.drawLineHoriz(newX, newY - 25, horizWidth, horizColor);
 			newY += 21;
-			graphics.drawShadowText("Global Rank:", newX + 2, newY - 32, 0xB5DC4F, 1, false);
-			graphics.drawColoredStringCentered(rightX, "#" + vc.getPartyGlobalRank(), 0xf1f1f1, 0, 1, newY - 32);
+			graphics.drawShadowText("Global Rank:", newX + 2, newY - 32, Theme.socialGuiLabelAccent(), 1, false);
+			graphics.drawColoredStringCentered(rightX, "#" + vc.getPartyGlobalRank(), Theme.socialGuiText(), 0, 1, newY - 32);
 			graphics.drawLineHoriz(newX, newY - 27, horizWidth, horizColor);
 			newY += 21;
-			graphics.drawShadowText("Total Points:", newX + 2, newY - 32, 0xB5DC4F, 1, false);
-			graphics.drawColoredStringCentered(rightX, "" + vc.getPartyPoints(), 0xf1f1f1, 0, 1, newY - 32);
+			graphics.drawShadowText("Total Points:", newX + 2, newY - 32, Theme.socialGuiLabelAccent(), 1, false);
+			graphics.drawColoredStringCentered(rightX, "" + vc.getPartyPoints(), Theme.socialGuiText(), 0, 1, newY - 32);
 			graphics.drawLineHoriz(newX, newY - 27, horizWidth, horizColor);
 			newY += 21;
-			graphics.drawShadowText("Total Members:", newX + 2, newY - 32, 0xB5DC4F, 1, false);
-			graphics.drawColoredStringCentered(rightX, vc.getPartyMembersTotal() + "/15", 0xf1f1f1, 0, 1, newY - 32);
+			graphics.drawShadowText("Total Members:", newX + 2, newY - 32, Theme.socialGuiLabelAccent(), 1, false);
+			graphics.drawColoredStringCentered(rightX, vc.getPartyMembersTotal() + "/15", Theme.socialGuiText(), 0, 1, newY - 32);
 			graphics.drawLineHoriz(newX, newY - 27, horizWidth, horizColor);
 			newY += 21;
-			graphics.drawShadowText("Matches Won:", newX + 2, newY - 32, 0xB5DC4F, 1, false);
-			graphics.drawColoredStringCentered(rightX, "0", 0xf1f1f1, 0, 1, newY - 32);
+			graphics.drawShadowText("Matches Won:", newX + 2, newY - 32, Theme.socialGuiLabelAccent(), 1, false);
+			graphics.drawColoredStringCentered(rightX, "0", Theme.socialGuiText(), 0, 1, newY - 32);
 			graphics.drawLineHoriz(newX, newY - 27, horizWidth, horizColor);
 			newY += 21;
-			graphics.drawShadowText("Matches Lost:", newX + 2, newY - 32, 0xB5DC4F, 1, false);
-			graphics.drawColoredStringCentered(rightX, "0", 0xf1f1f1, 0, 1, newY - 32);
+			graphics.drawShadowText("Matches Lost:", newX + 2, newY - 32, Theme.socialGuiLabelAccent(), 1, false);
+			graphics.drawColoredStringCentered(rightX, "0", Theme.socialGuiText(), 0, 1, newY - 32);
 			graphics.drawLineHoriz(newX, newY - 27, horizWidth, horizColor);
 			newY += 21;
-			graphics.drawShadowText("Type:", newX + 2, newY - 32, 0xB5DC4F, 1, false);
-			graphics.drawColoredStringCentered(rightX, vc.getPartySearchSettingByName(vc.canJoin), 0xf1f1f1, 0, 1, newY - 32);
+			graphics.drawShadowText("Type:", newX + 2, newY - 32, Theme.socialGuiLabelAccent(), 1, false);
+			graphics.drawColoredStringCentered(rightX, vc.getPartySearchSettingByName(vc.canJoin), Theme.socialGuiText(), 0, 1, newY - 32);
 			graphics.drawLineHoriz(newX, newY - 27, horizWidth, horizColor);
 
 			drawSubmitButton(graphics, x + 7, newY - 20, 394, 28, 18, 1, "Send Party Request", false, new ButtonHandler() {
@@ -424,7 +424,7 @@ public final class PartyInterface {
 				}
 			});
 		} else {
-			graphics.drawString("Search partys:", x + 10, y + 65, 0xB5DC4F, 2);
+			graphics.drawString("Search partys:", x + 10, y + 65, Theme.socialGuiLabelAccent(), 2);
 
 			drawSearchButton(graphics, x + 90, y + 48, width, height, new ButtonHandler() {
 				@Override
@@ -434,7 +434,7 @@ public final class PartyInterface {
 			});
 
 
-			graphics.drawString("Party Points:", x + 330, y + 90, 0xB5DC4F, 0);
+			graphics.drawString("Party Points:", x + 330, y + 90, Theme.socialGuiLabelAccent(), 0);
 			drawSubmitButton(graphics, x + 295, y + 50, 103, 24, 17, 1, "Reset search", false, new ButtonHandler() {
 				@Override
 				void handle() {
@@ -443,14 +443,14 @@ public final class PartyInterface {
 				}
 			});
 
-			int color = 0xC2C8C3;
+			int color = Theme.socialGuiSearchRowFill(false);
 			int listStartPoint = partySetupPanel.getScrollPosition(partySearchScroll);
 			int listEndPoint = listStartPoint + 3;
 			for (int i = -1; i < filteredList.size(); i++) {
 				if (i >= 500) {
 					break;
 				}
-				graphics.drawString("Displaying search results For: " + (!searchTerm.isEmpty() ? "\"" + searchTerm.toLowerCase() + "\"" : "ALL") + " (" + (filteredList.size()) + ")", x + 5, y + 90, 0xf1f1f1, 0);
+				graphics.drawString("Displaying search results For: " + (!searchTerm.isEmpty() ? "\"" + searchTerm.toLowerCase() + "\"" : "ALL") + " (" + (filteredList.size()) + ")", x + 5, y + 90, Theme.socialGuiText(), 0);
 				partySetupPanel.setListEntry(partySearchScroll, i + 1, "", 0, null, null);
 
 				if (i < listStartPoint || i > listEndPoint)
@@ -458,34 +458,34 @@ public final class PartyInterface {
 				PartyResult cr = filteredList.get(i);
 				if (mc.getMouseX() >= (newX) && mc.getMouseY() >= (newY) && mc.getMouseX() <= newX + 389
 					&& mc.getMouseY() <= (newY) + boxHeight && mc.inputX_Action == InputXAction.ACT_0) {
-					graphics.drawBoxAlpha(newX + 1, newY, boxWidth + 1, boxHeight - 1, 0x90E05B, 192);
+					graphics.drawBoxAlpha(newX + 1, newY, boxWidth + 1, boxHeight - 1, Theme.socialGuiSearchRowHighlight(), 192);
 					if (mc.getMouseClick() == 1) {
 						selectedPartyInSearch = i;
 						mc.setMouseClick(0);
 					}
 				} else {
 					if (selectedPartyInSearch == i) {
-						graphics.drawBoxAlpha(newX + 1, newY, boxWidth + 1, boxHeight - 1, 0x90E05B, 192);
+						graphics.drawBoxAlpha(newX + 1, newY, boxWidth + 1, boxHeight - 1, Theme.socialGuiSearchRowHighlight(), 192);
 					} else {
 						graphics.drawBoxAlpha(newX + 1, newY, boxWidth + 1, boxHeight - 1, color, 192);
 					}
 				}
 
 				if (i % 2 == 0) {
-					color = 0xD9DCD6;
+					color = Theme.socialGuiSearchRowFill(true);
 				} else {
-					color = 0xC2C8C3;
+					color = Theme.socialGuiSearchRowFill(false);
 				}
-				graphics.drawBoxBorder(newX, 390, newY, boxHeight, 0x716F6C);
+				graphics.drawBoxBorder(newX, 390, newY, boxHeight, Theme.socialGuiSearchRowBorder());
 
-				graphics.drawShadowText(cr.getPartyName(), x + 7, newY + 15, 0xFBFBF9, 4, false);
-				graphics.drawString(cr.getPartySearchSettingByName(cr.canJoin), x + 7, newY + 29, 0xF2A967, 0);
+				graphics.drawShadowText(cr.getPartyName(), x + 7, newY + 15, Theme.socialGuiDetailText(), 4, false);
+				graphics.drawString(cr.getPartySearchSettingByName(cr.canJoin), x + 7, newY + 29, Theme.socialGuiSearchTitleText(), 0);
 
-				graphics.drawString("Members:", x + 250, newY + 12, 0xf1f1f1, 0);
-				graphics.drawShadowText(cr.getPartyMembersTotal() + "/ 15", x + 273, newY + 21, 0xFBFBF9, 0, true);
-				graphics.drawLineVert(x + 320, newY, 0x716F6C, boxHeight);
-				graphics.drawShadowText(cr.getPartyPoints() + " pts", x + 356, newY + 14, 0xFBFBF9, 1, true);
-				graphics.drawString((Config.isAndroid() ? "Tap" : "Click") + " to view details", x + 120, newY + 29, 0xf1f1f1, 0);
+				graphics.drawString("Members:", x + 250, newY + 12, Theme.socialGuiText(), 0);
+				graphics.drawShadowText(cr.getPartyMembersTotal() + "/ 15", x + 273, newY + 21, Theme.socialGuiDetailText(), 0, true);
+				graphics.drawLineVert(x + 320, newY, Theme.socialGuiSearchRowBorder(), boxHeight);
+				graphics.drawShadowText(cr.getPartyPoints() + " pts", x + 356, newY + 14, Theme.socialGuiDetailText(), 1, true);
+				graphics.drawString((Config.isAndroid() ? "Tap" : "Click") + " to view details", x + 120, newY + 29, Theme.socialGuiText(), 0);
 
 				newY += boxHeight + 3;
 			}
@@ -499,12 +499,12 @@ public final class PartyInterface {
 		int leftBoxH = 184;
 		if (mc.party.inParty()) {
 			// LEFT SIDE
-			graphics.drawBoxAlpha(x + 3, y + 48, leftBoxW, leftBoxH, 0x1D1915, 192); //5F5147
-			graphics.drawBoxBorder(x + 3, leftBoxW, y + 48, leftBoxH, 0x5F5147);
+			graphics.drawBoxAlpha(x + 3, y + 48, leftBoxW, leftBoxH, Theme.socialGuiBackdropFill(), 192);
+			graphics.drawBoxBorder(x + 3, leftBoxW, y + 48, leftBoxH, Theme.socialGuiOuterCardBorder());
 
 			// RIGHT SIDE
-			graphics.drawBoxAlpha(x + 3 + 196 + 10, y + 48, leftBoxW, leftBoxH, 0x1D1915, 192); //5F5147
-			graphics.drawBoxBorder(x + 3 + 196 + 10, leftBoxW, y + 48, leftBoxH, 0x5F5147);
+			graphics.drawBoxAlpha(x + 3 + 196 + 10, y + 48, leftBoxW, leftBoxH, Theme.socialGuiBackdropFill(), 192);
+			graphics.drawBoxBorder(x + 3 + 196 + 10, leftBoxW, y + 48, leftBoxH, Theme.socialGuiOuterCardBorder());
 
 			drawSubmitButton(graphics, x + 9, y + 59, 184, 32, 14, 1, "Share Loot", false, new ButtonHandler() {
 				@Override
@@ -513,9 +513,9 @@ public final class PartyInterface {
 				}
 			});
 			if (mc.party.shareLoot[0] > 0) {
-				graphics.drawWrappedCenteredString("Yes ", x + 98, y + 86, 184, 1, 0xD9CD98, false);
+				graphics.drawWrappedCenteredString("Yes ", x + 98, y + 86, 184, 1, Theme.socialGuiSecondaryLabel(), false);
 			} else {
-				graphics.drawWrappedCenteredString("No", x + 98, y + 86, 184, 1, 0xD9CD98, false);
+				graphics.drawWrappedCenteredString("No", x + 98, y + 86, 184, 1, Theme.socialGuiSecondaryLabel(), false);
 			}
 
 			drawSelectButton(graphics, x + 9, y + 96, 184, 32, 14, 14, 1, 1, "Who can kick in party?", mc.party.getPartySettingByName(mc.party.getPartySetting(0)), new ButtonHandler() {
@@ -562,12 +562,12 @@ public final class PartyInterface {
 				}
 			});
 			if (mc.party.shareExp[0] > 0) {
-				graphics.drawWrappedCenteredString("Yes ", x + 98, y + 197, 184, 1, 0xD9CD98, false);
+				graphics.drawWrappedCenteredString("Yes ", x + 98, y + 197, 184, 1, Theme.socialGuiSecondaryLabel(), false);
 			} else {
-				graphics.drawWrappedCenteredString("No", x + 98, y + 197, 184, 1, 0xD9CD98, false);
+				graphics.drawWrappedCenteredString("No", x + 98, y + 197, 184, 1, Theme.socialGuiSecondaryLabel(), false);
 			}
 
-			graphics.drawWrappedCenteredString("Right-click on a box to change options.", x + 101, y + 214, 175, 0, 0xD9CD98, false);
+			graphics.drawWrappedCenteredString("Right-click on a box to change options.", x + 101, y + 214, 175, 0, Theme.socialGuiHintText(), false);
 
 			drawSubmitButton(graphics, x + 235, y + 54, 146, 28, 18, 1, "Invite to Party", false, new ButtonHandler() {
 				@Override
@@ -576,7 +576,7 @@ public final class PartyInterface {
 					mc.showUiTab = 0;
 				}
 			});
-			graphics.drawLineHoriz(x + 210, y + 87, 194, 0x5F5147);
+			graphics.drawLineHoriz(x + 210, y + 87, 194, Theme.socialGuiOuterCardBorder());
 			drawSubmitButton(graphics, x + 235, y + 92, 146, 28, 18, 1, "Leave Party", false, new ButtonHandler() {
 				@Override
 				void handle() {
@@ -584,20 +584,20 @@ public final class PartyInterface {
 					setVisible(false);
 				}
 			});
-			graphics.drawLineHoriz(x + 210, y + 125, 194, 0x5F5147);
+			graphics.drawLineHoriz(x + 210, y + 125, 194, Theme.socialGuiOuterCardBorder());
 		} else {
 			partySetupPanel.show(partyName_field);
 			partySetupPanel.show(partyTag_field);
-			graphics.drawBoxAlpha(x + 2, y + 48, width - 5, height - 37, 0x1D1915, 192); //5F5147
-			graphics.drawBoxBorder(x + 2, width - 5, y + 48, height - 37, 0x5F5147);
-			graphics.drawColoredStringCentered(width / 2 + x, "Choose a Party Name between 2-16 characters in length.", 0xf1f1f1, 0, 2, y + 64);
+			graphics.drawBoxAlpha(x + 2, y + 48, width - 5, height - 37, Theme.socialGuiBackdropFill(), 192);
+			graphics.drawBoxBorder(x + 2, width - 5, y + 48, height - 37, Theme.socialGuiOuterCardBorder());
+			graphics.drawColoredStringCentered(width / 2 + x, "Choose a Party Name between 2-16 characters in length.", Theme.socialGuiText(), 0, 2, y + 64);
 			drawInputButton(graphics, x + 14, y + 75, 380, 42, 14, 1, "Party Name:", false, new ButtonHandler() {
 				@Override
 				void handle() {
 					partySetupPanel.setFocus(partyName_field);
 				}
 			});
-			graphics.drawColoredStringCentered(width / 2 + x, "Enter your Party Tag between 2-5 characters in length.", 0xf1f1f1, 0, 2, y + 64 + 72);
+			graphics.drawColoredStringCentered(width / 2 + x, "Enter your Party Tag between 2-5 characters in length.", Theme.socialGuiText(), 0, 2, y + 64 + 72);
 			drawInputButton(graphics, x + 14, y + 147, 380, 42, 14, 1, "Party Tag:", false, new ButtonHandler() {
 				@Override
 				void handle() {
@@ -618,8 +618,8 @@ public final class PartyInterface {
 		int leftBoxW = 196;
 		int leftBoxH = 184;
 		if (mc.party.inParty()) {
-			graphics.drawBoxAlpha(x + 3 + 196 + 10, y + 48, leftBoxW, leftBoxH, 0x1D1915, 192); //5F5147
-			graphics.drawBoxBorder(x + 3 + 196 + 10, leftBoxW, y + 48, leftBoxH, 0x5F5147);
+			graphics.drawBoxAlpha(x + 3 + 196 + 10, y + 48, leftBoxW, leftBoxH, Theme.socialGuiBackdropFill(), 192);
+			graphics.drawBoxBorder(x + 3 + 196 + 10, leftBoxW, y + 48, leftBoxH, Theme.socialGuiOuterCardBorder());
 			drawSubmitButton(graphics, x + 235, y + 54, 146, 28, 18, 1, "Leave Party", false, new ButtonHandler() {
 				@Override
 				void handle() {
@@ -627,21 +627,21 @@ public final class PartyInterface {
 					setVisible(false);
 				}
 			});
-			graphics.drawLineHoriz(x + 210, y + 87, 194, 0x5F5147);
-			//graphics.drawLineHoriz(x + 210, y + 125, 194, 0x5F5147);
+			graphics.drawLineHoriz(x + 210, y + 87, 194, Theme.socialGuiOuterCardBorder());
+			//graphics.drawLineHoriz(x + 210, y + 125, 194, Theme.socialGuiOuterCardBorder());
 		} else {
 			partySetupPanel.show(partyName_field);
 			partySetupPanel.show(partyTag_field);
-			graphics.drawBoxAlpha(x + 2, y + 48, width - 5, height - 37, 0x1D1915, 192); //5F5147
-			graphics.drawBoxBorder(x + 2, width - 5, y + 48, height - 37, 0x5F5147);
-			graphics.drawColoredStringCentered(width / 2 + x, "Choose a Party Name between 2-16 characters in length.", 0xf1f1f1, 0, 2, y + 64);
+			graphics.drawBoxAlpha(x + 2, y + 48, width - 5, height - 37, Theme.socialGuiBackdropFill(), 192);
+			graphics.drawBoxBorder(x + 2, width - 5, y + 48, height - 37, Theme.socialGuiOuterCardBorder());
+			graphics.drawColoredStringCentered(width / 2 + x, "Choose a Party Name between 2-16 characters in length.", Theme.socialGuiText(), 0, 2, y + 64);
 			drawInputButton(graphics, x + 14, y + 75, 380, 42, 14, 1, "Party Name:", false, new ButtonHandler() {
 				@Override
 				void handle() {
 					partySetupPanel.setFocus(partyName_field);
 				}
 			});
-			graphics.drawColoredStringCentered(width / 2 + x, "Enter your Party Tag between 2-5 characters in length.", 0xf1f1f1, 0, 2, y + 64 + 72);
+			graphics.drawColoredStringCentered(width / 2 + x, "Enter your Party Tag between 2-5 characters in length.", Theme.socialGuiText(), 0, 2, y + 64 + 72);
 			drawInputButton(graphics, x + 14, y + 147, 380, 42, 14, 1, "Party Tag:", false, new ButtonHandler() {
 				@Override
 				void handle() {
@@ -659,46 +659,42 @@ public final class PartyInterface {
 	}
 
 	private void drawCloseButton(GraphicsController graphics, int x, int y, int width, int height, String text,
-								 boolean checked, ButtonHandler handler) {
-		int allColor = 0x957357;
+								 boolean checked, ButtonHandler handler) {        int allColor = Theme.socialGuiHeaderBandFill();
 
 		if (mc.getMouseX() >= x && mc.getMouseY() >= y && mc.getMouseX() <= x + width && mc.getMouseY() <= y + height && !menu_visible) {
-			if (!checked)
-				allColor = 0x442C13;
+			if (!checked)                allColor = Theme.socialGuiCloseFill(true);
 			if (mc.getMouseClick() == 1) {
 				handler.handle();
 				mc.setMouseClick(0);
 			}
 		}
 		graphics.drawBoxAlpha(x, y, width, height, allColor, 255);
-		graphics.drawLineHoriz(x, y, width, 0x5F5147);
-		graphics.drawString(text, x + (width / 2 - graphics.stringWidth(1, text) / 2), y + height / 2 + 5, 0xffffff, 1);
+		graphics.drawLineHoriz(x, y, width, Theme.socialGuiOuterCardBorder());
+		graphics.drawString(text, x + (width / 2 - graphics.stringWidth(1, text) / 2), y + height / 2 + 5, Theme.socialGuiBrightText(), 1);
 	}
 
 	private void drawButton(GraphicsController graphics, int x, int y, int width, int height, String text,
-							boolean checked, ButtonHandler handler) {
-		int allColor = 0x231B15;
+							boolean checked, ButtonHandler handler) {        int allColor = Theme.socialGuiNavFill(checked, false);
 		if (checked) {
-			allColor = 0x332A22;
+			allColor = Theme.socialGuiNavFill(true, false);
 		}
 		if (mc.getMouseX() >= x && mc.getMouseY() >= y && mc.getMouseX() <= x + width && mc.getMouseY() <= y + height) {
 			if (!checked)
-				allColor = 0x2A221B;
+				allColor = Theme.socialGuiNavFill(false, true);
 			if (mc.getMouseClick() == 1) {
 				handler.handle();
 				mc.setMouseClick(0);
 			}
 		}
 		graphics.drawBoxAlpha(x, y, width, height, allColor, 255);
-		graphics.drawBoxBorder(x, width, y, height, 0xA68B71); // 0xA3510C
-		graphics.drawString(text, x + (width / 2 - graphics.stringWidth(1, text) / 2), y + height / 2 + 5, 0xE3CCCF, 2);
+		graphics.drawBoxBorder(x, width, y, height, Theme.socialGuiNavBorder());
+		graphics.drawString(text, x + (width / 2 - graphics.stringWidth(1, text) / 2), y + height / 2 + 5, Theme.socialGuiSecondaryLabel(), 2);
 	}
 
 	private void drawInputButton(GraphicsController graphics, int x, int y, int width, int height, int heightText, int fontSize, String text,
-								 boolean checked, ButtonHandler handler) {
-		int allColor = 0x3D3428;
+								 boolean checked, ButtonHandler handler) {        int allColor = Theme.socialGuiInputFill(checked);
 		if (checked) {
-			allColor = 0x332A22;
+			allColor = Theme.socialGuiInputFill(true);
 		}
 		if (mc.getMouseX() >= x && mc.getMouseY() >= y && mc.getMouseX() <= x + width && mc.getMouseY() <= y + height) {
 			if (mc.getMouseClick() == 1) {
@@ -707,12 +703,11 @@ public final class PartyInterface {
 			}
 		}
 		graphics.drawBoxAlpha(x, y, width, height, allColor, 255);
-		graphics.drawBoxBorder(x, width, y, height, 0x777775);
-		graphics.drawString(text, x + (width / 2 - graphics.stringWidth(1, text) / 2), y + heightText, 0xE3CCCF, fontSize);
+		graphics.drawBoxBorder(x, width, y, height, Theme.socialGuiInputBorder());
+		graphics.drawString(text, x + (width / 2 - graphics.stringWidth(1, text) / 2), y + heightText, Theme.socialGuiSecondaryLabel(), fontSize);
 	}
 
-	private void drawSearchButton(GraphicsController graphics, int x, int y, int width, int height, ButtonHandler handler) {
-		int allColor = 0xFBFCFE;
+	private void drawSearchButton(GraphicsController graphics, int x, int y, int width, int height, ButtonHandler handler) {        int allColor = Theme.socialGuiSearchEntryFill();
 		if (mc.getMouseX() >= x && mc.getMouseY() >= y && mc.getMouseX() <= x + width && mc.getMouseY() <= y + height) {
 			if (mc.getMouseClick() == 1) {
 				handler.handle();
@@ -720,12 +715,11 @@ public final class PartyInterface {
 			}
 		}
 		graphics.drawBoxAlpha(x, y, width, height, allColor, 255);
-		graphics.drawBoxBorder(x, width, y, height, 0x080809);
+		graphics.drawBoxBorder(x, width, y, height, Theme.socialGuiSearchEntryBorder());
 	}
 
 	private void drawSelectButton(GraphicsController graphics, int x, int y, int width, int height, int heightText, int secondaryHeightText, int fontSize, int secondaryFontSize, String text,
-								  String secondaryText, ButtonHandler handler) {
-		int allColor = 0x4F4841;
+								  String secondaryText, ButtonHandler handler) {        int allColor = Theme.socialGuiSelectFill();
 		if (mc.getMouseX() >= x && mc.getMouseY() >= y && mc.getMouseX() <= x + width && mc.getMouseY() <= y + height) {
 			if (mc.getMouseClick() == 2) {
 				handler.handle();
@@ -734,26 +728,25 @@ public final class PartyInterface {
 		}
 
 		graphics.drawBoxAlpha(x, y, width, height, allColor, 255);
-		graphics.drawBoxBorder(x, width, y, height, 0x7C6C5C);
-		graphics.drawBoxBorder(x - 1, width + 2, y - 1, height + 2, 0x060607);
-		graphics.drawString(text, x + (width / 2 - graphics.stringWidth(1, text) / 2), y + heightText - 2, 0xEA9F59, fontSize);
-		graphics.drawColoredStringCentered(x + width / 2, secondaryText, 0xf1f1f1, 0, secondaryFontSize, y + heightText + secondaryHeightText);
+		graphics.drawBoxBorder(x, width, y, height, Theme.socialGuiSelectBorder());
+		graphics.drawBoxBorder(x - 1, width + 2, y - 1, height + 2, Theme.socialGuiCardShadowBorder());
+		graphics.drawString(text, x + (width / 2 - graphics.stringWidth(1, text) / 2), y + heightText - 2, Theme.socialGuiValueText(), fontSize);
+		graphics.drawColoredStringCentered(x + width / 2, secondaryText, Theme.socialGuiText(), 0, secondaryFontSize, y + heightText + secondaryHeightText);
 	}
 
 	private void drawSubmitButton(GraphicsController graphics, int x, int y, int width, int height, int heightText, int fontSize, String text,
-								  boolean checked, ButtonHandler handler) {
-		int allColor = 0x403020;
+								  boolean checked, ButtonHandler handler) {        int allColor = Theme.socialGuiSubmitFill(false);
 		if (mc.getMouseX() >= x && mc.getMouseY() >= y && mc.getMouseX() <= x + width && mc.getMouseY() <= y + height) {
 			if (!checked)
-				allColor = 0x423D2D;
+				allColor = Theme.socialGuiSubmitFill(true);
 			if (mc.getMouseClick() == 1) {
 				handler.handle();
 				mc.setMouseClick(0);
 			}
 		}
 		graphics.drawBoxAlpha(x, y, width, height, allColor, 255);
-		graphics.drawBoxBorder(x, width, y, height, 0x474745); // 0xA3510C
-		graphics.drawString(text, x + (width / 2 - graphics.stringWidth(1, text) / 2), y + heightText, 0xFF9530, fontSize);
+		graphics.drawBoxBorder(x, width, y, height, Theme.socialGuiSubmitBorder());
+		graphics.drawString(text, x + (width / 2 - graphics.stringWidth(1, text) / 2), y + heightText, Theme.socialGuiSubmitLabel(), fontSize);
 	}
 
 	private void drawRightClickMenu() {

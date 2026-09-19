@@ -392,4 +392,236 @@ public final class Theme {
 	public static int androidCastRemoveFill() {
 		return Config.C_PREMIUM_THEME ? DANGER : GenUtil.buildColor(255, 0, 0);
 	}
+
+	// ------------------------------------------------------------------
+	// Social GUI windows (ClanInterface / PartyInterface). These two
+	// interfaces are forked from a common template and share one palette:
+	// warm-brown chrome, translucent list bodies and a five-button scheme.
+	// Off-path values below reproduce the inherited literals exactly;
+	// premium values reuse the established Runewake palette.
+	// ------------------------------------------------------------------
+	private static final int CLASSIC_SOCIALGUI_BODY = 0x1D1711;
+	private static final int CLASSIC_SOCIALGUI_BACKDROP = 0x1D1915;
+	private static final int CLASSIC_SOCIALGUI_TABLE_HEADER = 0x432C26;
+	private static final int CLASSIC_SOCIALGUI_TABLE_HEADER_BORDER = 0x4C4445;
+	private static final int CLASSIC_SOCIALGUI_ROW_EVEN = 0x1C1B19;
+	private static final int CLASSIC_SOCIALGUI_ROW_ODD = 0x232220;
+	private static final int CLASSIC_SOCIALGUI_ROW_HIGHLIGHT = 0x202F39;
+	private static final int CLASSIC_SOCIALGUI_ROW_BORDER = 0x343434;
+	private static final int CLASSIC_SOCIALGUI_SEARCHROW_EVEN = 0xD9DCD6;
+	private static final int CLASSIC_SOCIALGUI_SEARCHROW_ODD = 0xC2C8C3;
+	private static final int CLASSIC_SOCIALGUI_SEARCHROW_HIGHLIGHT = 0x90E05B;
+	private static final int CLASSIC_SOCIALGUI_SEARCHROW_BORDER = 0x716F6C;
+	private static final int CLASSIC_SOCIALGUI_HEADER_BAND = 0x957357;
+	private static final int CLASSIC_SOCIALGUI_INNER_CARD = 0x544B40;
+	private static final int CLASSIC_SOCIALGUI_INNER_CARD_BORDER = 0x7D7161;
+	private static final int CLASSIC_SOCIALGUI_CARD_SHADOW = 0x060607;
+	private static final int CLASSIC_SOCIALGUI_OUTER_BORDER = 0x5F5147;
+	private static final int CLASSIC_SOCIALGUI_SEPARATOR = 0x6E5D4E;
+	private static final int CLASSIC_SOCIALGUI_DETAIL_SEPARATOR = 0x4C4638;
+
+	/** Main window body of the clan/party settings window (alpha applied at the call site). */
+	public static int socialGuiBodyFill() {
+		return Config.C_PREMIUM_THEME ? OVERLAY_SCRIM : CLASSIC_SOCIALGUI_BODY;
+	}
+
+	/** Translucent backdrop of the list boxes and content panels inside the window. */
+	public static int socialGuiBackdropFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_INSET : CLASSIC_SOCIALGUI_BACKDROP;
+	}
+
+	/** Backing fill of the clanmate/party table column headers. */
+	public static int socialGuiTableHeaderFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_SOCIALGUI_TABLE_HEADER;
+	}
+
+	/** Border of the table column headers. */
+	public static int socialGuiTableHeaderBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : CLASSIC_SOCIALGUI_TABLE_HEADER_BORDER;
+	}
+
+	/** Alternating body fill of the clanmate/party list rows (altColor = even rows). */
+	public static int socialGuiRowFill(boolean altColor) {
+		return Config.C_PREMIUM_THEME ? (altColor ? PANEL_INSET : PANEL_ELEVATED) : (altColor ? CLASSIC_SOCIALGUI_ROW_EVEN : CLASSIC_SOCIALGUI_ROW_ODD);
+	}
+
+	/** Hovered or selected clanmate/party row. */
+	public static int socialGuiRowHighlight() {
+		return Config.C_PREMIUM_THEME ? SELECTION : CLASSIC_SOCIALGUI_ROW_HIGHLIGHT;
+	}
+
+	/** Border around each clanmate/party row. */
+	public static int socialGuiRowBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK : CLASSIC_SOCIALGUI_ROW_BORDER;
+	}
+
+	/** Alternating body fill of the clan/party search-result rows (altColor = even rows). */
+	public static int socialGuiSearchRowFill(boolean altColor) {
+		return Config.C_PREMIUM_THEME ? (altColor ? PANEL_INSET : PANEL_ELEVATED) : (altColor ? CLASSIC_SOCIALGUI_SEARCHROW_EVEN : CLASSIC_SOCIALGUI_SEARCHROW_ODD);
+	}
+
+	/** Hovered or selected search-result row. */
+	public static int socialGuiSearchRowHighlight() {
+		return Config.C_PREMIUM_THEME ? SELECTION : CLASSIC_SOCIALGUI_SEARCHROW_HIGHLIGHT;
+	}
+
+	/** Border (and member-column separator) of each search-result row. */
+	public static int socialGuiSearchRowBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : CLASSIC_SOCIALGUI_SEARCHROW_BORDER;
+	}
+
+	/** Solid title band above the window body and the invite pop-up header. */
+	public static int socialGuiHeaderBandFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_SOCIALGUI_HEADER_BAND;
+	}
+
+	/** Raised card inside the setup view ("My clan" plaque). */
+	public static int socialGuiInnerCardFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_SOCIALGUI_INNER_CARD;
+	}
+
+	/** Border of the inner setup card. */
+	public static int socialGuiInnerCardBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : CLASSIC_SOCIALGUI_INNER_CARD_BORDER;
+	}
+
+	/** Dark shadow outline wrapping inner cards and select buttons. */
+	public static int socialGuiCardShadowBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK : CLASSIC_SOCIALGUI_CARD_SHADOW;
+	}
+
+	/** Outer border wrapping the window, its content boxes and the invite pop-up. */
+	public static int socialGuiOuterCardBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : CLASSIC_SOCIALGUI_OUTER_BORDER;
+	}
+
+	/** Separator under the window title band. */
+	public static int socialGuiSeparator() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : CLASSIC_SOCIALGUI_SEPARATOR;
+	}
+
+	/** Separators between setup-column groups and the close-button top edge. */
+	public static int socialGuiColumnSeparator() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : CLASSIC_SOCIALGUI_OUTER_BORDER;
+	}
+
+	/** Thin rules between the search-detail stat rows. */
+	public static int socialGuiDetailSeparator() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK : CLASSIC_SOCIALGUI_DETAIL_SEPARATOR;
+	}
+
+	/** Window title ("Clan Settings", "Party Invitation!"). */
+	public static int socialGuiTitleText() {
+		return Config.C_PREMIUM_THEME ? ACCENT_SECONDARY : 0xE5D8C0;
+	}
+
+	/** Standard body text (labels, instructions, table values). */
+	public static int socialGuiText() {
+		return Config.C_PREMIUM_THEME ? TEXT_PRIMARY : 0xf1f1f1;
+	}
+
+	/** Bright white emphasis text (invite lines, close-button label). */
+	public static int socialGuiBrightText() {
+		return Config.C_PREMIUM_THEME ? TEXT_PRIMARY : 0xffffff;
+	}
+
+	/** Warm orange accent (usernames, totals). */
+	public static int socialGuiAccentText() {
+		return Config.C_PREMIUM_THEME ? ACCENT_SECONDARY : 0xEFB063;
+	}
+
+	/** Lime-green stat labels in the search-detail view. */
+	public static int socialGuiLabelAccent() {
+		return Config.C_PREMIUM_THEME ? SUCCESS : 0xB5DC4F;
+	}
+
+	/** Off-white detail values (search-result titles, point totals). */
+	public static int socialGuiDetailText() {
+		return Config.C_PREMIUM_THEME ? TEXT_PRIMARY : 0xFBFBF9;
+	}
+
+	/** Tan helper hints ("Right-click on a box to change options."). */
+	public static int socialGuiHintText() {
+		return Config.C_PREMIUM_THEME ? TEXT_MUTED : 0xD9CD98;
+	}
+
+	/** Muted taupe line ("Settings for: <name>"). */
+	public static int socialGuiMutedText() {
+		return Config.C_PREMIUM_THEME ? TEXT_MUTED : 0xB39684;
+	}
+
+	/** Orange join-policy line on each search-result row. */
+	public static int socialGuiSearchTitleText() {
+		return Config.C_PREMIUM_THEME ? ACCENT_SECONDARY : 0xF2A967;
+	}
+
+	/** Orange value text ("My clan:", select-button primary labels). */
+	public static int socialGuiValueText() {
+		return Config.C_PREMIUM_THEME ? ACCENT_SECONDARY : 0xEA9F59;
+	}
+
+	/** Submit-button label ("Accept", "Submit", "Send Clan Request"). */
+	public static int socialGuiSubmitLabel() {
+		return Config.C_PREMIUM_THEME ? ACCENT_SECONDARY : 0xFF9530;
+	}
+
+	/** Pale secondary text on input/nav buttons. */
+	public static int socialGuiSecondaryLabel() {
+		return Config.C_PREMIUM_THEME ? TEXT_PRIMARY : 0xE3CCCF;
+	}
+
+	/** Close bar under the window; hover lightens the header brown. */
+	public static int socialGuiCloseFill(boolean hovered) {
+		return Config.C_PREMIUM_THEME ? (hovered ? PRESSED : PANEL_ELEVATED) : (hovered ? 0x442C13 : CLASSIC_SOCIALGUI_HEADER_BAND);
+	}
+
+	/** Page-tab buttons (Clanmates / Clan Setup / Clan Search). */
+	public static int socialGuiNavFill(boolean checked, boolean hovered) {
+		return Config.C_PREMIUM_THEME ? (checked ? SELECTION : hovered ? PRESSED : PANEL_ELEVATED) : (checked ? 0x332A22 : hovered ? 0x2A221B : 0x231B15);
+	}
+
+	/** Border of the page-tab buttons. */
+	public static int socialGuiNavBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : 0xA68B71;
+	}
+
+	/** Recessed input buttons (Clan Name / Clan Tag). */
+	public static int socialGuiInputFill(boolean checked) {
+		return Config.C_PREMIUM_THEME ? (checked ? SELECTION : OVERLAY_SCRIM) : (checked ? 0x332A22 : 0x3D3428);
+	}
+
+	/** Border of the input buttons. */
+	public static int socialGuiInputBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : 0x777775;
+	}
+
+	/** Search text-entry backing. Light in both modes: the Panel entry text is black (useAltColor=false) and the flag cannot change per theme without breaking classic. */
+	public static int socialGuiSearchEntryFill() {
+		return Config.C_PREMIUM_THEME ? TEXT_PRIMARY : 0xFBFCFE;
+	}
+
+	/** Search text-entry border. */
+	public static int socialGuiSearchEntryBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : 0x080809;
+	}
+
+	/** Right-click select buttons (setting pickers). */
+	public static int socialGuiSelectFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : 0x4F4841;
+	}
+
+	/** Border of the select buttons. */
+	public static int socialGuiSelectBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : 0x7C6C5C;
+	}
+
+	/** Submit-style buttons (Accept, Decline, Submit, Invite, Kick). */
+	public static int socialGuiSubmitFill(boolean hovered) {
+		return Config.C_PREMIUM_THEME ? (hovered ? PRESSED : PANEL_ELEVATED) : (hovered ? 0x423D2D : 0x403020);
+	}
+
+	/** Border of the submit-style buttons. */
+	public static int socialGuiSubmitBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : 0x474745;
+	}
 }

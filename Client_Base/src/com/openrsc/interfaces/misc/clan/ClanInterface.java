@@ -7,6 +7,7 @@ import orsc.graphics.gui.InputXPrompt;
 import orsc.graphics.gui.Menu;
 import orsc.graphics.gui.Panel;
 import orsc.graphics.gui.SocialLists;
+import orsc.graphics.gui.Theme;
 import orsc.graphics.two.GraphicsController;
 import orsc.mudclient;
 
@@ -105,27 +106,27 @@ public final class ClanInterface {
 		int tableBoxW = 65;
 
 		if (selectedClanMate != -1 && mc.clan.isAllowed(0)) {
-			graphics.drawBoxAlpha(x + 3, y + 48 + 12, leftBoxW, leftBoxH - 4, 0x1D1915, 192); //5F5147
-			graphics.drawBoxBorder(x + 3, leftBoxW, y + 48 + 11, leftBoxH - 4, 0x5F5147);
+			graphics.drawBoxAlpha(x + 3, y + 48 + 12, leftBoxW, leftBoxH - 4, Theme.socialGuiBackdropFill(), 192);
+			graphics.drawBoxBorder(x + 3, leftBoxW, y + 48 + 11, leftBoxH - 4, Theme.socialGuiOuterCardBorder());
 		} else {
-			graphics.drawBoxAlpha(x + 3, y + 48 + 12, leftBoxW, leftBoxH + 59, 0x1D1915, 192); //5F5147
-			graphics.drawBoxBorder(x + 3, leftBoxW, y + 48 + 11, leftBoxH + 59, 0x5F5147);
+			graphics.drawBoxAlpha(x + 3, y + 48 + 12, leftBoxW, leftBoxH + 59, Theme.socialGuiBackdropFill(), 192);
+			graphics.drawBoxBorder(x + 3, leftBoxW, y + 48 + 11, leftBoxH + 59, Theme.socialGuiOuterCardBorder());
 		}
 
 		for (int i = 0; i < 5; i++) {
 			if (i == 0) {
-				graphics.drawBoxAlpha(tableBox, y + 48 + 11 + 2, tableBoxW + 69, 20, 0x432C26, 192); //5F5147
-				graphics.drawBoxBorder(tableBox, tableBoxW + 69, y + 48 + 11 + 2, 20, 0x4C4445);
-				graphics.drawString(clanMateTable[i], tableBox + 4, y + 75, 0xf1f1f1, 1);
+				graphics.drawBoxAlpha(tableBox, y + 48 + 11 + 2, tableBoxW + 69, 20, Theme.socialGuiTableHeaderFill(), 192);
+				graphics.drawBoxBorder(tableBox, tableBoxW + 69, y + 48 + 11 + 2, 20, Theme.socialGuiTableHeaderBorder());
+				graphics.drawString(clanMateTable[i], tableBox + 4, y + 75, Theme.socialGuiText(), 1);
 			} else {
-				graphics.drawBoxAlpha(tableBox + 135, y + 48 + 11 + 2, tableBoxW, 20, 0x432C26, 192); //5F5147
-				graphics.drawBoxBorder(tableBox + 135, tableBoxW, y + 48 + 11 + 2, 20, 0x4C4445);
-				graphics.drawString(clanMateTable[i], tableBox + 4 + 135, y + 75, 0xf1f1f1, 1);
+				graphics.drawBoxAlpha(tableBox + 135, y + 48 + 11 + 2, tableBoxW, 20, Theme.socialGuiTableHeaderFill(), 192);
+				graphics.drawBoxBorder(tableBox + 135, tableBoxW, y + 48 + 11 + 2, 20, Theme.socialGuiTableHeaderBorder());
+				graphics.drawString(clanMateTable[i], tableBox + 4 + 135, y + 75, Theme.socialGuiText(), 1);
 				tableBox += 66;
 			}
 		}
 
-		int color = 0x232220;
+		int color = Theme.socialGuiRowFill(false);
 		int listStartPoint = clanSetupPanel.getScrollPosition(clanGUIScroll);
 		int listEndPoint = listStartPoint + (selectedClanMate != -1 && mc.clan.isAllowed(0) ? 3 : 6);
 		int showing = 0;
@@ -142,14 +143,14 @@ public final class ClanInterface {
 			if (mc.clan.isAllowed(0)) {
 				if (mc.getMouseX() >= (newX) && mc.getMouseY() >= (newY) && mc.getMouseX() <= newX + 384
 					&& mc.getMouseY() <= (newY - 5) + boxHeight && mc.inputX_Action == InputXAction.ACT_0) {
-					graphics.drawBoxAlpha(newX + 1, newY, boxWidth + 1, boxHeight - 1, 0x202F39, 192);
+					graphics.drawBoxAlpha(newX + 1, newY, boxWidth + 1, boxHeight - 1, Theme.socialGuiRowHighlight(), 192);
 					if (mc.getMouseClick() == 1) {
 						selectedClanMate = i;
 						mc.setMouseClick(0);
 					}
 				} else {
 					if (selectedClanMate == i) {
-						graphics.drawBoxAlpha(newX + 1, newY, boxWidth + 1, boxHeight - 1, 0x202F39, 192);
+						graphics.drawBoxAlpha(newX + 1, newY, boxWidth + 1, boxHeight - 1, Theme.socialGuiRowHighlight(), 192);
 
 					} else {
 						graphics.drawBoxAlpha(newX + 1, newY, boxWidth + 1, boxHeight - 1, color, 192);
@@ -158,23 +159,23 @@ public final class ClanInterface {
 			}
 
 			if (i % 2 == 0) {
-				color = 0x1C1B19;
+				color = Theme.socialGuiRowFill(true);
 			} else {
-				color = 0x232220;
+				color = Theme.socialGuiRowFill(false);
 			}
-			graphics.drawBoxBorder(newX, 400, newY, boxHeight, 0x343434);
-			graphics.drawString(mc.clan.username[i], newX + 3, newY + 16, 0xEFB063, 0);
-			graphics.drawColoredString(newX + 3 + 137, newY + 16, "" + mc.clan.getClanRankNames(mc.clan.clanRank[i]), 2, 0xffffff, 0);
-			graphics.drawColoredString(newX + 3 + 135 + 67, newY + 16, "" + mc.clan.getPlayerKills(i), 2, 0xffffff, 0);
-			graphics.drawColoredString(newX + 3 + 135 + 67 + 67, newY + 16, "" + mc.clan.getPlayerDeaths(i), 2, 0xffffff, 0);
-			graphics.drawColoredString(newX + 3 + 135 + 67 + 67 + 67, newY + 16, "" + mc.clan.getKDR(i), 2, 0xffffff, 0);
+			graphics.drawBoxBorder(newX, 400, newY, boxHeight, Theme.socialGuiRowBorder());
+			graphics.drawString(mc.clan.username[i], newX + 3, newY + 16, Theme.socialGuiAccentText(), 0);
+			graphics.drawColoredString(newX + 3 + 137, newY + 16, "" + mc.clan.getClanRankNames(mc.clan.clanRank[i]), 2, Theme.socialGuiBrightText(), 0);
+			graphics.drawColoredString(newX + 3 + 135 + 67, newY + 16, "" + mc.clan.getPlayerKills(i), 2, Theme.socialGuiBrightText(), 0);
+			graphics.drawColoredString(newX + 3 + 135 + 67 + 67, newY + 16, "" + mc.clan.getPlayerDeaths(i), 2, Theme.socialGuiBrightText(), 0);
+			graphics.drawColoredString(newX + 3 + 135 + 67 + 67 + 67, newY + 16, "" + mc.clan.getKDR(i), 2, Theme.socialGuiBrightText(), 0);
 			newY += boxHeight - 1;
 		}
 
 
-		graphics.drawString("Total clanmates: (" + showing + " / 15)", newX, y + 55, 0xEFB063, 0);
+		graphics.drawString("Total clanmates: (" + showing + " / 15)", newX, y + 55, Theme.socialGuiAccentText(), 0);
 		if (selectedClanMate != -1 && mc.clan.isAllowed(0)) {
-			graphics.drawString("Settings for: " + mc.clan.username[selectedClanMate], newX, y + 180, 0xB39684, 0);
+			graphics.drawString("Settings for: " + mc.clan.username[selectedClanMate], newX, y + 180, Theme.socialGuiMutedText(), 0);
 			drawSubmitButton(graphics, newX + 250, y + 194, 130, 28, 18, 1, "Kick user", false, new ButtonHandler() {
 				@Override
 				void handle() {
@@ -213,13 +214,13 @@ public final class ClanInterface {
 		clanSetupPanel.hide(clanSearchScroll);
 		int leftBoxW = width - 88;
 		int leftBoxH = 138;
-		graphics.drawBox(x + 88 / 2, y - 10, leftBoxW, 20, 0x957357);
-		graphics.drawBoxAlpha(x + 88 / 2, y + 10, leftBoxW, leftBoxH, 0x1D1915, 192); //5F5147
-		graphics.drawBoxBorder(x + 88 / 2, leftBoxW, y - 10, leftBoxH + 20, 0x5F5147);
-		graphics.drawColoredStringCentered(width / 2 + x, "Clan Invitation!", 0xE5D8C0, 0, 1, y + 5);
-		graphics.drawColoredStringCentered(width / 2 + x, invitationBy, 0xf1f1f1, 0, 1, y + 28);
-		graphics.drawColoredStringCentered(width / 2 + x, "@cla@" + invitationByClan, 0xffffff, 0, 5, y + 58);
-		graphics.drawColoredStringCentered(width / 2 + x, "Would you like to join clan?", 0xf1f1f1, 0, 1, y + 90);
+		graphics.drawBox(x + 88 / 2, y - 10, leftBoxW, 20, Theme.socialGuiHeaderBandFill());
+		graphics.drawBoxAlpha(x + 88 / 2, y + 10, leftBoxW, leftBoxH, Theme.socialGuiBackdropFill(), 192);
+		graphics.drawBoxBorder(x + 88 / 2, leftBoxW, y - 10, leftBoxH + 20, Theme.socialGuiOuterCardBorder());
+		graphics.drawColoredStringCentered(width / 2 + x, "Clan Invitation!", Theme.socialGuiTitleText(), 0, 1, y + 5);
+		graphics.drawColoredStringCentered(width / 2 + x, invitationBy, Theme.socialGuiText(), 0, 1, y + 28);
+		graphics.drawColoredStringCentered(width / 2 + x, "@cla@" + invitationByClan, Theme.socialGuiBrightText(), 0, 5, y + 58);
+		graphics.drawColoredStringCentered(width / 2 + x, "Would you like to join clan?", Theme.socialGuiText(), 0, 1, y + 90);
 
 		drawSubmitButton(graphics, x + 55, y + 110, 142, 28, 18, 1, "Accept", false, new ButtonHandler() {
 			@Override
@@ -244,14 +245,14 @@ public final class ClanInterface {
 		clanSetupPanel.hide(clanName_field);
 		clanSetupPanel.hide(clanTag_field);
 		clanSetupPanel.hide(clanSearch_field);
-		int boxColor = 0x1D1711;
-		int headerColor = 0x957357;
+		int boxColor = Theme.socialGuiBodyFill();
+		int headerColor = Theme.socialGuiHeaderBandFill();
 		// HEADER
 		graphics.drawBox(x, y, width, 15, headerColor);
 		graphics.drawBoxAlpha(x, y + 15, width, height, boxColor, 192);
-		graphics.drawBoxBorder(x - 1, width + 2, y - 1, height + 42, 0x5F5147);
-		graphics.drawColoredStringCentered(width / 2 + x, "Clan Settings", 0xE5D8C0, 0, 1, y + 12);
-		graphics.drawLineHoriz(x, y + 43, width, 0x6E5D4E);
+		graphics.drawBoxBorder(x - 1, width + 2, y - 1, height + 42, Theme.socialGuiOuterCardBorder());
+		graphics.drawColoredStringCentered(width / 2 + x, "Clan Settings", Theme.socialGuiTitleText(), 0, 1, y + 12);
+		graphics.drawLineHoriz(x, y + 43, width, Theme.socialGuiSeparator());
 		// CONTENT
 		if (!mc.clan.inClan()) {
 			drawButton(graphics, x + 3, y + 18, 125, 22, "Clan Search", this.clanActivePanel == 3, new ButtonHandler() {
@@ -358,33 +359,33 @@ public final class ClanInterface {
 			clanSetupPanel.setFocus(-1);
 			clanSetupPanel.hide(clanSearch_field);
 			final ClanResult vc = filteredList.get(selectedClanInSearch);
-			int horizColor = 0x4C4638;
+			int horizColor = Theme.socialGuiDetailSeparator();
 			int horizWidth = 400;
-			graphics.drawShadowText(vc.getClanName() + " < " + vc.getClanTag() + " >", x + 7, newY - 32, 0xFBFBF9, 5, false);
+			graphics.drawShadowText(vc.getClanName() + " < " + vc.getClanTag() + " >", x + 7, newY - 32, Theme.socialGuiDetailText(), 5, false);
 			graphics.drawLineHoriz(newX, newY - 25, horizWidth, horizColor);
 			newY += 21;
-			graphics.drawShadowText("Global Rank:", newX + 2, newY - 32, 0xB5DC4F, 1, false);
-			graphics.drawColoredStringCentered(rightX, "#" + vc.getClanGlobalRank(), 0xf1f1f1, 0, 1, newY - 32);
+			graphics.drawShadowText("Global Rank:", newX + 2, newY - 32, Theme.socialGuiLabelAccent(), 1, false);
+			graphics.drawColoredStringCentered(rightX, "#" + vc.getClanGlobalRank(), Theme.socialGuiText(), 0, 1, newY - 32);
 			graphics.drawLineHoriz(newX, newY - 27, horizWidth, horizColor);
 			newY += 21;
-			graphics.drawShadowText("Total Points:", newX + 2, newY - 32, 0xB5DC4F, 1, false);
-			graphics.drawColoredStringCentered(rightX, "" + vc.getClanPoints(), 0xf1f1f1, 0, 1, newY - 32);
+			graphics.drawShadowText("Total Points:", newX + 2, newY - 32, Theme.socialGuiLabelAccent(), 1, false);
+			graphics.drawColoredStringCentered(rightX, "" + vc.getClanPoints(), Theme.socialGuiText(), 0, 1, newY - 32);
 			graphics.drawLineHoriz(newX, newY - 27, horizWidth, horizColor);
 			newY += 21;
-			graphics.drawShadowText("Total Members:", newX + 2, newY - 32, 0xB5DC4F, 1, false);
-			graphics.drawColoredStringCentered(rightX, vc.getClanMembersTotal() + "/15", 0xf1f1f1, 0, 1, newY - 32);
+			graphics.drawShadowText("Total Members:", newX + 2, newY - 32, Theme.socialGuiLabelAccent(), 1, false);
+			graphics.drawColoredStringCentered(rightX, vc.getClanMembersTotal() + "/15", Theme.socialGuiText(), 0, 1, newY - 32);
 			graphics.drawLineHoriz(newX, newY - 27, horizWidth, horizColor);
 			newY += 21;
-			graphics.drawShadowText("Matches Won:", newX + 2, newY - 32, 0xB5DC4F, 1, false);
-			graphics.drawColoredStringCentered(rightX, "0", 0xf1f1f1, 0, 1, newY - 32);
+			graphics.drawShadowText("Matches Won:", newX + 2, newY - 32, Theme.socialGuiLabelAccent(), 1, false);
+			graphics.drawColoredStringCentered(rightX, "0", Theme.socialGuiText(), 0, 1, newY - 32);
 			graphics.drawLineHoriz(newX, newY - 27, horizWidth, horizColor);
 			newY += 21;
-			graphics.drawShadowText("Matches Lost:", newX + 2, newY - 32, 0xB5DC4F, 1, false);
-			graphics.drawColoredStringCentered(rightX, "0", 0xf1f1f1, 0, 1, newY - 32);
+			graphics.drawShadowText("Matches Lost:", newX + 2, newY - 32, Theme.socialGuiLabelAccent(), 1, false);
+			graphics.drawColoredStringCentered(rightX, "0", Theme.socialGuiText(), 0, 1, newY - 32);
 			graphics.drawLineHoriz(newX, newY - 27, horizWidth, horizColor);
 			newY += 21;
-			graphics.drawShadowText("Type:", newX + 2, newY - 32, 0xB5DC4F, 1, false);
-			graphics.drawColoredStringCentered(rightX, vc.getClanSearchSettingByName(vc.canJoin), 0xf1f1f1, 0, 1, newY - 32);
+			graphics.drawShadowText("Type:", newX + 2, newY - 32, Theme.socialGuiLabelAccent(), 1, false);
+			graphics.drawColoredStringCentered(rightX, vc.getClanSearchSettingByName(vc.canJoin), Theme.socialGuiText(), 0, 1, newY - 32);
 			graphics.drawLineHoriz(newX, newY - 27, horizWidth, horizColor);
 
 			drawSubmitButton(graphics, x + 7, newY - 20, 394, 28, 18, 1, "Send Clan Request", false, new ButtonHandler() {
@@ -395,7 +396,7 @@ public final class ClanInterface {
 				}
 			});
 		} else {
-			graphics.drawString("Search clans:", x + 10, y + 65, 0xB5DC4F, 2);
+			graphics.drawString("Search clans:", x + 10, y + 65, Theme.socialGuiLabelAccent(), 2);
 
 			drawSearchButton(graphics, x + 90, y + 48, width, height, new ButtonHandler() {
 				@Override
@@ -405,7 +406,7 @@ public final class ClanInterface {
 			});
 
 
-			graphics.drawString("Clan Points:", x + 330, y + 90, 0xB5DC4F, 0);
+			graphics.drawString("Clan Points:", x + 330, y + 90, Theme.socialGuiLabelAccent(), 0);
 			drawSubmitButton(graphics, x + 295, y + 50, 103, 24, 17, 1, "Reset search", false, new ButtonHandler() {
 				@Override
 				void handle() {
@@ -414,14 +415,14 @@ public final class ClanInterface {
 				}
 			});
 
-			int color = 0xC2C8C3;
+			int color = Theme.socialGuiSearchRowFill(false);
 			int listStartPoint = clanSetupPanel.getScrollPosition(clanSearchScroll);
 			int listEndPoint = listStartPoint + 3;
 			for (int i = -1; i < filteredList.size(); i++) {
 				if (i >= 500) {
 					break;
 				}
-				graphics.drawString("Displaying search results For: " + (!searchTerm.isEmpty() ? "\"" + searchTerm.toLowerCase() + "\"" : "ALL") + " (" + (filteredList.size()) + ")", x + 5, y + 90, 0xf1f1f1, 0);
+				graphics.drawString("Displaying search results For: " + (!searchTerm.isEmpty() ? "\"" + searchTerm.toLowerCase() + "\"" : "ALL") + " (" + (filteredList.size()) + ")", x + 5, y + 90, Theme.socialGuiText(), 0);
 				clanSetupPanel.setListEntry(clanSearchScroll, i + 1, "", 0, (String) null, (String) null);
 
 				if (i < listStartPoint || i > listEndPoint)
@@ -429,34 +430,34 @@ public final class ClanInterface {
 				ClanResult cr = filteredList.get(i);
 				if (mc.getMouseX() >= (newX) && mc.getMouseY() >= (newY) && mc.getMouseX() <= newX + 389
 					&& mc.getMouseY() <= (newY) + boxHeight && mc.inputX_Action == InputXAction.ACT_0) {
-					graphics.drawBoxAlpha(newX + 1, newY, boxWidth + 1, boxHeight - 1, 0x90E05B, 192);
+					graphics.drawBoxAlpha(newX + 1, newY, boxWidth + 1, boxHeight - 1, Theme.socialGuiSearchRowHighlight(), 192);
 					if (mc.getMouseClick() == 1) {
 						selectedClanInSearch = i;
 						mc.setMouseClick(0);
 					}
 				} else {
 					if (selectedClanInSearch == i) {
-						graphics.drawBoxAlpha(newX + 1, newY, boxWidth + 1, boxHeight - 1, 0x90E05B, 192);
+						graphics.drawBoxAlpha(newX + 1, newY, boxWidth + 1, boxHeight - 1, Theme.socialGuiSearchRowHighlight(), 192);
 					} else {
 						graphics.drawBoxAlpha(newX + 1, newY, boxWidth + 1, boxHeight - 1, color, 192);
 					}
 				}
 
 				if (i % 2 == 0) {
-					color = 0xD9DCD6;
+					color = Theme.socialGuiSearchRowFill(true);
 				} else {
-					color = 0xC2C8C3;
+					color = Theme.socialGuiSearchRowFill(false);
 				}
-				graphics.drawBoxBorder(newX, 390, newY, boxHeight, 0x716F6C);
+				graphics.drawBoxBorder(newX, 390, newY, boxHeight, Theme.socialGuiSearchRowBorder());
 
-				graphics.drawShadowText(cr.getClanName(), x + 7, newY + 15, 0xFBFBF9, 4, false);
-				graphics.drawString(cr.getClanSearchSettingByName(cr.canJoin), x + 7, newY + 29, 0xF2A967, 0);
+				graphics.drawShadowText(cr.getClanName(), x + 7, newY + 15, Theme.socialGuiDetailText(), 4, false);
+				graphics.drawString(cr.getClanSearchSettingByName(cr.canJoin), x + 7, newY + 29, Theme.socialGuiSearchTitleText(), 0);
 
-				graphics.drawString("Members:", x + 250, newY + 12, 0xf1f1f1, 0);
-				graphics.drawShadowText(cr.getClanMembersTotal() + "/ 15", x + 273, newY + 21, 0xFBFBF9, 0, true);
-				graphics.drawLineVert(x + 320, newY, 0x716F6C, boxHeight);
-				graphics.drawShadowText(cr.getClanPoints() + " pts", x + 356, newY + 14, 0xFBFBF9, 1, true);
-				graphics.drawString((Config.isAndroid() ? "Tap" : "Click") + " to view details", x + 120, newY + 29, 0xf1f1f1, 0);
+				graphics.drawString("Members:", x + 250, newY + 12, Theme.socialGuiText(), 0);
+				graphics.drawShadowText(cr.getClanMembersTotal() + "/ 15", x + 273, newY + 21, Theme.socialGuiDetailText(), 0, true);
+				graphics.drawLineVert(x + 320, newY, Theme.socialGuiSearchRowBorder(), boxHeight);
+				graphics.drawShadowText(cr.getClanPoints() + " pts", x + 356, newY + 14, Theme.socialGuiDetailText(), 1, true);
+				graphics.drawString((Config.isAndroid() ? "Tap" : "Click") + " to view details", x + 120, newY + 29, Theme.socialGuiText(), 0);
 
 				newY += boxHeight + 3;
 			}
@@ -470,18 +471,18 @@ public final class ClanInterface {
 		int leftBoxH = 184;
 		if (mc.clan.inClan()) {
 			// LEFT SIDE
-			graphics.drawBoxAlpha(x + 3, y + 48, leftBoxW, leftBoxH, 0x1D1915, 192); //5F5147
-			graphics.drawBoxBorder(x + 3, leftBoxW, y + 48, leftBoxH, 0x5F5147);
+			graphics.drawBoxAlpha(x + 3, y + 48, leftBoxW, leftBoxH, Theme.socialGuiBackdropFill(), 192);
+			graphics.drawBoxBorder(x + 3, leftBoxW, y + 48, leftBoxH, Theme.socialGuiOuterCardBorder());
 
 			// RIGHT SIDE
-			graphics.drawBoxAlpha(x + 3 + 196 + 10, y + 48, leftBoxW, leftBoxH, 0x1D1915, 192); //5F5147
-			graphics.drawBoxBorder(x + 3 + 196 + 10, leftBoxW, y + 48, leftBoxH, 0x5F5147);
+			graphics.drawBoxAlpha(x + 3 + 196 + 10, y + 48, leftBoxW, leftBoxH, Theme.socialGuiBackdropFill(), 192);
+			graphics.drawBoxBorder(x + 3 + 196 + 10, leftBoxW, y + 48, leftBoxH, Theme.socialGuiOuterCardBorder());
 
-			graphics.drawBoxAlpha(x + 9, y + 54, 184, 37, 0x544B40, 255);
-			graphics.drawBoxBorder(x + 9, 184, y + 54, 37, 0x7D7161);
-			graphics.drawBoxBorder(x + 8, 186, y + 53, 39, 0x060607);
-			graphics.drawColoredStringCentered(x + 32 + (184 / 2 - graphics.stringWidth(1, "My clan:") / 2), "My clan:", 0xEA9F59, 0, 1, y + 66);
-			graphics.drawColoredStringCentered(x + 101, mc.clan.getClanName() + " <@cla@" + mc.clan.getClanTag() + "@whi@>", 0xf1f1f1, 0, 1, y + 85);
+			graphics.drawBoxAlpha(x + 9, y + 54, 184, 37, Theme.socialGuiInnerCardFill(), 255);
+			graphics.drawBoxBorder(x + 9, 184, y + 54, 37, Theme.socialGuiInnerCardBorder());
+			graphics.drawBoxBorder(x + 8, 186, y + 53, 39, Theme.socialGuiCardShadowBorder());
+			graphics.drawColoredStringCentered(x + 32 + (184 / 2 - graphics.stringWidth(1, "My clan:") / 2), "My clan:", Theme.socialGuiValueText(), 0, 1, y + 66);
+			graphics.drawColoredStringCentered(x + 101, mc.clan.getClanName() + " <@cla@" + mc.clan.getClanTag() + "@whi@>", Theme.socialGuiText(), 0, 1, y + 85);
 
 			drawSelectButton(graphics, x + 9, y + 96, 184, 32, 14, 14, 1, 1, "Who can kick in clan?", mc.clan.getClanSettingByName(mc.clan.getClanSetting(0)), new ButtonHandler() {
 				@Override
@@ -540,7 +541,7 @@ public final class ClanInterface {
 				}
 			});
 
-			graphics.drawWrappedCenteredString("Right-click on a box to change options.", x + 101, y + 214, 175, 0, 0xD9CD98, false);
+			graphics.drawWrappedCenteredString("Right-click on a box to change options.", x + 101, y + 214, 175, 0, Theme.socialGuiHintText(), false);
 
 			drawSubmitButton(graphics, x + 235, y + 54, 146, 28, 18, 1, "Invite to Clan", false, new ButtonHandler() {
 				@Override
@@ -549,7 +550,7 @@ public final class ClanInterface {
 					mc.showUiTab = 0;
 				}
 			});
-			graphics.drawLineHoriz(x + 210, y + 87, 194, 0x5F5147);
+			graphics.drawLineHoriz(x + 210, y + 87, 194, Theme.socialGuiColumnSeparator());
 			drawSubmitButton(graphics, x + 235, y + 92, 146, 28, 18, 1, "Leave Party", false, new ButtonHandler() {
 				@Override
 				void handle() {
@@ -557,20 +558,20 @@ public final class ClanInterface {
 					setVisible(false);
 				}
 			});
-			graphics.drawLineHoriz(x + 210, y + 125, 194, 0x5F5147);
+			graphics.drawLineHoriz(x + 210, y + 125, 194, Theme.socialGuiColumnSeparator());
 		} else {
 			clanSetupPanel.show(clanName_field);
 			clanSetupPanel.show(clanTag_field);
-			graphics.drawBoxAlpha(x + 2, y + 48, width - 5, height - 37, 0x1D1915, 192); //5F5147
-			graphics.drawBoxBorder(x + 2, width - 5, y + 48, height - 37, 0x5F5147);
-			graphics.drawColoredStringCentered(width / 2 + x, "Choose a Clan Name between 2-16 characters in length.", 0xf1f1f1, 0, 2, y + 64);
+			graphics.drawBoxAlpha(x + 2, y + 48, width - 5, height - 37, Theme.socialGuiBackdropFill(), 192);
+			graphics.drawBoxBorder(x + 2, width - 5, y + 48, height - 37, Theme.socialGuiOuterCardBorder());
+			graphics.drawColoredStringCentered(width / 2 + x, "Choose a Clan Name between 2-16 characters in length.", Theme.socialGuiText(), 0, 2, y + 64);
 			drawInputButton(graphics, x + 14, y + 75, 380, 42, 14, 1, "Clan Name:", false, new ButtonHandler() {
 				@Override
 				void handle() {
 					clanSetupPanel.setFocus(clanName_field);
 				}
 			});
-			graphics.drawColoredStringCentered(width / 2 + x, "Enter your Clan Tag between 2-5 characters in length.", 0xf1f1f1, 0, 2, y + 64 + 72);
+			graphics.drawColoredStringCentered(width / 2 + x, "Enter your Clan Tag between 2-5 characters in length.", Theme.socialGuiText(), 0, 2, y + 64 + 72);
 			drawInputButton(graphics, x + 14, y + 147, 380, 42, 14, 1, "Clan Tag:", false, new ButtonHandler() {
 				@Override
 				void handle() {
@@ -589,45 +590,45 @@ public final class ClanInterface {
 
 	private void drawCloseButton(GraphicsController graphics, int x, int y, int width, int height, String text,
 								 boolean checked, ButtonHandler handler) {
-		int allColor = 0x957357;
+		int allColor = Theme.socialGuiHeaderBandFill();
 
 		if (mc.getMouseX() >= x && mc.getMouseY() >= y && mc.getMouseX() <= x + width && mc.getMouseY() <= y + height && !menu_visible) {
 			if (!checked)
-				allColor = 0x442C13;
+				allColor = Theme.socialGuiCloseFill(true);
 			if (mc.getMouseClick() == 1) {
 				handler.handle();
 				mc.setMouseClick(0);
 			}
 		}
 		graphics.drawBoxAlpha(x, y, width, height, allColor, 255);
-		graphics.drawLineHoriz(x, y, width, 0x5F5147);
-		graphics.drawString(text, x + (width / 2 - graphics.stringWidth(1, text) / 2), y + height / 2 + 5, 0xffffff, 1);
+		graphics.drawLineHoriz(x, y, width, Theme.socialGuiColumnSeparator());
+		graphics.drawString(text, x + (width / 2 - graphics.stringWidth(1, text) / 2), y + height / 2 + 5, Theme.socialGuiBrightText(), 1);
 	}
 
 	private void drawButton(GraphicsController graphics, int x, int y, int width, int height, String text,
 							boolean checked, ButtonHandler handler) {
-		int allColor = 0x231B15;
+		int allColor = Theme.socialGuiNavFill(checked, false);
 		if (checked) {
-			allColor = 0x332A22;
+			allColor = Theme.socialGuiNavFill(true, false);
 		}
 		if (mc.getMouseX() >= x && mc.getMouseY() >= y && mc.getMouseX() <= x + width && mc.getMouseY() <= y + height) {
 			if (!checked)
-				allColor = 0x2A221B;
+				allColor = Theme.socialGuiNavFill(false, true);
 			if (mc.getMouseClick() == 1) {
 				handler.handle();
 				mc.setMouseClick(0);
 			}
 		}
 		graphics.drawBoxAlpha(x, y, width, height, allColor, 255);
-		graphics.drawBoxBorder(x, width, y, height, 0xA68B71); // 0xA3510C
-		graphics.drawString(text, x + (width / 2 - graphics.stringWidth(1, text) / 2), y + height / 2 + 5, 0xE3CCCF, 2);
+		graphics.drawBoxBorder(x, width, y, height, Theme.socialGuiNavBorder());
+		graphics.drawString(text, x + (width / 2 - graphics.stringWidth(1, text) / 2), y + height / 2 + 5, Theme.socialGuiSecondaryLabel(), 2);
 	}
 
 	private void drawInputButton(GraphicsController graphics, int x, int y, int width, int height, int heightText, int fontSize, String text,
 								 boolean checked, ButtonHandler handler) {
-		int allColor = 0x3D3428;
+		int allColor = Theme.socialGuiInputFill(checked);
 		if (checked) {
-			allColor = 0x332A22;
+			allColor = Theme.socialGuiInputFill(true);
 		}
 		if (mc.getMouseX() >= x && mc.getMouseY() >= y && mc.getMouseX() <= x + width && mc.getMouseY() <= y + height) {
 			if (mc.getMouseClick() == 1) {
@@ -636,12 +637,12 @@ public final class ClanInterface {
 			}
 		}
 		graphics.drawBoxAlpha(x, y, width, height, allColor, 255);
-		graphics.drawBoxBorder(x, width, y, height, 0x777775);
-		graphics.drawString(text, x + (width / 2 - graphics.stringWidth(1, text) / 2), y + heightText, 0xE3CCCF, fontSize);
+		graphics.drawBoxBorder(x, width, y, height, Theme.socialGuiInputBorder());
+		graphics.drawString(text, x + (width / 2 - graphics.stringWidth(1, text) / 2), y + heightText, Theme.socialGuiSecondaryLabel(), fontSize);
 	}
 
 	private void drawSearchButton(GraphicsController graphics, int x, int y, int width, int height, ButtonHandler handler) {
-		int allColor = 0xFBFCFE;
+		int allColor = Theme.socialGuiSearchEntryFill();
 		if (mc.getMouseX() >= x && mc.getMouseY() >= y && mc.getMouseX() <= x + width && mc.getMouseY() <= y + height) {
 			if (mc.getMouseClick() == 1) {
 				handler.handle();
@@ -649,12 +650,12 @@ public final class ClanInterface {
 			}
 		}
 		graphics.drawBoxAlpha(x, y, width, height, allColor, 255);
-		graphics.drawBoxBorder(x, width, y, height, 0x080809);
+		graphics.drawBoxBorder(x, width, y, height, Theme.socialGuiSearchEntryBorder());
 	}
 
 	private void drawSelectButton(GraphicsController graphics, int x, int y, int width, int height, int heightText, int secondaryHeightText, int fontSize, int secondaryFontSize, String text,
 								  String secondaryText, ButtonHandler handler) {
-		int allColor = 0x4F4841;
+		int allColor = Theme.socialGuiSelectFill();
 		if (mc.getMouseX() >= x && mc.getMouseY() >= y && mc.getMouseX() <= x + width && mc.getMouseY() <= y + height) {
 			if (mc.getMouseClick() == 2) {
 				handler.handle();
@@ -663,26 +664,26 @@ public final class ClanInterface {
 		}
 
 		graphics.drawBoxAlpha(x, y, width, height, allColor, 255);
-		graphics.drawBoxBorder(x, width, y, height, 0x7C6C5C);
-		graphics.drawBoxBorder(x - 1, width + 2, y - 1, height + 2, 0x060607);
-		graphics.drawString(text, x + (width / 2 - graphics.stringWidth(1, text) / 2), y + heightText - 2, 0xEA9F59, fontSize);
-		graphics.drawColoredStringCentered(x + width / 2, secondaryText, 0xf1f1f1, 0, secondaryFontSize, y + heightText + secondaryHeightText);
+		graphics.drawBoxBorder(x, width, y, height, Theme.socialGuiSelectBorder());
+		graphics.drawBoxBorder(x - 1, width + 2, y - 1, height + 2, Theme.socialGuiCardShadowBorder());
+		graphics.drawString(text, x + (width / 2 - graphics.stringWidth(1, text) / 2), y + heightText - 2, Theme.socialGuiValueText(), fontSize);
+		graphics.drawColoredStringCentered(x + width / 2, secondaryText, Theme.socialGuiText(), 0, secondaryFontSize, y + heightText + secondaryHeightText);
 	}
 
 	private void drawSubmitButton(GraphicsController graphics, int x, int y, int width, int height, int heightText, int fontSize, String text,
 								  boolean checked, ButtonHandler handler) {
-		int allColor = 0x403020;
+		int allColor = Theme.socialGuiSubmitFill(false);
 		if (mc.getMouseX() >= x && mc.getMouseY() >= y && mc.getMouseX() <= x + width && mc.getMouseY() <= y + height) {
 			if (!checked)
-				allColor = 0x423D2D;
+				allColor = Theme.socialGuiSubmitFill(true);
 			if (mc.getMouseClick() == 1) {
 				handler.handle();
 				mc.setMouseClick(0);
 			}
 		}
 		graphics.drawBoxAlpha(x, y, width, height, allColor, 255);
-		graphics.drawBoxBorder(x, width, y, height, 0x474745); // 0xA3510C
-		graphics.drawString(text, x + (width / 2 - graphics.stringWidth(1, text) / 2), y + heightText, 0xFF9530, fontSize);
+		graphics.drawBoxBorder(x, width, y, height, Theme.socialGuiSubmitBorder());
+		graphics.drawString(text, x + (width / 2 - graphics.stringWidth(1, text) / 2), y + heightText, Theme.socialGuiSubmitLabel(), fontSize);
 	}
 
 	private void drawRightClickMenu() {
