@@ -76,3 +76,18 @@ slices (commits 1e46ff66c, 23fb70257, d71159921):
    inside each picker box and not colliding with the box sprites; classic
    mode should render exactly as before (no chips, inherited list colours).
 5. Per-resolution matrix above still applies to these screens.
+
+## Additions from the 2026-09-24 pass (all unverified visually)
+
+First priorities for the human pass after the minimap/compass slice
+(commit e614ab6e8):
+
+1. **Minimap (custom UI, premium mode)**: viewport shows a subtle inset
+   backdrop with a bronze frame instead of raw black; the frame's
+   corners/edges do not collide with the terrain diamond; the compass dial
+   sits on a translucent plate with a bevel ring and stays readable over
+   bright terrain (desert, snow, cliffs).
+2. **Minimap (classic mode)**: must be pixel-identical to previous builds
+   (all new colours resolve to black and the added draws are no-ops).
+3. Per-resolution matrix above still applies; check the frame at 1024×768
+   (minimum) and 3840×2160 (max scale) specifically.

@@ -398,3 +398,65 @@ Commits:
    coherent families: `AuctionHouse` (~30 literals, blue-tinted family),
    `IronManInterface` (~25, own button family), then the remaining
    smaller misc panels.
+
+## Session: minimap/compass chrome + graphics survey (2026-09-24)
+
+### Starting point
+- Branch `develop` at `9e55d0398`, tree clean (`.freebuff/` untracked as
+  usual). Request: "further graphical enhancements — textures, models,
+  scaling, widescreen, icons, map".
+
+### Graphics survey (what was learned)
+- `GraphicsController.drawMinimapSprite` (orsc/graphics/two) rasterises the
+  rotating terrain with a **fixed 1:1 texel mapping** — the `var5` argument
+  is the zoom (192 normal / 128 compass) and is already parameterised at
+  every call site *including* the click-to-walk inverse in
+  `drawUiTabMinimap`, so a future zoom feature is feasible but needs a
+  careful visual pass (the anti-bot jitter interacts with clipping).
+- `drawSpriteClipping` is the codebase's fixed-point **sprite scaler**
+  (16.16 fixed point); the top MENUBAR icon strip already scales through
+  it. The classic-tab side-panel icons (LEFTARROW/RIGHTARROW etc. via
+  `panel.addSprite`) still draw native-size in custom UI — a candidate
+  icon slice.
+- Minimap terrain colours come from `Scene.resourceToColor` →
+  `World.drawMinimapTile` (1 minimap px per 3 world px, corners split A/B)
+  into a 512×512 offscreen `minimapSprite`.
+- The premium defect class from the clan/party slice does not apply here:
+  the new minimap draws are backdrop/border only, no text entries.
+
+### Implemented this session (`e614ab6e8`)
+- Theme.java: four accessors `minimapBackdropFill`, `minimapFrameColor`,
+  `minimapCompassBackdropFill`, `minimapCompassRingColor` (classic
+  constants 0x000000 each; premium PANEL_INSET / BORDER_DARK_MID /
+  PANEL_ELEVATED / BORDER_DARK).
+- `mudclient.drawUiTabMinimap`: viewport backdrop + frame themed;
+  translucent compass plate (ui(10)² at the dial centre, alpha 200) plus
+  bevel ring (ui(8)²), both inside the existing clip so they cannot leak.
+- Classic mode byte-identical (accessors resolve to 0x000000 and the added
+  draws are no-ops there); draw-layer only — no geometry, zoom, packets or
+  input changes; the viewport intentionally stays native-size because
+  `drawMinimapSprite` has no scale factor.
+
+### Verification
+- `ant compile` pass; smoke launch alive 12 s (log shows only the known
+  no-local-server `getServerConfig` ConnectionRefused); theme tripwire
+  passes at 254 pairs (the new CLASSIC_MINIMAP_* literals live in
+  Theme.java accessor guards, which the tripwire ignores by design).
+- Honest limitation: no display — framing/contrast unverified visually.
+
+### Process note (tools)
+- mudclient.java is **LF in the repo** (unlike Theme.java which is CRLF);
+  `${CR}` sed patterns silently no-op there. GNU sed `a\`/`i\` in this
+  Git Bash eats one leading tab of inserted text — check with `cat -A`
+  and re-indent. A multi-line `perl -0pe` splice duplicated a line once;
+  restoring via `git checkout HEAD -- <file>` and preferring whole-line
+  `sed a\`/`i\` edits was the clean path.
+
+### Exact next tasks
+1. Human visual pass (unchanged top blocker; now also covers the minimap
+   frame/compass plate in premium mode).
+2. Minimap zoom for the map tab (zoom is parameterised; needs visual
+   tuning of the click inverse and jitter) — draw-layer only.
+3. Scaled side-panel tab icons via drawSpriteClipping in custom UI.
+4. `World.drawMinimapTile` 2× supersampled map pixels (crisper terrain).
+5. Continue baseline-driven theme migration (AuctionHouse, IronMan).

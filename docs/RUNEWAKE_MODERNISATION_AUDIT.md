@@ -68,6 +68,7 @@ space via `ui()` helpers; input coordinates transformed by the same factor
    (AuctionHouse, IronMan, SkillGuide, AchievementGUI, ...), inventoried
    in `scripts/theme_literal_baseline.txt`.
 
+8. Minimap/compass chrome (draw-layer) — done in `e614ab6e8`: the custom-UI minimap backdrop/frame and the compass plate/ring now come from `Theme.minimap*` tokens; classic is byte-identical and the viewport stays native-size because `drawMinimapSprite` cannot scale. Candidate follow-ups (draw-layer only): parameterised minimap zoom for the map tab, `World.drawMinimapTile` 2× supersampling, scaled side-panel tab icons via `drawSpriteClipping`.
 ## Remaining priorities (ordered)
 
 1. Human visual pass per `RUNEWAKE_VISUAL_TEST_MATRIX.md` (settings tab,
