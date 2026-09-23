@@ -9238,12 +9238,14 @@ public final class mudclient implements Runnable {
 				this.getSurface().drawSprite(spriteSelect(GUIPARTS.MINIMAPTAB.getDef()), posX - ui(49), ui(3));
 				posX += ui(40);
 			}
-			this.getSurface().drawBox(posX, posY, var4, var5, 0);
+			this.getSurface().drawBox(posX, posY, var4, var5, Theme.minimapBackdropFill());
+			this.getSurface().drawBoxBorder(posX, var4, posY, var5, Theme.minimapFrameColor());
 			this.getSurface().setClip(posX, var4 + posX, posY + var5, posY);
 			if (var2 <= 119) {
 				this.characterHealthBar = null;
 			}
 
+			this.getSurface().drawBoxAlpha(posX + ui(14), posY + ui(14), ui(10), ui(10), Theme.minimapCompassBackdropFill(), 200);
 			int var6 = 192 + this.minimapRandom_2;
 			int var7 = 255 & this.cameraRotation + this.minimapRandom_1;
 			int mX = var6 * (this.localPlayer.currentX - 6040) * 3 / 2048;
@@ -9324,6 +9326,7 @@ public final class mudclient implements Runnable {
 			this.getSurface().drawCircle(posX + var4 / 2, var5 / 2 + posY, ui(2), 0xFFFFFF, 255, -1057205208);
 			this.getSurface().drawMinimapSprite(spriteSelect(GUIPARTS.COMPASS.getDef()), posY + ui(19), posX + ui(19), 842218000, 128,
 				255 & this.cameraRotation + 128);
+			this.getSurface().drawBoxBorder(posX + ui(15), ui(8), posY + ui(15), ui(8), Theme.minimapCompassRingColor());
 			this.getSurface().setClip(0, this.getGameWidth(), this.getGameHeight() + ui(12), 0);
 			if (var1) {
 				posX = offX - this.getSurface().width2 + this.mouseX;

@@ -420,6 +420,9 @@ public final class Theme {
 	private static final int CLASSIC_SOCIALGUI_SEPARATOR = 0x6E5D4E;
 	private static final int CLASSIC_SOCIALGUI_DETAIL_SEPARATOR = 0x4C4638;
 
+	private static final int CLASSIC_MINIMAP_BACKDROP = 0x000000;
+	private static final int CLASSIC_MINIMAP_BORDER = 0x000000;
+
 	/** Main window body of the clan/party settings window (alpha applied at the call site). */
 	public static int socialGuiBodyFill() {
 		return Config.C_PREMIUM_THEME ? OVERLAY_SCRIM : CLASSIC_SOCIALGUI_BODY;
@@ -428,6 +431,26 @@ public final class Theme {
 	/** Translucent backdrop of the list boxes and content panels inside the window. */
 	public static int socialGuiBackdropFill() {
 		return Config.C_PREMIUM_THEME ? PANEL_INSET : CLASSIC_SOCIALGUI_BACKDROP;
+	}
+
+	/** Backdrop behind the rotating minimap terrain, visible outside the terrain diamond. */
+	public static int minimapBackdropFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_INSET : CLASSIC_MINIMAP_BACKDROP;
+	}
+
+	/** Frame drawn around the minimap viewport box. */
+	public static int minimapFrameColor() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : CLASSIC_MINIMAP_BORDER;
+	}
+
+	/** Translucent inner plate behind the compass dial. */
+	public static int minimapCompassBackdropFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_MINIMAP_BACKDROP;
+	}
+
+	/** Bevel ring around the compass backdrop plate. */
+	public static int minimapCompassRingColor() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK : CLASSIC_MINIMAP_BORDER;
 	}
 
 	/** Backing fill of the clanmate/party table column headers. */
