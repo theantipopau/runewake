@@ -19,6 +19,11 @@ dependencyGuard:
   script:
     - bash scripts/check_dependencies.sh
 
+pagesBuild:
+  stage: verify
+  script:
+    - bash scripts/build_pages.sh
+
 build:
   stage: build
   script:
