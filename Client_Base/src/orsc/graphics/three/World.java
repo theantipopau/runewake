@@ -2,6 +2,7 @@ package orsc.graphics.three;
 
 import com.openrsc.client.entityhandling.EntityHandler;
 import com.openrsc.client.model.Sector;
+import com.openrsc.client.model.Sprite;
 import com.openrsc.data.DataConversions;
 import orsc.Config;
 import orsc.graphics.two.GraphicsController;
@@ -42,6 +43,90 @@ public final class World {
 	// private final byte[][] wallsNorthSouth = new byte[4][2304];
 	// private final byte[][] wallsRoof = new byte[4][2304];
 	private GraphicsController minimapGraphics;
+	private int[] minimapHiRes = new int[570 * 570];
+	// 2x-supersampled minimap buffer: every legacy low-res draw is replicated at
+	// 2x resolution and box-downsampled into minimapSprite on publish, which
+	// keeps every consumer (drawMinimapSprite, offsets, click inverse) at the
+	// original 285x285 geometry.
+	private static final int MINIMAP_HIRES_STRIDE = 570;
+	private static final int MINIMAP_SIZE = 285;
+
+
+	/** Zero-fills the 2x-supersampled minimap buffer. */
+	private void mmFill(int color) {
+		java.util.Arrays.fill(this.minimapHiRes, color);
+	}
+
+	/** Horizontal run at 2x, clipped to the legacy 285x285 bounds exactly like GraphicsController. */
+	private void mmLineHoriz(int x, int y, int width, int color) {
+		if (y < 0 || y >= MINIMAP_SIZE) {
+			return;
+		}
+		int x0 = Math.max(x, 0);
+		int x1 = Math.min(x + width, MINIMAP_SIZE);
+		if (x0 >= x1) {
+			return;
+		}
+		int off = (y << 1) * MINIMAP_HIRES_STRIDE + (x0 << 1);
+		for (int i = 0, n = (x1 - x0) << 1; i < n; ++i) {
+			this.minimapHiRes[off + i] = color;
+		}
+	}
+
+	/** Vertical run at 2x, clipped to the legacy 285x285 bounds exactly like GraphicsController. */
+	private void mmLineVert(int x, int y, int height, int color) {
+		if (x < 0 || x >= MINIMAP_SIZE) {
+			return;
+		}
+		int y0 = Math.max(y, 0);
+		int y1 = Math.min(y + height, MINIMAP_SIZE);
+		if (y0 >= y1) {
+			return;
+		}
+		int off = (y0 << 1) * MINIMAP_HIRES_STRIDE + (x << 1);
+		for (int i = 0, n = (y1 - y0) << 1; i < n; ++i) {
+			this.minimapHiRes[off + i * MINIMAP_HIRES_STRIDE] = color;
+		}
+	}
+
+	/** Single pixel at 2x (all four sub-pixels), clipped to the legacy bounds. */
+	private void mmPixel(int x, int y, int color) {
+		if (x < 0 || y < 0 || x >= MINIMAP_SIZE || y >= MINIMAP_SIZE) {
+			return;
+		}
+		int off = (y << 1) * MINIMAP_HIRES_STRIDE + (x << 1);
+		this.minimapHiRes[off] = color;
+		this.minimapHiRes[off + 1] = color;
+		this.minimapHiRes[off + MINIMAP_HIRES_STRIDE] = color;
+		this.minimapHiRes[off + MINIMAP_HIRES_STRIDE + 1] = color;
+	}
+
+	/** Box-downsamples the 2x buffer into minimapSprite (same 285x285 geometry as before). */
+	private void publishMinimapSprite() {
+		int[] out = new int[MINIMAP_SIZE * MINIMAP_SIZE];
+		for (int y = 0; y < MINIMAP_SIZE; ++y) {
+			int rowA = (y << 1) * MINIMAP_HIRES_STRIDE;
+			int rowB = rowA + MINIMAP_HIRES_STRIDE;
+			int dst = y * MINIMAP_SIZE;
+			for (int x = 0; x < MINIMAP_SIZE; ++x) {
+				int s = x << 1;
+				int c0 = this.minimapHiRes[rowA + s];
+				int c1 = this.minimapHiRes[rowA + s + 1];
+				int c2 = this.minimapHiRes[rowB + s];
+				int c3 = this.minimapHiRes[rowB + s + 1];
+				int r = ((c0 >> 16 & 0xFF) + (c1 >> 16 & 0xFF) + (c2 >> 16 & 0xFF) + (c3 >> 16 & 0xFF)) >> 2;
+				int g = ((c0 >> 8 & 0xFF) + (c1 >> 8 & 0xFF) + (c2 >> 8 & 0xFF) + (c3 >> 8 & 0xFF)) >> 2;
+				int b = ((c0 & 0xFF) + (c1 & 0xFF) + (c2 & 0xFF) + (c3 & 0xFF)) >> 2;
+				out[dst + x] = r << 16 | g << 8 | b;
+			}
+		}
+		Sprite sprite = new Sprite(out, MINIMAP_SIZE, MINIMAP_SIZE);
+		sprite.setShift(0, 0);
+		sprite.setRequiresShift(false);
+		sprite.setSomething(MINIMAP_SIZE, MINIMAP_SIZE);
+		this.minimapGraphics.minimapSprite = sprite;
+	}
+
 	private Scene scene;
 	private RSModel modelAccumulate;
 	private RSModel[] modelLandscapeGrid = new RSModel[64];
@@ -302,20 +387,20 @@ public final class World {
 				// AAA
 				// AAB
 				// ABB
-				this.minimapGraphics.drawLineHoriz(mx, my, 3, a);
-				this.minimapGraphics.drawLineHoriz(mx, 1 + my, 2, a);
-				this.minimapGraphics.drawLineHoriz(mx, my + 2, 1, a);
-				this.minimapGraphics.drawLineHoriz(2 + mx, my + 1, 1, b);
-				this.minimapGraphics.drawLineHoriz(mx + 1, my + 2, 2, b);
+				this.mmLineHoriz(mx, my, 3, a);
+				this.mmLineHoriz(mx, 1 + my, 2, a);
+				this.mmLineHoriz(mx, my + 2, 1, a);
+				this.mmLineHoriz(2 + mx, my + 1, 1, b);
+				this.mmLineHoriz(mx + 1, my + 2, 2, b);
 			} else if (bridge00_11 == 1) {
 				// BBB
 				// ABB
 				// AAB
-				this.minimapGraphics.drawLineHoriz(mx, my, 3, b);
-				this.minimapGraphics.drawLineHoriz(1 + mx, 1 + my, 2, b);
-				this.minimapGraphics.drawLineHoriz(mx + 2, my + 2, 1, b);
-				this.minimapGraphics.drawLineHoriz(mx, my + 1, 1, a);
-				this.minimapGraphics.drawLineHoriz(mx, 2 + my, 2, a);
+				this.mmLineHoriz(mx, my, 3, b);
+				this.mmLineHoriz(1 + mx, 1 + my, 2, b);
+				this.mmLineHoriz(mx + 2, my + 2, 1, b);
+				this.mmLineHoriz(mx, my + 1, 1, a);
+				this.mmLineHoriz(mx, 2 + my, 2, a);
 			}
 
 		} catch (RuntimeException var12) {
@@ -519,7 +604,7 @@ public final class World {
 					this.modelAccumulate = new RSModel(18688, 18688, true, true, false, false, true);
 
 				if (showWallOnMinimap) {
-					this.minimapGraphics.blackScreen(true);
+					this.mmFill(0);
 
 					for (int x = 0; x < 96; ++x)
 						for (int z = 0; z < 96; ++z)
@@ -837,7 +922,7 @@ public final class World {
 							}
 
 							if (showWallOnMinimap)
-								this.minimapGraphics.drawLineHoriz(x * 3, z * 3, 3, wallColor);
+								this.mmLineHoriz(x * 3, z * 3, 3, wallColor);
 						}
 
 						wall = this.getHorizontalWall(x, z);
@@ -852,7 +937,7 @@ public final class World {
 							}
 
 							if (showWallOnMinimap)
-								this.minimapGraphics.drawLineVert(x * 3, z * 3, wallColor, 3);
+								this.mmLineVert(x * 3, z * 3, wallColor, 3);
 						}
 
 						wall = this.getWallDiagonal(x, z);
@@ -864,9 +949,9 @@ public final class World {
 									CollisionFlag.FULL_BLOCK_B);
 
 							if (showWallOnMinimap) {
-								this.minimapGraphics.setPixel(x * 3, z * 3, wallColor);
-								this.minimapGraphics.setPixel(1 + x * 3, 1 + z * 3, wallColor);
-								this.minimapGraphics.setPixel(x * 3 + 2, 2 + z * 3, wallColor);
+								this.mmPixel(x * 3, z * 3, wallColor);
+								this.mmPixel(1 + x * 3, 1 + z * 3, wallColor);
+								this.mmPixel(x * 3 + 2, 2 + z * 3, wallColor);
 							}
 						}
 
@@ -878,15 +963,15 @@ public final class World {
 									CollisionFlag.FULL_BLOCK_A);
 
 							if (showWallOnMinimap) {
-								this.minimapGraphics.setPixel(2 + x * 3, z * 3, wallColor);
-								this.minimapGraphics.setPixel(x * 3 + 1, z * 3 + 1, wallColor);
-								this.minimapGraphics.setPixel(x * 3, 2 + z * 3, wallColor);
+								this.mmPixel(2 + x * 3, z * 3, wallColor);
+								this.mmPixel(x * 3 + 1, z * 3 + 1, wallColor);
+								this.mmPixel(x * 3, 2 + z * 3, wallColor);
 							}
 						}
 					}
 
 				if (showWallOnMinimap)
-					this.minimapGraphics.copyPixelDataToSurface(GraphicsController.SPRITE_LAYER.MINIMAP, 0, 0, 285, 285);
+					publishMinimapSprite();
 
 				this.modelAccumulate.setDiffuseLightAndColor(-50, -10, -50, 60, 24, false, 122);
 				this.modelWallGrid[plane] = this.modelAccumulate.divideModelByGrid(0, 8, 1536, -120, 64, 338, 1536,
