@@ -44,6 +44,18 @@ public class OpenRSC extends ORSCApplet {
 				props.load(in);
 
 				// Load scaling settings
+				String minimapZoomString = props.getProperty("minimap_zoom");
+				if (minimapZoomString != null && !minimapZoomString.isEmpty()) {
+					// Invalid values fall back to 100%; a bad setting must never prevent startup.
+					try {
+						float zoom = Float.parseFloat(minimapZoomString);
+						if (zoom > 0.0f && zoom <= 4.0f) {
+							mudclient.minimapZoom = zoom;
+						}
+					} catch (NumberFormatException e) {
+						System.out.println("Invalid minimap_zoom value, defaulting to 100%");
+					}
+				}
 				String scalingTypeString = props.getProperty("scaling_type");
 				String scalarString = props.getProperty("scaling_scalar");
 				String uiScaleCapString = props.getProperty("ui_scale_cap");

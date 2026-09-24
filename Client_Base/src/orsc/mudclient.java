@@ -469,6 +469,12 @@ public final class mudclient implements Runnable {
 	// a positive value shrinks oversized UI on very large windows but never grows the UI
 	// past the fit invariant, so panels can never overflow. Persisted as "ui_scale_cap".
 	public static float uiScaleCap = 0.0f;
+	// Minimap zoom factor for the custom-UI map tab. 1.0 = authentic scale. The
+	// value multiplies the map sprite's texel ratio (drawMinimapSprite) and is
+	// inverted exactly in the click-to-walk mapping, so clicks stay true at any
+	// zoom. Cycles via the settings tab; persisted as "minimap_zoom".
+	public static float minimapZoom = 1.0f;
+	private static final float[] MINIMAP_ZOOMS = {1.0f, 1.5f, 2.0f, 0.75f};
 	private int groundItemCount = 0;
 	private boolean inputX_Focused = true;
 	private int inputX_Height = 0;
@@ -9246,7 +9252,7 @@ public final class mudclient implements Runnable {
 			}
 
 			this.getSurface().drawBoxAlpha(posX + ui(14), posY + ui(14), ui(10), ui(10), Theme.minimapCompassBackdropFill(), 200);
-			int var6 = 192 + this.minimapRandom_2;
+			int var6 = (int) ((192 + this.minimapRandom_2) * minimapZoom);
 			int var7 = 255 & this.cameraRotation + this.minimapRandom_1;
 			int mX = var6 * (this.localPlayer.currentX - 6040) * 3 / 2048;
 			int mZ = var6 * (this.localPlayer.currentZ - 6040) * 3 / 2048;
@@ -9335,7 +9341,7 @@ public final class mudclient implements Runnable {
 					var5 = 152;
 					posX = this.getSurface().width2 - offX;
 					var4 = 156;
-					var6 = 192 + this.minimapRandom_2;
+					var6 = (int) ((192 + this.minimapRandom_2) * minimapZoom);
 					var7 = 255 & this.cameraRotation + this.minimapRandom_1;
 					if (!C_CUSTOM_UI)
 						posX += ui(40);
@@ -9826,6 +9832,11 @@ public final class mudclient implements Runnable {
 			final String capLabel = uiScaleCap <= 0.0f ? "@gre@Auto" : "@whi@" + (int) (uiScaleCap * 100) + "%";
 			this.panelSettings.setListEntry(this.controlSettingPanel, index++,
 				"@whi@Interface scale - " + capLabel, 48, null, null);
+
+			// minimap zoom - client-local (list id 49)
+			final String zoomLabel = minimapZoom == 1.0f ? "@gre@100%" : "@whi@" + (int) (minimapZoom * 100) + "%";
+			this.panelSettings.setListEntry(this.controlSettingPanel, index++,
+				"@whi@Minimap zoom - " + zoomLabel, 49, null, null);
 		}
 
 		// mouse button(s) - byte index 1
@@ -10287,6 +10298,11 @@ public final class mudclient implements Runnable {
 		// interface scale cap - list id 48, client-local (no server sync needed)
 		if (settingIndex == 48 && this.mouseButtonClick == 1) {
 			cycleUiScaleCap();
+		}
+
+		// minimap zoom - list id 49, client-local (no server sync needed)
+		if (settingIndex == 49 && this.mouseButtonClick == 1) {
+			cycleMinimapZoom();
 		}
 
 		// one or two mouse button(s) - byte index 1
@@ -11630,6 +11646,21 @@ public final class mudclient implements Runnable {
 		// Interface scale cap: Auto -> 100% -> ... -> 250% -> Auto. The cap only ever
 		// shrinks the auto-derived scale, so panels always fit the window regardless.
 		private static final float[] UI_SCALE_CAPS = {0.0f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f, 2.5f};
+
+		// Minimap zoom: 100% (authentic) -> 150% -> 200% -> 75% -> 100%. Purely a
+		// draw-side magnification of the map sprite; the click-to-walk inverse in
+		// drawUiTabMinimap divides by the same factor so clicks stay true.
+		private void cycleMinimapZoom() {
+			int idx = 0;
+			for (int i = 0; i < MINIMAP_ZOOMS.length; ++i) {
+				if (Float.compare(MINIMAP_ZOOMS[i], minimapZoom) == 0) {
+					idx = i;
+					break;
+				}
+			}
+			minimapZoom = MINIMAP_ZOOMS[(idx + 1) % MINIMAP_ZOOMS.length];
+			saveClientSetting("minimap_zoom", String.valueOf(minimapZoom));
+		}
 
 		private void cycleUiScaleCap() {
 			int idx = 0;
