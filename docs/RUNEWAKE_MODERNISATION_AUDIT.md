@@ -70,6 +70,7 @@ space via `ui()` helpers; input coordinates transformed by the same factor
 
 8. Minimap/compass chrome (draw-layer) — done in `e614ab6e8`: the custom-UI minimap backdrop/frame and the compass plate/ring now come from `Theme.minimap*` tokens; classic is byte-identical and the viewport stays native-size because `drawMinimapSprite` cannot scale. Zoom and 2x supersampling since landed in `33c6df17d` and `0c9321db1`; scaled side-panel icons deferred (see item 9).
 9. Minimap zoom (`33c6df17d`), 2x supersampled minimap raster (`0c9321db1`) and AuctionHouse theme migration (`94b8d3541`, baseline 254->228) all done draw-layer only. Side-panel icon scaling deferred: `drawSpriteClipping` draws nothing for sprites whose something1/2 metadata is zero and that metadata is unverifiable without a display.
+10. Video-driven fixes (`04f01db7f`): custom-UI settings/inventory panels made legible (opaque-enough fills), map tab now scales with the UI in custom mode with working full-box click region. Needs human re-test at 2496x1482.
 ## Remaining priorities (ordered)
 
 1. Human visual pass per `RUNEWAKE_VISUAL_TEST_MATRIX.md` (settings tab,

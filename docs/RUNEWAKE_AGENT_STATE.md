@@ -533,3 +533,59 @@ size arrows. Revisit after the human visual pass.
    map pixels and the auction house premium scheme).
 2. IronManInterface migration (~25 literals, own button family).
 3. Side-panel icon scaling, deferred pending the visual pass above.
+
+## Session: video-driven UI diagnosis + fixes (2026-09-24, third pass)
+
+User supplied a 26s gameplay recording (2496x1482, custom UI, live
+server) plus answers: texture popping = walls/objects blinking, scaling
+wrong everywhere, map tab opened briefly.
+
+### What the frame analysis found
+- No sky/terrain flicker exists: sky brightness never dips (min 27.8,
+  no black frames, no alternating deltas) — the "popping" candidates in
+  the scene timeline were all **tab open/close transitions**.
+- Map-open runs: f83-162 (wrench), f194-221 (inventory), f345-379
+  (magic); the map tab itself shows at f163-180 as a native-size tan
+  square under the giant MENUBAR strip.
+- Defect 1 (legibility): custom-UI panels draw translucent panelFill
+  (alpha 160) boxes with no opaque backdrop — the bright 3D world bled
+  straight through settings rows and inventory slots.
+- Defect 2 (map scale): the minimap viewport is fixed 156x152 design px
+  (the code comment says "native pixel size... otherwise the map
+  renders as a small diamond adrift"), and the click region began at
+  ui(40) inside the box, eating the left strip at high uiScale.
+- The scaled MENUBAR strip and the tab icons render correctly; the
+  "oversized icons" impression is the strip's actual design (6 icons,
+  each ~30 design px at ~4.9x scale) — flagged for the human pass to
+  judge whether the art needs redesign, not a code bug.
+- The recording predates none of the minimap chrome issues (zoom was
+  100%, tab barely opened); the 2x supersample and compass plate were
+  not visible in it.
+
+### Fixed in `04f01db7f`
+1. Settings body boxes alpha 160 -> 224 (authentic-settings branch).
+2. Inventory grid: opaque panelFill underlay in custom UI.
+3. Map tab: viewport scales by round(uiScale) in custom mode via
+   mapScale; the zoom constant carries the factor (terrain quad and all
+   entity offsets derive from it), dots scale via mapViewportScale,
+   compass scales to match, click inverse re-derives the same constant,
+   and the custom-UI hit region spans the whole box. Classic tab hit
+   region preserved byte-identical.
+
+### Method notes
+- opencv-python-headless (pip) + Windows Python reads the mp4 directly;
+  MSYS /tmp is invisible to Windows Python (use $TEMP or repo paths).
+- Programmatic checks that actually discriminated: per-frame sky-brightness
+  runs (ruled out flicker), terrain-colour signature for the map box,
+  right-edge frame diffs (localized tab transitions), black-band scan
+  (found only the recording's window chrome).
+
+### Exact next tasks
+1. Human re-test at the recording's window size: settings rows legible?
+   inventory slots opaque? map fills the tab area and clicking walks to
+   the right tile?
+2. If the tab icon strip still reads oversized, that is an art/redesign
+   question, not scaling code.
+3. Remaining translucency: magic/stats tab (alpha 210) and friends tab
+   are darker but still translucent - candidate for the same treatment
+   if the visual pass flags them.

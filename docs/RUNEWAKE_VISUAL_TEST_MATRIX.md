@@ -112,3 +112,16 @@ auction-house slices (commits 33c6df17d, 0c9321db1, 94b8d3541):
    builds (every accessor returns the inherited literal, including the
    0x45454545 and 0xfffffff quirks).
 5. Per-resolution matrix above still applies to all of the above.
+
+## Additions from the 2026-09-24 video pass (fixes 04f01db7f)
+
+Human re-test requested at the recording's window (2496x1482, custom UI):
+
+1. Settings tab: rows must be legible over bright terrain (alpha now 224).
+2. Inventory: slot grid sits on an opaque backdrop; world shows only
+   through slot cells, items still render inside cells.
+3. Map tab: box fills the tab area (scaled), dots/compass visible and
+   proportioned, clicking a tile walks to the tile under the cursor,
+   zoom setting still composes with the scale.
+4. Classic UI (authentic tab bar): unchanged — map position, size and
+   click region must be pixel-identical to previous builds.
