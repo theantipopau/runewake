@@ -1,71 +1,62 @@
-# RuneWake Server Browser
+# RuneWake GitHub landing page
 
-A static, backend-free webpage that lists known RuneWake servers, their
-live player counts and ping, and a **Play** button per server — similar in
-spirit to the modern OSRS site's world list.
+This directory contains the dark-fantasy RuneWake project landing page. It is
+intentionally static: no build step, framework, or server-side code is needed.
 
-## How it works
+## Preview locally
 
-- `servers.json` is a plain list of servers. Each entry needs a `statusUrl`
-  pointing at that server's status endpoint.
-- `index.html` fetches `servers.json`, then fetches each server's
-  `statusUrl` directly from the visitor's browser — there is no backend for
-  this page to run; static hosting (GitHub Pages, Cloudflare Pages, or just
-  opening the file locally) is enough.
-- **Ping** is measured client-side as the round-trip time of that same
-  status fetch. It's a reasonable reachability/latency proxy, but note it's
-  measured against `ws_server_port`, not the exact port/protocol the game
-  client's TCP connection uses (`server_port`) — treat it as approximate.
-- **Play** button: a browser page can't launch a native desktop client or
-  write into its folder directly (sandboxing), so there's no true single-
-  click connect. Instead, clicking **Play** downloads a small
-  `connect-<server>.bat` that writes the server's host/port into
-  `Client_Base/Cache/ip.txt` and `Cache/port.txt` (the same override files
-  the client already reads — see `Config.java`'s `SERVER_IP`/`SERVER_PORT`)
-  and then runs `run-client.bat`. The user drops the downloaded file next to
-  `run-client.bat` and runs it — effectively "download once, click to play"
-  from then on for that server.
+From the repository root, serve the page with any static HTTP server:
 
-## Server-side requirement
-
-Each listed server needs to be running with `want_feature_websockets: true`
-(the default — see `server/default.conf`). The status endpoint is served on
-the **websocket port** (`ws_server_port` in the server's `.conf` file), not
-the main game port (`server_port`) — the main game port speaks the raw RSC
-protocol only. For the default config that's:
-
-```
-http://<server-ip>:<ws_server_port>/status
+```sh
+python -m http.server 8000 --directory web/site
 ```
 
-which returns JSON like:
+Then open <http://localhost:8000/>. The `../server-browser/` link is resolved
+from the `web/site` directory and works when the whole `web/` tree is served
+from the repository root, which is how the GitHub Pages deployment is laid
+out.
 
-```json
-{"serverName": "RuneWake", "players": 12, "uptimeMillis": 3600000}
+## GitHub Pages
+
+The `gh-pages` branch is the published site branch. From the repository root,
+stage and validate the complete published tree without changing branches:
+
+```sh
+bash scripts/build_pages.sh build/pages
 ```
 
-The endpoint sends `Access-Control-Allow-Origin: *` so it can be fetched
-from a page hosted anywhere.
+Then copy the generated `build/pages/` contents into a clean checkout of
+`gh-pages`, review the diff, commit it, and push that branch normally. The
+staging script rewrites the source page's `../server-browser/` links for the
+published root and places the server browser under `/server-browser/`. It also
+checks every local HTML asset/reference before the files are published.
 
-## Adding your server
+The staging script never pushes and never switches branches, so it is safe to
+run in CI or locally. Keep the source page in `web/site/` so the repository
+remains the single source of truth. The current Pages deployment is
+<https://theantipopau.github.io/runewake/>.
 
-Add an entry to `servers.json`:
+## Assets
 
-```json
-{
-  "name": "My RuneWake Server",
-  "statusUrl": "http://your-server-ip:43494/status",
-  "connectHost": "your-server-ip",
-  "connectPort": 43594
-}
-```
+- `assets/logo.webp` — optimised copy of the owner-supplied
+  `assets/runewakelogo.png` source artwork.
+- `assets/login.webp` — reserved optimised copy of the owner-supplied login
+  artwork for a future login-showcase section.
+- `assets/favicon-512.png` — square, smooth-filtered web icon derived from the
+  owner-supplied icon source.
+- `assets/frame-0120.jpg` and `assets/frame-0221.jpg` — reduced, progressive
+  JPEG copies of frames from the local gameplay recording used as project
+  screenshots. They are pre-fix captures and are labelled as build-in-motion
+  examples rather than current visual test evidence.
 
-Then open a pull request. `connectHost`/`connectPort` are just displayed —
-they're what a player would enter in `Client_Base/Cache/port.txt`
-(or the client's server-select config) to actually connect.
+The original PNG sources remain in the repository's top-level `assets/`
+directory. No commercial RuneScape assets were copied into the page. See
+`docs/RUNEWAKE_ASSET_INVENTORY.md` for provenance and asset rules.
 
-## Known limitation
+## Design direction
 
-If your server sits behind a firewall/NAT/reverse proxy, the status port
-needs to be reachable from the public internet for this to work — same
-requirement as the main game port already has today.
+The palette mirrors the game-side premium theme: ink-black backgrounds,
+bronze borders, rune-blue accents, parchment text, and a NOP-style green
+status signal. The page uses CSS custom properties, responsive layout,
+reduced-size modern WebP/JPEG assets, and no remote font or icon dependency so
+it remains readable on a slow connection and in a static GitHub Pages deploy.
