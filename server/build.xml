@@ -22,7 +22,7 @@
                 <pathelement path="${java.class.path}/"/>
                 <pathelement location="${lib}/log4j-api-2.17.0.jar"/>
                 <pathelement location="${lib}/log4j-core-2.17.0.jar"/>
-                <pathelement location="${lib}/disruptor-3.3.5.jar"/>
+                <pathelement location="${lib}/disruptor-3.3.11.jar"/>
                 <pathelement location="${lib}/commons-lang-2.6.jar"/>
             </classpath>
             <compilerarg line="-Xlint:deprecation"/>
@@ -64,6 +64,7 @@
                 <pathelement location="${lib}/emoji-java-5.1.1.jar"/>
                 <pathelement location="${lib}/json-20190722.jar"/>
                 <pathelement location="${lib}/gitlab4j-api-4.12.17.jar"/>
+                <pathelement location="${lib}/log4j-slf4j18-impl-2.17.0.jar"/>
                 <pathelement location="${lib}/slf4j-nop-2.0.0-alpha5.jar"/>
                 <pathelement location="${lib}/disruptor-3.3.11.jar"/>
                 <pathelement location="${lib}/guice-5.0.2-jar-with-dependencies.jar"/>
@@ -89,15 +90,14 @@
             <arg value="${confFile}.conf"/>
             <jvmarg line="-Xms800M -Xmx2048M -Xdiag -XX:+UseZGC -XX:NewSize=128m -DcoloredLogging=${coloredLogging}"/>
             <classpath>
-                <pathelement location="${lib}/disruptor-3.3.0.jar"/>
+                <pathelement location="${lib}/disruptor-3.3.11.jar"/>
                 <pathelement location="${lib}/log4j-api-2.17.0.jar"/>
                 <pathelement location="${lib}/log4j-core-2.17.0.jar"/>
                 <pathelement location="${lib}/log4j-iostreams-2.17.0.jar"/>
-                <pathelement location="${lib}/xpp3_min-1.1.4c.jar"/>
+                <pathelement location="${lib}/log4j-slf4j18-impl-2.17.0.jar"/>
                 <pathelement location="${lib}/xpp3-1.1.4c.jar"/>
-                <pathelement location="${lib}/xstream-1.4.9.jar"/>
+                <pathelement location="${lib}/xstream-1.4.18.jar"/>
                 <pathelement location="${lib}/mysql-connector-j-9.4.0.jar"/>
-                <pathelement location="${lib}/disruptor-3.3.5.jar"/>
                 <pathelement location="${lib}/commons-lang-2.6.jar"/>
                 <pathelement location="${lib}/*"/>
                 <pathelement location="${lib}/commons-codec-1.14.jar"/>
@@ -116,15 +116,14 @@
             <arg value="${confFile}.conf"/>
             <jvmarg line="-XX:+IgnoreUnrecognizedVMOptions -Xdiag -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+UseBiasedLocking -XX:NewSize=64m -DcoloredLogging=${coloredLogging}"/>
             <classpath>
-                <pathelement location="${lib}/disruptor-3.3.0.jar"/>
+                <pathelement location="${lib}/disruptor-3.3.11.jar"/>
                 <pathelement location="${lib}/log4j-api-2.17.0.jar"/>
                 <pathelement location="${lib}/log4j-core-2.17.0.jar"/>
                 <pathelement location="${lib}/log4j-iostreams-2.17.0.jar"/>
-                <pathelement location="${lib}/xpp3_min-1.1.4c.jar"/>
+                <pathelement location="${lib}/log4j-slf4j18-impl-2.17.0.jar"/>
                 <pathelement location="${lib}/xpp3-1.1.4c.jar"/>
-                <pathelement location="${lib}/xstream-1.4.9.jar"/>
+                <pathelement location="${lib}/xstream-1.4.18.jar"/>
                 <pathelement location="${lib}/mysql-connector-j-9.4.0.jar"/>
-                <pathelement location="${lib}/disruptor-3.3.5.jar"/>
                 <pathelement location="${lib}/commons-lang-2.6.jar"/>
                 <pathelement location="${lib}/*"/>
                 <pathelement location="${lib}/commons-codec-1.14.jar"/>

@@ -14,6 +14,11 @@ themeGuard:
   script:
     - bash scripts/check_theme_literals.sh
 
+dependencyGuard:
+  stage: verify
+  script:
+    - bash scripts/check_dependencies.sh
+
 build:
   stage: build
   script:
