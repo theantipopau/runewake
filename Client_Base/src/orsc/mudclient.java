@@ -564,6 +564,9 @@ public final class mudclient implements Runnable {
 	private int midRegionBaseZ;
 	private int minimapRandom_1 = 0;
 	private int minimapRandom_2 = 0;
+	// Viewport scale of the map tab currently being drawn (1 = native). Read by
+	// drawMinimapEntity so entity dots keep their visual size in a scaled box.
+	private int mapViewportScale = 1;
 	private int mouseButtonDownTime = 0;
 	private int mouseWalkX = 0;
 	private int mouseWalkY = 0;
@@ -6503,13 +6506,21 @@ public final class mudclient implements Runnable {
 
 	private void drawMinimapEntity(int val, int x, byte var3, int y) {
 		try {
-			this.getSurface().setPixel(x, y, val);
+			// Dot footprint scales with the map viewport so markers stay visible in a
+			// scaled box; at scale 1 this is byte-identical to the original draws.
+			int s = this.mapViewportScale;
+			int half = s >> 1;
+			for (int dy = 0; dy < s; ++dy) {
+				for (int dx = 0; dx < s; ++dx) {
+					this.getSurface().setPixel(x - half + dx, y - half + dy, val);
+				}
+			}
 
-			this.getSurface().setPixel(x - 1, y, val);
+			this.getSurface().setPixel(x - s, y, val);
 			if (var3 <= -32) {
-				this.getSurface().setPixel(1 + x, y, val);
-				this.getSurface().setPixel(x, y - 1, val);
-				this.getSurface().setPixel(x, y + 1, val);
+				this.getSurface().setPixel(s + x, y, val);
+				this.getSurface().setPixel(x, y - s, val);
+				this.getSurface().setPixel(x, y + s, val);
 			}
 		} catch (RuntimeException var6) {
 			throw GenUtil.makeThrowable(var6, "client.D(" + val + ',' + x + ',' + var3 + ',' + y + ')');
@@ -8208,6 +8219,12 @@ public final class mudclient implements Runnable {
 			int yOffset = ui(36);
 			if (C_CUSTOM_UI)
 				yOffset = maxY - ui(228);
+			if (C_CUSTOM_UI) {
+				// Opaque backdrop behind the inventory grid so the world cannot bleed
+				// through between the translucent slot cells (grid: 5 x ui(49) wide,
+				// 6 rows x ui(34) tall from yOffset).
+				this.getSurface().drawBoxAlpha(var3, yOffset, ui(245), ui(204), Theme.panelFill(), 224);
+			}
 
 			if (this.tabEquipmentIndex == 0) //inventory tab
 			{
@@ -9232,8 +9249,13 @@ public final class mudclient implements Runnable {
 			int offX = C_CUSTOM_UI ? ui(170) : ui(199);
 			int posX = this.getSurface().width2 - offX;
 			int posY = ui(36);
-			int var4 = 156;
-			int var5 = 152;
+			// The map viewport scales with the UI in custom mode (the native-size map was
+			// tiny on modern windows). Entity offsets already derive from the zoom constant
+			// alone, so only the box, the hit region and the click inverse need the factor.
+			final int mapScale = C_CUSTOM_UI ? Math.max(1, Math.round(uiScale)) : 1;
+			int var4 = 156 * mapScale;
+			int var5 = 152 * mapScale;
+			this.mapViewportScale = mapScale;
 			if (C_CUSTOM_UI) {
 				int borderSize = ui(2);
 				posY = ui(10);
@@ -9252,7 +9274,10 @@ public final class mudclient implements Runnable {
 			}
 
 			this.getSurface().drawBoxAlpha(posX + ui(14), posY + ui(14), ui(10), ui(10), Theme.minimapCompassBackdropFill(), 200);
-			int var6 = (int) ((192 + this.minimapRandom_2) * minimapZoom);
+			// Zoom constant carries mapScale: drawMinimapSprite spreads its terrain quad
+			// proportionally to this value and every entity offset derives from it too,
+			// so the whole map scales coherently inside the scaled box.
+			int var6 = (int) ((192 + this.minimapRandom_2) * minimapZoom) * mapScale;
 			int var7 = 255 & this.cameraRotation + this.minimapRandom_1;
 			int mX = var6 * (this.localPlayer.currentX - 6040) * 3 / 2048;
 			int mZ = var6 * (this.localPlayer.currentZ - 6040) * 3 / 2048;
@@ -9330,18 +9355,19 @@ public final class mudclient implements Runnable {
 			}
 
 			this.getSurface().drawCircle(posX + var4 / 2, var5 / 2 + posY, ui(2), 0xFFFFFF, 255, -1057205208);
-			this.getSurface().drawMinimapSprite(spriteSelect(GUIPARTS.COMPASS.getDef()), posY + ui(19), posX + ui(19), 842218000, 128,
+			this.getSurface().drawMinimapSprite(spriteSelect(GUIPARTS.COMPASS.getDef()), posY + ui(19), posX + ui(19), 842218000, 128 * mapScale,
 				255 & this.cameraRotation + 128);
 			this.getSurface().drawBoxBorder(posX + ui(15), ui(8), posY + ui(15), ui(8), Theme.minimapCompassRingColor());
 			this.getSurface().setClip(0, this.getGameWidth(), this.getGameHeight() + ui(12), 0);
 			if (var1) {
 				posX = offX - this.getSurface().width2 + this.mouseX;
 				var13 = this.mouseY - posY;
-				if (posX >= ui(40) && var13 >= 0 && posX < ui(196) && var13 < 152) {
-					var5 = 152;
+				if (posX >= (C_CUSTOM_UI ? 0 : ui(40)) && var13 >= 0 && posX < (C_CUSTOM_UI ? var4 : ui(196))
+					&& var13 < var5) {
+					var5 = 152 * mapScale;
 					posX = this.getSurface().width2 - offX;
-					var4 = 156;
-					var6 = (int) ((192 + this.minimapRandom_2) * minimapZoom);
+					var4 = 156 * mapScale;
+					var6 = (int) ((192 + this.minimapRandom_2) * minimapZoom) * mapScale;
 					var7 = 255 & this.cameraRotation + this.minimapRandom_1;
 					if (!C_CUSTOM_UI)
 						posX += ui(40);
@@ -9398,10 +9424,10 @@ public final class mudclient implements Runnable {
 				// authentic settings GUI
 				if (this.authenticSettings) {
 					var4 = ui(36);
-					this.getSurface().drawBoxAlpha(var3, ui(36), var5, ui(65), Theme.panelFill(), 160);
-					this.getSurface().drawBoxAlpha(var3, ui(101), var5, ui(65), Theme.panelFillAlt(), 160);
-					this.getSurface().drawBoxAlpha(var3, ui(166), var5, ui(95), Theme.panelFill(), 160);
-					this.getSurface().drawBoxAlpha(var3, ui(261), var5, (this.insideTutorial || this.insideBlackHole) ? ui(55) : ui(40), Theme.panelFillAlt(), 160);
+					this.getSurface().drawBoxAlpha(var3, ui(36), var5, ui(65), Theme.panelFill(), 224);
+					this.getSurface().drawBoxAlpha(var3, ui(101), var5, ui(65), Theme.panelFillAlt(), 224);
+					this.getSurface().drawBoxAlpha(var3, ui(166), var5, ui(95), Theme.panelFill(), 224);
+					this.getSurface().drawBoxAlpha(var3, ui(261), var5, (this.insideTutorial || this.insideBlackHole) ? ui(55) : ui(40), Theme.panelFillAlt(), 224);
 				}
 
 				// custom settings GUI
