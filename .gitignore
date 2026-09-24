@@ -166,3 +166,7 @@ server/server_log.txt
 
 # Local environment (contains real credentials; see .env.example)
 .env
+
+# Local release/build outputs
+/dist/
+scripts/__pycache__/

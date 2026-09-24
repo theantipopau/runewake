@@ -39,7 +39,8 @@ engineering.
 ## Explore RuneWake
 
 - [Open the RuneWake landing page](https://theantipopau.github.io/runewake/)
-- [Browse community servers](web/server-browser/README.md)
+- [Browse community servers](https://theantipopau.github.io/runewake/server-browser/)
+- [Download the latest release](https://github.com/theantipopau/runewake/releases/latest)
 - [Open issues and discussions](https://github.com/theantipopau/runewake/issues)
 - [Read the project roadmap](ROADMAP.md)
 - [Read contribution guidance](CONTRIBUTING.md)
@@ -115,6 +116,8 @@ serves status on the WebSocket port.
 
 ## Downloads and launcher
 
+The first downloadable package is [RuneWake 0.1.0](https://github.com/theantipopau/runewake/releases/tag/v0.1.0). It is a clean player/operator bundle with the built client, launcher, server jars, server data, portable Windows JDK/Ant, and SHA-256 manifest. The release archive is not a source checkout and excludes local databases, logs, secrets, and developer state. See [`docs/RELEASES.md`](docs/RELEASES.md) for the contents, verification steps, and rebuild command.
+
 `PC_Launcher` builds `OpenRSC.jar`, a self-updating launcher that downloads
 and maintains the client cache through MD5 diffing. Published client assets
 are hosted on the repository's `game-files` branch; the republish procedure is
@@ -136,7 +139,8 @@ does not require an administrator install.
 | Visual verification | [`docs/RUNEWAKE_VISUAL_TEST_MATRIX.md`](docs/RUNEWAKE_VISUAL_TEST_MATRIX.md) |
 | Java libraries | [`docs/DEPENDENCIES.md`](docs/DEPENDENCIES.md) |
 | Static server browser | [`web/server-browser/README.md`](web/server-browser/README.md) |
-| GitHub landing page | [`web/site/README.md`](web/site/README.md) |
+| GitHub Pages layout | [`web/site/README.md`](web/site/README.md), [`docs/FREE_HOSTING.md`](docs/FREE_HOSTING.md) |
+| Releases | [`docs/RELEASES.md`](docs/RELEASES.md) |
 | Security | [`SECURITY.md`](SECURITY.md) |
 
 ## Minimum requirements

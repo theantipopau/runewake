@@ -34,7 +34,11 @@ checks every local HTML asset/reference before the files are published.
 The staging script never pushes and never switches branches, so it is safe to
 run in CI or locally. Keep the source page in `web/site/` so the repository
 remains the single source of truth. The current Pages deployment is
-<https://theantipopau.github.io/runewake/>.
+<https://theantipopau.github.io/runewake/>. The server browser is the nested
+page at <https://theantipopau.github.io/runewake/server-browser/>; it is a
+static listing, not a game-server host. GitHub Pages cannot run the Java
+server itself. For free/low-cost server hosting options, see
+[`docs/FREE_HOSTING.md`](../../docs/FREE_HOSTING.md).
 
 ## Assets
 
