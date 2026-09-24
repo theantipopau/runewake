@@ -190,7 +190,10 @@ def main() -> int:
     # manifest cannot contain its own stable digest without a fixed-point hash.
     files = sorted(path for path in bundle.rglob("*") if path.is_file() and path.name != "MANIFEST.sha256")
     manifest_lines = [f"{sha256(path)}  {path.relative_to(bundle).as_posix()}" for path in files]
-    (bundle / "MANIFEST.sha256").write_text("\n".join(manifest_lines) + "\n", encoding="utf-8")
+    # Write explicit LF bytes so the manifest works with sha256sum on Windows
+    # Git Bash as well as Unix shells; text-mode newline conversion can add
+    # carriage returns that become part of the parsed filename.
+    (bundle / "MANIFEST.sha256").write_bytes(("\n".join(manifest_lines) + "\n").encode("utf-8"))
 
     with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zipped:
         for path in sorted(bundle.rglob("*")):
