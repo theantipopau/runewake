@@ -18,11 +18,23 @@ out.
 
 ## GitHub Pages
 
-The `gh-pages` branch is the published site branch. The page can be copied
-there when the site layout changes, or served directly from the `web/site`
-directory if the repository's Pages configuration is changed to use the
-`develop` branch and `/web/site` as its source. Keep the source page in this
-directory so the repository remains the single source of truth.
+The `gh-pages` branch is the published site branch. From the repository root,
+stage and validate the complete published tree without changing branches:
+
+```sh
+bash scripts/build_pages.sh build/pages
+```
+
+Then copy the generated `build/pages/` contents into a clean checkout of
+`gh-pages`, review the diff, commit it, and push that branch normally. The
+staging script rewrites the source page's `../server-browser/` links for the
+published root and places the server browser under `/server-browser/`. It also
+checks every local HTML asset/reference before the files are published.
+
+The staging script never pushes and never switches branches, so it is safe to
+run in CI or locally. Keep the source page in `web/site/` so the repository
+remains the single source of truth. The current Pages deployment is
+<https://theantipopau.github.io/runewake/>.
 
 ## Assets
 
