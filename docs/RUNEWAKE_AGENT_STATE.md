@@ -460,3 +460,76 @@ Commits:
 3. Scaled side-panel tab icons via drawSpriteClipping in custom UI.
 4. `World.drawMinimapTile` 2× supersampled map pixels (crisper terrain).
 5. Continue baseline-driven theme migration (AuctionHouse, IronMan).
+
+## Session: minimap zoom + supersample + auction house (2026-09-24, continued)
+
+Same day, continuing from `58b0eccc6`. Three slices landed, one deferred.
+
+### Slice 1: minimap zoom (`33c6df17d`)
+- Survey finding from the earlier session held up: `drawMinimapSprite`'s
+  texel-ratio argument (192 + anti-bot jitter) is the single zoom constant
+  and the click-to-walk inverse divides by its exact reciprocal, so
+  multiplying the constant by a user factor on BOTH sides keeps clicks
+  true at any zoom.
+- New settings row "Minimap zoom" (list id 49, next to the interface-scale
+  row) cycling 100 -> 150 -> 200 -> 75 -> 100, persisted as
+  "minimap_zoom", loaded by PC `OpenRSC` with sanity bounds (invalid ->
+  100%, never blocks startup).
+- Default 1.0 leaves the integer constant bit-identical (authentic render).
+
+### Slice 2: minimap supersample (`0c9321db1`)
+- World now rasterises the 285x285 minimap into a private 570x570 buffer
+  via `mm*` helpers (clipping semantics copied from GraphicsController:
+  inclusive-edge runs, boundary-clip exactness), then publishes through a
+  2x2 box downsample into `minimapSprite`.
+- Consumer geometry untouched by construction: sprite stays 285x285, so
+  zoom setting and click inverse need no changes. Side benefit: the map
+  no longer detours through the live main surface.
+- The second wall-drawing block feeding the discarded WORLDMAP copy was
+  left byte-identical (its output is never consumed).
+
+### Slice 3: auction house (`94b8d3541`)
+- Largest unmigrated UI file (~89 literals) migrated to a new
+  `Theme.auction*` family (32 accessors, ~100 refs in AuctionHouse.java).
+- Role map covered the three button schemes (plain / fancy / text-hit
+  with idle-checked-hover), danger states for cancel-arming, and the
+  file's quirks preserved verbatim in classic mode: the `0x45454545`
+  alpha-bleed row fill, the 7-digit `0xfffffff` highlight, decimal
+  red/green colours, and the shared `0x980000` behind the cancel button
+  and its confirm strip.
+- Self-caught defect: pass A initially mapped drawTextHit's checked TEXT
+  to a FILL token (dark-on-dark) — fixed to the purpose-built
+  `auctionTextHitActiveColor` before compile.
+- Tripwire baseline 254 -> 228 pairs (pure removals, nothing added).
+
+### Deferred: side-panel icon scaling
+Panel sprite entries are decorative (no hit regions involved), but
+`drawSpriteClipping`'s requiresShift branch returns early — draws
+nothing — when the sprite's something1/2 metadata is zero. Whether the
+LEFTARROW/RIGHTARROW GUI sprites carry that metadata cannot be verified
+without a display; an invisible-arrow regression is worse than native-
+size arrows. Revisit after the human visual pass.
+
+### Verification
+- Per slice: `ant compile` (covers Client_Base + PC_Client sources),
+  smoke launch alive 10 s (log shows only the known no-local-server
+  getServerConfig refusal), tripwire pass. AuctionHouse diff verified
+  whitespace-neutral against HEAD. No visual inspection (no display).
+
+### Process notes (tools)
+- Confirmed again: GNU sed `a\`/`i\` in this Git Bash eats one leading
+  tab of inserted text. Reliable alternative used throughout: `r file`
+  inserts (append-after-match from a prepared file) plus line-scoped
+  `sed Ns/…/…` for mid-block placement and one-line fixes.
+- `file` reporting Theme.java as "ASCII text" (was "CRLF ...") after an
+  insert is autocrlf cosmetics; committed blobs are LF in this repo and
+  `git diff` shows only real content lines.
+- Multi-value `sed -e`/`;`-chained literal migrations: run longer
+  literals before their prefixes (0x45454545 before 0x454545) and audit
+  leftovers with `grep -oP '0x[0-9A-Fa-f]+' | sort | uniq -c` afterwards.
+
+### Exact next tasks
+1. Human visual pass (top blocker; now includes zoom cycling, supersampled
+   map pixels and the auction house premium scheme).
+2. IronManInterface migration (~25 literals, own button family).
+3. Side-panel icon scaling, deferred pending the visual pass above.

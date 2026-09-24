@@ -91,3 +91,24 @@ First priorities for the human pass after the minimap/compass slice
    (all new colours resolve to black and the added draws are no-ops).
 3. Per-resolution matrix above still applies; check the frame at 1024×768
    (minimum) and 3840×2160 (max scale) specifically.
+
+## Additions from the 2026-09-24 second pass (all unverified visually)
+
+First priorities for the human pass after the zoom, supersample and
+auction-house slices (commits 33c6df17d, 0c9321db1, 94b8d3541):
+
+1. **Minimap zoom**: settings row cycles 100/150/200/75%; at each level
+   the map fills sensibly, dots stay visible, and clicking a tile walks
+   to the tile under the cursor (accuracy matters most at 200%).
+2. **Supersampled map pixels**: walls read as continuous soft lines
+   rather than single pixels; terrain colours unchanged overall (they
+   are averaged, so check for washed-out water/roads); zoom 100% should
+   look like the old map but smoother.
+3. **Auction house (premium mode)**: tab/filter/checked button states
+   legible (hover uses the pressed token under white text — verify
+   contrast); armed-cancel rows clearly red; yellow headings now aged
+   gold; item names and prices readable on inset panels.
+4. **Auction house (classic mode)**: must be pixel-identical to previous
+   builds (every accessor returns the inherited literal, including the
+   0x45454545 and 0xfffffff quirks).
+5. Per-resolution matrix above still applies to all of the above.
