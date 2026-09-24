@@ -8518,6 +8518,21 @@ public final class mudclient implements Runnable {
 				var4 = maxY - ui(182);
 			int var5 = ui(196);
 			int var6 = ui(182);
+			if (C_CUSTOM_UI) {
+				// Opaque backdrop behind the translucent social-panel fills. The classic UI
+				// gets its MENUSOCIAL backing sprite here; custom UI has none, so without this
+				// the 3D world bleeds through the tab strip and the list rows. The height
+				// matches the boxes the clan tab stacks below the body when you are in a clan.
+				int socialTop = var4;
+				int socialHeight = var6;
+				if (this.panelSocialTab == 1) {
+					socialTop -= ui(19);
+					socialHeight += ui(19);
+					if (clan.inClan())
+						socialHeight += ui(48);
+				}
+				this.getSurface().drawBoxAlpha(var3, socialTop, var5, socialHeight, Theme.panelFill(), 224);
+			}
 			int maxWidth = getGameWidth() - ui(23);
 			int minWidth = getGameWidth() - ui(83);
 			if (var2) {
@@ -8949,6 +8964,14 @@ public final class mudclient implements Runnable {
 			if (C_CUSTOM_UI)
 				magicPanelYStart = maxY - ui(182);
 			int magicPanelWidth = ui(196);
+			if (C_CUSTOM_UI) {
+				// Same opaque-backdrop treatment as the other side panels; the Android
+				// cast-last-spell box stacks one more block underneath when present.
+				int magicBackdropHeight = ui(182);
+				if (isAndroid())
+					magicBackdropHeight += ui(50);
+				this.getSurface().drawBoxAlpha(magicPanelX, magicPanelYStart, magicPanelWidth, magicBackdropHeight, Theme.panelFill(), 224);
+			}
 			int var8;
 			int var7 = var8 = Theme.tabUnselectedFill();
 			if (this.magicOrPrayerList != 0) {
@@ -11178,6 +11201,11 @@ public final class mudclient implements Runnable {
 				height = ui(262);
 			if (Config.S_WANT_OPENPK_POINTS) {
 				height = ui(186);
+			}
+			if (C_CUSTOM_UI) {
+				// Opaque backdrop behind the translucent stats/quests body and tab strip
+				// (classic UI draws its SKILLSTAB backing sprite instead).
+				this.getSurface().drawBoxAlpha(x, y, width, height, Theme.panelFill(), 224);
 			}
 			int var8;
 			int yFromTopDistance = var8 = Theme.tabUnselectedFill();
