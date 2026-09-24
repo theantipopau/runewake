@@ -246,7 +246,20 @@ confirm before moving to the next.
       right, can't click it" mismatch this plan was careful to avoid
       elsewhere does not apply here.
 
-## Companion fix: tab-panel auto-close boundaries (RESOLVED, see step 1 above)
+## Site and dependency maintenance (2026-09-24)
+
+The static GitHub landing page is deliberately separate from the native UI
+scaling pipeline. It uses responsive CSS and a dark-fantasy palette derived
+from the same premium Theme roles, but it must not be used to infer native
+client scaling or visual-test status. The two linked gameplay captures are
+reduced pre-fix documentation frames; the human matrix pass remains the source
+of truth for current client appearance.
+
+Vendored Java dependencies are now checked independently of UI rendering:
+`scripts/check_dependencies.sh` verifies named Ant jar references, and
+`docs/DEPENDENCIES.md` records the inventory and the known JDA/SLF4J runtime
+mismatch. This keeps build hygiene from being conflated with a visual pass.
+
 
 Two separate, structurally-parallel boundary checks gate whether an open
 right-side tab panel counts as "still hovered," one per UI mode

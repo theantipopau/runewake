@@ -534,7 +534,56 @@ size arrows. Revisit after the human visual pass.
 2. IronManInterface migration (~25 literals, own button family).
 3. Side-panel icon scaling, deferred pending the visual pass above.
 
-## Session: video-driven UI diagnosis + fixes (2026-09-24, third pass)
+## Session: 2026-09-24 (landing page, dependency guard, README)
+
+### Completed
+1. **Dependency guard and documentation** (`5107957ec`): added
+   `docs/DEPENDENCIES.md`, repaired stale named server jars in
+   `server/build.xml`, added `scripts/check_dependencies.sh`, and wired
+   `dependencyGuard` beside the existing theme guard in `.gitlab-ci.yml`.
+   The server core and plugins both compile with the repaired classpaths.
+2. **Custom side-panel backdrops** (`24ff007f0`): social/clan/ignore,
+   magic/prayer, and stats/quests receive opaque `Theme.panelFill()`
+   backdrops only under `C_CUSTOM_UI`; the branch-specific stacked heights
+   are preserved, and classic UI remains guarded.
+3. **Static landing page**: created `web/site/index.html` and
+   `web/site/README.md`, using the premium dark-fantasy palette, responsive
+   CSS, local links, a hero/feature/contributor/documentation structure, and
+   optimised owner-supplied artwork copies. The page does not depend on a
+   framework or remote font.
+4. **README and documentation**: rewrote `README.md` as a project guide with
+   badges, quick paths, feature map, documentation index, Pages link, and
+   historical/legal attribution. Updated asset, visual, modernisation, and
+   project-state records.
+
+### Verification actually run
+- `bash scripts/check_dependencies.sh`: **passed**.
+- `bash scripts/check_theme_literals.sh`: **passed**, 228 pairs.
+- `cd server && ant compile_core && ant compile_plugins`: **passed**.
+- `Client_Base ant compile` had passed before the committed backdrop slice;
+  rerun in the final verification pass before push.
+- Image dimensions and output sizes were checked with Pillow.
+- No native game window or display is available, so side-panel and landing
+  page appearance remains explicitly unverified. The extracted gameplay
+  frames are pre-fix documentation art, not visual-test evidence.
+
+### Untracked files not for commit
+- `.freebuff/` is client metadata and must remain uncommitted.
+- `runewake_frame_analysis.html` is a scratch contact sheet and must remain
+  out of commits.
+- `.env` must remain untracked; never add it to a commit.
+
+### Next steps
+1. Run the final client compile, guards, and static-site sanity checks.
+2. Human visual pass at the matrix resolutions, especially the three new
+   custom-UI panel backdrops and the landing page at phone/tablet/desktop.
+3. Keep the JDA/SLF4J mismatch as a separate runtime migration decision;
+   do not add mismatched 2.x jars as a false fix.
+4. Publish the landing page through the repository's GitHub Pages branch
+   workflow after the develop changes are pushed.
+
+---
+
 
 User supplied a 26s gameplay recording (2496x1482, custom UI, live
 server) plus answers: texture popping = walls/objects blinking, scaling

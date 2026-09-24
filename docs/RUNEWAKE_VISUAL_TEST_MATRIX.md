@@ -125,3 +125,28 @@ Human re-test requested at the recording's window (2496x1482, custom UI):
    zoom setting still composes with the scale.
 4. Classic UI (authentic tab bar): unchanged — map position, size and
    click region must be pixel-identical to previous builds.
+
+## Additions from the 2026-09-24 site and side-panel pass
+
+All items below are unverified in the agent environment (no native display).
+The landing page can be checked in a browser separately from the Java client.
+
+1. **Custom social/clan/ignore panel** (`24ff007f0`): the new opaque
+   `panelFill` backdrop must cover the tab strip and list body without
+   changing the clan-tab stacked action-box height; world bleed should be
+   limited to intentional inset cells.
+2. **Custom magic/prayer panel** (`24ff007f0`): backdrop must include the
+   Android cast-last-spell block when present and must not cover neighbouring
+   tabs or clip the bottom edge.
+3. **Custom stats/quests panel** (`24ff007f0`): backdrop must align with the
+   OpenPK height override and remain opaque enough over bright terrain.
+4. **Classic mode regression**: the three new backdrop draws are guarded by
+   `C_CUSTOM_UI`; compare the inherited sprite-backed panels for pixel
+   identity.
+5. **Static landing page**: check `web/site/index.html` at narrow phone,
+   tablet, and desktop widths; verify the hero image, document flow, and
+   links to `../server-browser/` load when served from `web/`. The browser
+   page is documentation, not a client visual test.
+6. **Landing-page captures**: `frame-0120.jpg` and `frame-0221.jpg` are
+   pre-fix gameplay captures used only as illustrative site art. They must
+   not be treated as evidence that the current client panels look correct.

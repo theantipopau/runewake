@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1b1712">
+  <meta name="description" content="RuneWake is a community-driven revival of RuneScape Classic with a modern client, configurable servers, and an open development community.">
+  <title>RuneWake — Wake the world</title>
+  <link rel="icon" type="image/png" href="assets/favicon-512.png">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #1b1712;
+      --bg-deep: #120f0c;
+      --panel: #2a241d;
+      --panel-raised: #342c23;
+      --panel-soft: rgba(42, 36, 29, .78);
+      --text: #ece6db;
+      --muted: #a89d8c;
+      --faint: #71675a;
+      --accent: #d99a5b;
+      --accent-bright: #f0bb7b;
+      --teal: #6eb6ba;
+      --border: #453b2e;
+      --border-bright: #72583a;
+      --shadow: 0 24px 80px rgba(0, 0, 0, .35);
+      --serif: Georgia, 'Times New Roman', serif;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 80% 5%, rgba(110, 182, 186, .08), transparent 30rem),
+        radial-gradient(circle at 8% 25%, rgba(217, 154, 91, .08), transparent 28rem),
+        var(--bg);
+      font-family: var(--sans);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      z-index: -1;
+      inset: 0;
+      pointer-events: none;
+      opacity: .18;
+      background-image: linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.014) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, black, transparent 80%);
+    }
+    a { color: inherit; }
+    .wrap { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
+    .eyebrow {
+      color: var(--accent);
+      font-size: .73rem;
+      font-weight: 800;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+    }
+    .muted { color: var(--muted); }
+    .site-header {
+      position: sticky;
+      z-index: 10;
+      top: 0;
+      border-bottom: 1px solid rgba(69, 59, 46, .8);
+      background: rgba(27, 23, 18, .9);
+      backdrop-filter: blur(16px);
+    }
+    .nav { min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+    .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font-weight: 800; letter-spacing: .04em; }
+    .brand-mark { width: 38px; height: 38px; object-fit: cover; border: 1px solid var(--border-bright); border-radius: 8px; background: var(--panel); }
+    .brand small { display: block; color: var(--muted); font-size: .62rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; }
+    .nav-links { display: flex; align-items: center; gap: 22px; color: var(--muted); font-size: .88rem; }
+    .nav-links a { text-decoration: none; transition: color .2s ease; }
+    .nav-links a:hover, .nav-links a:focus-visible { color: var(--accent-bright); }
+    .nav-cta, .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: 1px solid var(--border-bright);
+      border-radius: 7px;
+      padding: .65rem 1rem;
+      background: var(--accent);
+      color: #241a0d;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform .2s ease, background .2s ease, border-color .2s ease;
+    }
+    .nav-cta { padding: .5rem .8rem; font-size: .82rem; }
+    .nav-cta:hover, .button:hover { transform: translateY(-2px); background: var(--accent-bright); border-color: var(--accent-bright); }
+    .button.secondary { background: transparent; color: var(--text); border-color: var(--border-bright); }
+    .button.secondary:hover { background: var(--panel-raised); color: var(--accent-bright); }
+    .hero { display: grid; grid-template-columns: .92fr 1.08fr; align-items: center; gap: clamp(36px, 6vw, 88px); min-height: 700px; padding: 88px 0 100px; }
+    h1, h2, h3 { font-family: var(--serif); font-weight: 500; line-height: 1.08; }
+    h1 { max-width: 700px; margin: 16px 0 24px; font-size: clamp(3.2rem, 7vw, 6.4rem); letter-spacing: -.055em; }
+    h1 em { color: var(--accent); font-style: normal; }
+    .hero-copy { max-width: 560px; color: var(--muted); font-size: 1.08rem; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+    .hero-notes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 28px; }
+    .tag { border: 1px solid var(--border); border-radius: 99px; padding: .28rem .65rem; color: var(--muted); font-size: .75rem; }
+    .hero-art { position: relative; }
+    .hero-art::before { content: ''; position: absolute; z-index: -1; inset: 8% -5% -8% 8%; border: 1px solid rgba(217,154,91,.22); transform: rotate(3deg); }
+    .hero-art::after { content: ''; position: absolute; z-index: -1; inset: 3% 4% -3% -4%; border: 1px solid rgba(110,182,186,.2); transform: rotate(-3deg); }
+    .art-frame { overflow: hidden; border: 1px solid var(--border-bright); border-radius: 12px; background: var(--panel); box-shadow: var(--shadow); }
+    .art-frame img { display: block; width: 100%; height: auto; }
+    .art-caption { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: .8rem 1rem; color: var(--muted); font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; }
+    .status { color: #8ed39a; white-space: nowrap; }
+    .status::before { content: '●'; margin-right: 7px; font-size: .65rem; }
+    .section { padding: 100px 0; border-top: 1px solid rgba(69, 59, 46, .65); }
+    .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 32px; margin-bottom: 42px; }
+    h2 { margin: 10px 0 0; font-size: clamp(2.1rem, 4vw, 3.5rem); letter-spacing: -.035em; }
+    .section-heading p { max-width: 420px; margin: 0; color: var(--muted); }
+    .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .card { position: relative; min-height: 260px; padding: 26px; overflow: hidden; border: 1px solid var(--border); border-radius: 10px; background: linear-gradient(145deg, rgba(52,44,35,.92), rgba(34,29,23,.92)); }
+    .card::after { content: ''; position: absolute; right: -36px; bottom: -50px; width: 150px; height: 150px; border: 1px solid rgba(217,154,91,.2); transform: rotate(45deg); }
+    .card-icon { display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 30px; border: 1px solid var(--border-bright); border-radius: 7px; color: var(--accent-bright); font-family: var(--serif); font-size: 1.35rem; }
+    .card h3 { margin: 0 0 10px; font-size: 1.45rem; }
+    .card p { margin: 0; color: var(--muted); font-size: .9rem; }
+    .split { display: grid; grid-template-columns: .9fr 1.1fr; gap: 70px; align-items: center; }
+    .split-art { overflow: hidden; border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); }
+    .split-art img { display: block; width: 100%; }
+    .checklist { display: grid; gap: 16px; margin-top: 30px; }
+    .check { display: grid; grid-template-columns: 26px 1fr; gap: 12px; align-items: start; }
+    .check b { color: var(--teal); }
+    .check strong { display: block; margin-bottom: 2px; }
+    .check span { color: var(--muted); font-size: .9rem; }
+    .paths { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .path { display: flex; min-height: 220px; flex-direction: column; padding: 25px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel-soft); }
+    .path .number { color: var(--accent); font-family: var(--serif); font-size: 2.2rem; }
+    .path h3 { margin: 16px 0 8px; font-size: 1.35rem; }
+    .path p { margin: 0 0 20px; color: var(--muted); font-size: .88rem; }
+    .path a { margin-top: auto; color: var(--accent-bright); font-size: .85rem; font-weight: 800; text-decoration: none; }
+    .quote { padding: 56px clamp(25px, 6vw, 80px); border: 1px solid var(--border-bright); border-radius: 12px; background: linear-gradient(120deg, rgba(110,182,186,.08), rgba(217,154,91,.12)); }
+    blockquote { margin: 0; font-family: var(--serif); font-size: clamp(1.65rem, 3vw, 2.65rem); line-height: 1.25; }
+    blockquote cite { display: block; margin-top: 20px; color: var(--muted); font-family: var(--sans); font-size: .8rem; font-style: normal; letter-spacing: .08em; text-transform: uppercase; }
+    .docs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .doc-link { display: block; padding: 20px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); text-decoration: none; background: rgba(42,36,29,.52); }
+    .doc-link:hover { border-color: var(--accent); background: var(--panel-raised); }
+    .doc-link b { display: block; margin-bottom: 6px; color: var(--accent-bright); }
+    .doc-link span { color: var(--muted); font-size: .82rem; }
+    footer { padding: 36px 0 50px; border-top: 1px solid rgba(69,59,46,.65); color: var(--muted); font-size: .8rem; }
+    .footer-row { display: flex; justify-content: space-between; gap: 24px; }
+    .footer-row a { color: var(--accent); }
+    @media (max-width: 850px) {
+      .nav-links { display: none; }
+      .hero, .split { grid-template-columns: 1fr; }
+      .hero { min-height: 0; padding-top: 64px; }
+      .hero-art { max-width: 720px; }
+      .feature-grid, .paths { grid-template-columns: 1fr 1fr; }
+      .docs-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1120px); }
+      .section { padding: 70px 0; }
+      .section-heading { display: block; }
+      .section-heading p { margin-top: 18px; }
+      h1 { font-size: clamp(3rem, 17vw, 4.4rem); }
+      .feature-grid, .paths, .docs-grid { grid-template-columns: 1fr; }
+      .footer-row { display: block; }
+      .footer-row > * + * { margin-top: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="index.html" aria-label="RuneWake home">
+        <img class="brand-mark" src="assets/favicon-512.png" alt="">
+        <span>RuneWake<small>community revival</small></span>
+      </a>
+      <nav class="nav-links" aria-label="Primary navigation">
+        <a href="#features">Features</a>
+        <a href="#paths">Get involved</a>
+        <a href="#docs">Docs</a>
+        <a href="../server-browser/">Server browser</a>
+      </nav>
+      <a class="nav-cta" href="https://github.com/theantipopau/runewake">View on GitHub ↗</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap hero">
+      <div>
+        <div class="eyebrow">Open source · RuneScape Classic · 2026</div>
+        <h1>Wake the world.<br><em>Build your legacy.</em></h1>
+        <p class="hero-copy">RuneWake is a community-driven revival of RuneScape Classic: a faithful game foundation wrapped in a modern, responsive client and a server platform made to be configured, hosted, and extended in the open.</p>
+        <div class="hero-actions">
+          <a class="button" href="https://github.com/theantipopau/runewake#readme">Explore RuneWake ↗</a>
+          <a class="button secondary" href="../server-browser/">Find a server</a>
+        </div>
+        <div class="hero-notes" aria-label="Project characteristics">
+          <span class="tag">AGPL-3.0</span><span class="tag">Java 8 compatible</span><span class="tag">Self-hostable</span><span class="tag">No pay-to-win</span>
+        </div>
+      </div>
+      <div class="hero-art">
+        <div class="art-frame">
+          <img src="assets/frame-0120.jpg" width="1200" height="713" alt="RuneWake gameplay showing the custom interface with a world map and side panels">
+          <div class="art-caption"><span>World view · custom interface</span><span class="status">Build in motion</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <div class="wrap">
+        <div class="section-heading">
+          <div><div class="eyebrow">The RuneWake shape</div><h2>Old soul. New signal.</h2></div>
+          <p>RuneWake keeps the classic game's readable, tactile rhythm while making the surrounding technology easier to run, inspect, and improve.</p>
+        </div>
+        <div class="feature-grid">
+          <article class="card"><div class="card-icon">01</div><h3>Faithful by default</h3><p>Classic rendering remains the baseline. The authentic interface keeps its inherited sprites and colours while the modern path is available when you want it.</p></article>
+          <article class="card"><div class="card-icon">02</div><h3>Server-shaped</h3><p>Configure game modes, rates, worlds, clans, auctions, holidays, and more from server configuration instead of rebuilding the client for every idea.</p></article>
+          <article class="card"><div class="card-icon">03</div><h3>Made to look again</h3><p>Resolution-aware UI scaling, a minimap you can actually read, premium dark-fantasy theme tokens, and a launcher that keeps the client current.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap split">
+        <div class="split-art"><img src="assets/frame-0221.jpg" width="1200" height="713" loading="lazy" alt="RuneWake custom interface showing inventory and minimap panels over the game world"></div>
+        <div>
+          <div class="eyebrow">A clearer window</div>
+          <h2>Keep the game in view.</h2>
+          <p class="muted">The client is being modernised without throwing away the character of the original. Panels scale with the window, the map has a readable frame and zoom, and the optional theme gives the interface a darker, warmer edge.</p>
+          <div class="checklist">
+            <div class="check"><b>↗</b><div><strong>Responsive interface</strong><span>Design-space scaling follows the window instead of leaving tiny controls on a large display.</span></div></div>
+            <div class="check"><b>◈</b><div><strong>Premium dark-fantasy theme</strong><span>Central tokens bring bronze, rune-blue, parchment, and ink into a consistent visual system.</span></div></div>
+            <div class="check"><b>⌁</b><div><strong>Tools for operators</strong><span>Self-hosting, server status pages, launcher packaging, and dependency checks live beside the source.</span></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="paths">
+      <div class="wrap">
+        <div class="section-heading">
+          <div><div class="eyebrow">Choose your path</div><h2>There is a place to start.</h2></div>
+          <p>Whether you came to play, host a world, or make the client better, the repository has a route in.</p>
+        </div>
+        <div class="paths">
+          <article class="path"><div class="number">I.</div><h3>Play RuneWake</h3><p>Build the client, connect to a local server, or use the static browser to find a community world.</p><a href="https://github.com/theantipopau/runewake#playing-locally">Read the getting started →</a></article>
+          <article class="path"><div class="number">II.</div><h3>Host a world</h3><p>Use the simple Windows path, Docker, MariaDB, or the Makefile helpers to bring a server online.</p><a href="https://github.com/theantipopau/runewake#hosting-your-own-server">See hosting guides →</a></article>
+          <article class="path"><div class="number">III.</div><h3>Make it yours</h3><p>Follow the roadmap, read the audits, pick an issue, and send a focused change with its verification notes.</p><a href="https://github.com/theantipopau/runewake/blob/develop/CONTRIBUTING.md">Contribute to the fork →</a></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap"><div class="quote"><blockquote>“A revival is not a screenshot. It is a world that still boots, still changes, and still gives people something to build together.”<cite>RuneWake project direction</cite></blockquote></div></div>
+    </section>
+
+    <section class="section" id="docs">
+      <div class="wrap">
+        <div class="section-heading"><div><div class="eyebrow">The field notes</div><h2>Know before you build.</h2></div><p>Modernisation notes, visual test coverage, asset provenance, and dependency decisions are documented in the open.</p></div>
+        <div class="docs-grid">
+          <a class="doc-link" href="https://github.com/theantipopau/runewake/blob/develop/README.md"><b>README</b><span>Project map, downloads, and first steps.</span></a>
+          <a class="doc-link" href="https://github.com/theantipopau/runewake/blob/develop/UI_SCALING_PLAN.md"><b>UI scaling plan</b><span>How resolution-aware layout is being made safe.</span></a>
+          <a class="doc-link" href="https://github.com/theantipopau/runewake/tree/develop/docs"><b>Project audits</b><span>Architecture, branding, assets, and visual checks.</span></a>
+          <a class="doc-link" href="https://github.com/theantipopau/runewake/blob/develop/docs/DEPENDENCIES.md"><b>Dependencies</b><span>Vendored jars, licences, and upgrade guardrails.</span></a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-row">
+      <div>RuneWake · an open community revival of RuneScape Classic.</div>
+      <div><a href="https://github.com/theantipopau/runewake">Source</a> · <a href="https://github.com/theantipopau/runewake/blob/develop/LICENSE">AGPL-3.0</a> · <a href="https://github.com/theantipopau/runewake/issues">Issues</a></div>
+    </div>
+  </footer>
+</body>
+</html>
