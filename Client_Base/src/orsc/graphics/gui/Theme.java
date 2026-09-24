@@ -401,6 +401,198 @@ public final class Theme {
 	// premium values reuse the established Runewake palette.
 	// ------------------------------------------------------------------
 	private static final int CLASSIC_SOCIALGUI_BODY = 0x1D1711;
+	// === Auction house (AuctionHouse.java) ===
+
+	private static final int CLASSIC_AUCTION_PANEL_BORDER = 0x343434;
+	private static final int CLASSIC_AUCTION_LIST_BAND_LINE = 0x222222;
+	private static final int CLASSIC_AUCTION_INPUT_FILL = 0x0C0C0C;
+	private static final int CLASSIC_AUCTION_INPUT_BORDER = 0x35231B;
+	private static final int CLASSIC_AUCTION_HEADER_BAND_FILL = 0x6b8e23;
+	private static final int CLASSIC_AUCTION_TABLE_HEADER_FILL = 0x3E557C;
+	private static final int CLASSIC_AUCTION_LIST_BAND_FILL = 0x192638;
+	private static final int CLASSIC_AUCTION_LIST_BAND_BORDER = 0x292D30;
+	private static final int CLASSIC_AUCTION_LIST_ROW_SELECTED_DANGER = 0xff0000;
+	private static final int CLASSIC_AUCTION_LIST_ROW_ARMED_DANGER = 0x45454545;
+	private static final int CLASSIC_AUCTION_CANCEL_CONFIRM_FILL = 0x980000;
+	private static final int CLASSIC_AUCTION_CANCEL_BUTTON_FILL = 0x980000;
+	private static final int CLASSIC_AUCTION_CANCEL_BUTTON_HOVER_FILL = 0x500000;
+	private static final int CLASSIC_AUCTION_CANCEL_BUTTON_BORDER = 0xC8C7BE;
+	private static final int CLASSIC_AUCTION_BUTTON_IDLE_FILL = 0x333333;
+	private static final int CLASSIC_AUCTION_FANCY_BUTTON_IDLE_FILL = 0x0A2B56;
+	private static final int CLASSIC_AUCTION_BUTTON_CHECKED_FILL = 0x659CDE;
+	private static final int CLASSIC_AUCTION_BUTTON_HOVER_FILL = 0x263751;
+	private static final int CLASSIC_AUCTION_BUTTON_BORDER = 0x242424;
+	private static final int CLASSIC_AUCTION_FANCY_BUTTON_BORDER = 0xBFA086;
+	private static final int CLASSIC_AUCTION_TEXT_HIT_IDLE = 0xffffff;
+	private static final int CLASSIC_AUCTION_TEXT_HIT_ACTIVE = 0x6b8e23;
+	private static final int CLASSIC_AUCTION_TEXT_HIT_HOVER = 0xFF0000;
+	private static final int CLASSIC_AUCTION_HEADING = 0xFFFF00;
+	private static final int CLASSIC_AUCTION_SELECTOR_PANEL_FILL = 0x454545;
+	private static final int CLASSIC_AUCTION_SPINNER_BORDER = 0x555555;
+	private static final int CLASSIC_AUCTION_SEARCH_FILL = 0x222222;
+	private static final int CLASSIC_AUCTION_SEARCH_BORDER = 0x474843;
+	private static final int CLASSIC_AUCTION_PRICE_LABEL = 0xc1b575;
+	private static final int CLASSIC_AUCTION_INVENTORY_SLOT = 0xd0d0d0;
+
+	/** Outer frames of the auction window, list boxes and tabs. */
+	public static int auctionPanelBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : CLASSIC_AUCTION_PANEL_BORDER;
+	}
+
+	/** Alternating-list separator lines. */
+	public static int auctionListBandLine() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK : CLASSIC_AUCTION_LIST_BAND_LINE;
+	}
+
+	/** Input-box fill for price and quantity fields. */
+	public static int auctionInputFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_INSET : CLASSIC_AUCTION_INPUT_FILL;
+	}
+
+	/** Frame around price and quantity input boxes. */
+	public static int auctionInputBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : CLASSIC_AUCTION_INPUT_BORDER;
+	}
+
+	/** Header bands: categories column and buy/sell mode selector. */
+	public static int auctionHeaderBandFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_AUCTION_HEADER_BAND_FILL;
+	}
+
+	/** Header row of the auction listing table. */
+	public static int auctionTableHeaderFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_AUCTION_TABLE_HEADER_FILL;
+	}
+
+	/** Alternating-list row band. */
+	public static int auctionListBandFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_INSET : CLASSIC_AUCTION_LIST_BAND_FILL;
+	}
+
+	/** Border around the alternating-list block. */
+	public static int auctionListBandBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK : CLASSIC_AUCTION_LIST_BAND_BORDER;
+	}
+
+	/** Row fill of the selected (about-to-be-cancelled) auction entry. */
+	public static int auctionListRowSelectedDanger() {
+		return Config.C_PREMIUM_THEME ? DANGER : CLASSIC_AUCTION_LIST_ROW_SELECTED_DANGER;
+	}
+
+	/** Row fill of the auction entry armed for cancellation. */
+	public static int auctionListRowArmedDanger() {
+		return Config.C_PREMIUM_THEME ? PRESSED : CLASSIC_AUCTION_LIST_ROW_ARMED_DANGER;
+	}
+
+	/** Confirm strip under the cancel button. */
+	public static int auctionCancelConfirmFill() {
+		return Config.C_PREMIUM_THEME ? DANGER : CLASSIC_AUCTION_CANCEL_CONFIRM_FILL;
+	}
+
+	/** Cancel-auction button fill. */
+	public static int auctionCancelButtonFill() {
+		return Config.C_PREMIUM_THEME ? DANGER : CLASSIC_AUCTION_CANCEL_BUTTON_FILL;
+	}
+
+	/** Cancel-auction button fill while hovered. */
+	public static int auctionCancelButtonHoverFill() {
+		return Config.C_PREMIUM_THEME ? PRESSED : CLASSIC_AUCTION_CANCEL_BUTTON_HOVER_FILL;
+	}
+
+	/** Border of the cancel-auction button. */
+	public static int auctionCancelButtonBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : CLASSIC_AUCTION_CANCEL_BUTTON_BORDER;
+	}
+
+	/** Idle fill of plain auction buttons. */
+	public static int auctionButtonIdleFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_AUCTION_BUTTON_IDLE_FILL;
+	}
+
+	/** Idle fill of the fancy (framed) auction buttons. */
+	public static int auctionFancyButtonIdleFill() {
+		return Config.C_PREMIUM_THEME ? OVERLAY_SCRIM : CLASSIC_AUCTION_FANCY_BUTTON_IDLE_FILL;
+	}
+
+	/** Fill of a checked/active auction button. */
+	public static int auctionButtonCheckedFill() {
+		return Config.C_PREMIUM_THEME ? SELECTION : CLASSIC_AUCTION_BUTTON_CHECKED_FILL;
+	}
+
+	/** Fill of a hovered unchecked auction button. */
+	public static int auctionButtonHoverFill() {
+		return Config.C_PREMIUM_THEME ? PRESSED : CLASSIC_AUCTION_BUTTON_HOVER_FILL;
+	}
+
+	/** Border of plain auction buttons. */
+	public static int auctionButtonBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK : CLASSIC_AUCTION_BUTTON_BORDER;
+	}
+
+	/** Border of the fancy (framed) auction buttons. */
+	public static int auctionFancyButtonBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : CLASSIC_AUCTION_FANCY_BUTTON_BORDER;
+	}
+
+	/** Clickable category/text heading in its idle state. */
+	public static int auctionTextHitIdleColor() {
+		return Config.C_PREMIUM_THEME ? TEXT_MUTED : CLASSIC_AUCTION_TEXT_HIT_IDLE;
+	}
+
+	/** Clickable category/text heading while active. */
+	public static int auctionTextHitActiveColor() {
+		return Config.C_PREMIUM_THEME ? ACCENT_SECONDARY : CLASSIC_AUCTION_TEXT_HIT_ACTIVE;
+	}
+
+	/** Clickable category/text heading while hovered. */
+	public static int auctionTextHitHoverColor() {
+		return Config.C_PREMIUM_THEME ? DANGER : CLASSIC_AUCTION_TEXT_HIT_HOVER;
+	}
+
+	/** Yellow headings drawn over panel insets. */
+	public static int auctionHeadingColor() {
+		return Config.C_PREMIUM_THEME ? ACCENT_SECONDARY : CLASSIC_AUCTION_HEADING;
+	}
+
+	/** Large inset panel behind the item selector list. */
+	public static int auctionSelectorPanelFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_INSET : CLASSIC_AUCTION_SELECTOR_PANEL_FILL;
+	}
+
+	/** Border of the quantity spinner box. */
+	public static int auctionSpinnerBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : CLASSIC_AUCTION_SPINNER_BORDER;
+	}
+
+	/** Search box fill in the browse tab. */
+	public static int auctionSearchFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_INSET : CLASSIC_AUCTION_SEARCH_FILL;
+	}
+
+	/** Search box border. */
+	public static int auctionSearchBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : CLASSIC_AUCTION_SEARCH_BORDER;
+	}
+
+	/** Price labels ("Buyout:", "Each:"). */
+	public static int auctionPriceLabelColor() {
+		return Config.C_PREMIUM_THEME ? ACCENT_SECONDARY : CLASSIC_AUCTION_PRICE_LABEL;
+	}
+
+	/** Inventory slot count text. */
+	public static int auctionInventorySlotColor() {
+		return Config.C_PREMIUM_THEME ? TEXT_PRIMARY : CLASSIC_AUCTION_INVENTORY_SLOT;
+	}
+
+	/** General white body text on the darkened auction panels. */
+	public static int auctionTextPrimaryColor() {
+		return Config.C_PREMIUM_THEME ? TEXT_PRIMARY : 0xffffff;
+	}
+
+	/** Green amount text on auction listings. */
+	public static int auctionCountGreen() {
+		return Config.C_PREMIUM_THEME ? SUCCESS : 65280;
+	}
 	private static final int CLASSIC_SOCIALGUI_BACKDROP = 0x1D1915;
 	private static final int CLASSIC_SOCIALGUI_TABLE_HEADER = 0x432C26;
 	private static final int CLASSIC_SOCIALGUI_TABLE_HEADER_BORDER = 0x4C4445;
