@@ -638,3 +638,228 @@ wrong everywhere, map tab opened briefly.
 3. Remaining translucency: magic/stats tab (alpha 210) and friends tab
    are darker but still translucent - candidate for the same treatment
    if the visual pass flags them.
+
+## Session: 2026-09-25 (premium login console frame)
+
+### Completed
+1. **Login/onboarding console chrome** (working tree, not committed): added a
+   premium-only frame behind the welcome, existing-user, registration, and
+   password-recovery forms in `mudclient.drawLogin()`. It uses a dark
+   translucent `Theme` fill, a two-step bronze bevel, and rune-blue rules.
+   The registration heading now selects light text only in premium mode so it
+   stays readable on that dark frame; classic retains its original black text.
+   The existing login status scrim now uses the same token family.
+2. **Scaling and compatibility**: all frame dimensions use `ui(...)`; the
+   helper returns before drawing when `C_PREMIUM_THEME` is off. No `Panel`
+   controls, coordinates, click regions, or keyboard focus indices changed.
+   The status scrim's classic path still resolves to the inherited black
+   fill and alpha.
+
+### Commands run (results)
+- `ant -f Client_Base/build.xml compile` with the bundled Portable_Windows
+  JDK 8 / Ant 1.10.5: **passed**.
+- `ant -f PC_Launcher/build.xml compile`: **passed** (verification build; no
+  launcher source changed in this pass).
+- `bash scripts/check_theme_literals.sh`: **passed**, 228 classified pairs.
+- `bash scripts/check_dependencies.sh`: **passed**.
+- `bash scripts/build_pages.sh`: **passed**, 10 staged files with valid local
+  links.
+- `git diff --check`: **passed**.
+- No native display or game window is available, so the frame, contrast,
+  clipping, and scaling remain explicitly unverified.
+
+### Exact next tasks
+1. Run the human visual pass from `docs/RUNEWAKE_VISUAL_TEST_MATRIX.md` at
+   minimum and maximum scales, including both registration layouts and
+   Android keyboard spacing.
+2. Exercise login error/connection states and confirm the status scrim does
+   not obscure either status row or the focused-field underline.
+3. Compare a classic-mode login/recovery screen against the previous build;
+   it should be pixel-identical because the new helper is a no-op there.
+4. Keep the existing uncommitted hosting changes and untracked `.freebuff/`
+   and `runewake_frame_analysis.html` separate from any future client commit.
+
+## Session: 2026-09-26 (adaptive premium login console)
+
+### Completed
+1. **Measured console geometry** (working tree, not committed): added
+   `Panel.getContentBounds()`, which returns the axis-aligned bounds
+   `{left, top, right, bottom}` of every visible control a panel draws. It
+   measures centred/left text with the live font metrics and reads the box
+   controls directly; it mutates no control or focus state.
+2. **Data-driven frame**: `mudclient.drawPremiumLoginFrame(Panel, padX, padY)`
+   now derives the console rectangle from those bounds instead of four
+   per-screen magic numbers, so free/members welcome layouts, both
+   `wantEmail()` registration layouts, and Android offsets are covered
+   automatically. Width/height clamp to an envelope so long welcome text
+   cannot stretch the console past the window.
+3. **Status scrim alignment**: the existing-user screen's premium scrim now
+   matches the console width (never narrower than the status line) rather than
+   banding full-width across the splash art. Classic still uses the inherited
+   full-width scrim and black fill.
+4. **Robustness**: the unreachable screen-3 `panelLoginOptions.drawPanel()`
+   call is null-guarded, removing a latent NPE footgun.
+5. **Server observability** (working tree, not committed): hardened
+   `HttpRequestHandler` on the WebSocket port. `/status` keeps its original
+   fields and adds `maxPlayers`/`uptimeSeconds`; `/healthz` returns `ok` for
+   liveness probes; `/metrics` exposes Prometheus gauges
+   (`runewake_players_online`, `runewake_players_max`,
+   `runewake_uptime_seconds`). `GET`/`HEAD` are supported, other methods get
+   `405` + `Allow`, unknown paths get `404`, and every response is
+   `Cache-Control: no-store`. Query strings are tolerated. No new tracking and
+   no database access.
+6. **Consumer + docs**: `web/server-browser/` now renders `players /
+   maxPlayers` and documents the new routes; `docs/FREE_HOSTING.md`,
+   `server/SIMPLE_HOSTING.md`, and `web/server-browser/README.md` describe the
+   monitor/metric endpoints.
+7. **Ironman window theme migration** (working tree, not committed):
+   `IronManInterface`'s 12 literals now route through a new `Theme.ironman*`
+   family (body/border, heading, inset plate + hover, dividers, radio badge,
+   sub-menu plate, close button idle/hover, choice-box border). The off-path
+   returns the inherited literals verbatim.
+8. **Skill guide theme migration**: `SkillGuideInterface`'s 8 literals move to
+   `Theme.skillGuide*` (translucent body, border, text, table header band, row
+   band, button/tab fill states, button border).
+   `scripts/theme_literal_baseline.txt` regenerated 228 -> 208 pairs.
+9. **Executable theme-parity guard** (new):
+   `Client_Base/test/orsc/graphics/gui/ThemeParityTest.java` +
+   `scripts/check_theme_parity.sh`. It builds the test against the client jar
+   with the bundled JDK and asserts, for the login / Ironman / Skill-guide
+   families, that the off-path equals the exact inherited literal and the
+   on-path equals the intended premium token (57 assertions). Wired into CI as
+   `themeParityGuard` (build stage, after the client compile).
+
+### Commands run (results)
+- `ant -f Client_Base/build.xml compile` with the bundled Portable_Windows
+  JDK 8 / Ant 1.10.5: **passed**.
+- `bash scripts/check_theme_literals.sh`: **passed**, 228 classified pairs.
+- `bash scripts/check_dependencies.sh`: **passed**.
+- `bash scripts/check_hosting_config.sh`: **passed**.
+- `bash scripts/build_pages.sh`: **passed**, 10 staged files with valid links.
+- `git diff --check`: **passed**.
+- `ant -f server/build.xml compile_core`: **passed** (642 sources).
+- **Runtime verification (real, not compile-only)**: booted the world locally
+  on the bundled JDK 8 with the SQLite backend (`com.openrsc.server.Server
+  default.conf`) and exercised the HTTP face with `curl`. Observed:
+  - `/healthz` -> `200`, `content-length: 3`, body `ok`, `cache-control:
+    no-store`.
+  - `/status` -> `{"serverName":"RuneWake","players":0,"maxPlayers":2000,
+    "uptimeMillis":1113,"uptimeSeconds":1}`; `?t=1` query returns the same
+    document.
+  - `/metrics` -> `text/plain; version=0.0.4` with the three gauges.
+  - `HEAD /status` -> `200` with `content-length: 93` and no body.
+  - `POST /status` -> `405` with `allow: GET, HEAD`.
+  - `/nope` -> `404`.
+  The process was stopped afterwards and ports 43494/43594/8787 were confirmed
+  clear; the SQLite databases are git-ignored and no server-written file shows
+  in `git status`.
+- **Browser verification (real)**: served `web/` statically and loaded
+  `web/server-browser/index.html` against the running world; the accessibility
+  snapshot shows `RuneWake`, `uptime 0m`, `5 ms`, `0` `/ 2000` `PLAYERS
+  ONLINE`, and the enabled Play button, with an empty console.
+- `bash scripts/check_theme_parity.sh`: **passed**, `OK: 57 theme-parity
+  checks, 0 failed.` (real headless execution, not a static check).
+- `bash scripts/check_theme_literals.sh`: **passed**, 208 pairs.
+- `.gitlab-ci.yml` re-parsed as YAML after adding `themeParityGuard`;
+  `bash -n` clean on the new script.
+- No display is available for the Java client, so the login-frame padding,
+  clamping, scrim alignment, premium Ironman/Skill-guide appearance, and
+  classic pixel-identity remain explicitly unverified visually.
+
+### Exact next tasks
+1. Run the human visual pass added to `docs/RUNEWAKE_VISUAL_TEST_MATRIX.md`
+   (frame tracks each form; long-text clamp; scrim reads as console band;
+   Android offsets; classic pixel-identity).
+2. Exercise invalid-credential and connection-failure statuses and confirm
+   the focused-field underline stays visible inside the scrim.
+3. If the measured frame is accepted, consider reusing `getContentBounds()`
+   for the other premium surfaces (e.g. a themed modal backdrop) rather than
+   adding more per-screen constants.
+4. Operator follow-up for observability: publish the `ws_server_port`, point a
+   real external uptime monitor at `/healthz`, and scrape `/metrics`; that
+   requires a host and credentials this environment lacks.
+5. Extend `ThemeParityTest` with each newly migrated family (next candidates:
+   AchievementGUI, BankPinInterface, PointInterface) so the parity guard keeps
+   covering what the baseline tripwire only classifies structurally.
+6. Keep the uncommitted hosting changes and untracked `.freebuff/` and
+   `runewake_frame_analysis.html` separate from any future client commit.
+
+## Session: 2026-09-26 (dependency refresh, texture de-duplication, legacy-panel theme sweep, 0.1.1)
+
+### What was done
+- **Server dependencies refreshed to current Java-8-compatible releases**, all
+  vendored in `server/lib`: netty-all 4.1.33 -> 4.1.67 (last release of that
+  artifact that is still a real uber-jar), log4j 2.17.0 -> 2.25.2,
+  commons-compress 1.18 -> 1.28.0, commons-lang3 3.12.0 -> 3.18.0,
+  commons-collections4 4.0 -> 4.5.0, commons-codec 1.14 -> 1.19.0,
+  xstream 1.4.18 -> 1.4.21, json 20190722 -> 20250517,
+  guava 30.1.1-jre -> 33.4.8-jre, sqlite-jdbc 3.34.0 -> 3.50.3.0,
+  disruptor 3.3.11 -> 3.4.4.
+- **`commons-io-2.20.0.jar` newly vendored** (commons-compress 1.27+ declares it
+  at compile scope and reaches `CloseShieldInputStream` during world load).
+  Without it the server compiled clean and then died with
+  `NoClassDefFoundError` at `WorldLoader.loadWorld`. Only booting the world
+  caught this.
+- **`slf4j-nop-2.0.0-alpha5.jar` removed** and
+  `log4j-slf4j18-impl-2.17.0.jar` replaced by `log4j-slf4j-impl-2.25.2.jar`,
+  the SLF4J 1.7 binder that JDA's shaded API needs. Logs now read
+  `SLF4J: Actual binding is of type [org.apache.logging.slf4j.Log4jLoggerFactory]`
+  instead of falling back to NOP.
+- **`server/build.gradle` un-drifted** from the vendored jars (it previously
+  asked for netty 4.1.107, xstream 1.4.9, guice 5.0.1, emoji-java 4.0.0), the
+  unused spring repository removed, JUnit pinned, project version set to 0.1.1.
+- **World texture preparation de-duplicated** into one
+  `mudclient.prepareTexturePalette(Sprite, byte[])` helper used by both
+  `loadTextures` and `loadTexturesAuthentic`.
+- **Legacy custom windows themed**: `PointInterface`, `PointsToGpInterface`,
+  `TerritorySignupInterface`, `ExperienceConfigInterface`,
+  `QuestGuideInterface`, `LostOnDeathInterface` and `AchievementGUI` now use
+  new `Theme.legacy*` / `Theme.points*` / `Theme.achievement*` accessors.
+
+### Verification actually run
+- `ant -f server/build.xml compile_core compile_plugins`: **passed** (642 + 471
+  sources) on the new dependency set.
+- `ant -f Client_Base/build.xml compile`: **passed** (124 sources, also
+  compiles `PC_Client/src`).
+- `ant -f PC_Launcher/build.xml compile`: **passed**.
+- Server booted on the bundled JDK 8 with SQLite: reached
+  `RuneWake started in 1748ms`, `Game world is now online on TCP port 43594`.
+  `curl` against the WebSocket port returned `/healthz` `200 ok`,
+  `/status` JSON, `/metrics` Prometheus text, `HEAD` headers with no body,
+  `405` + `Allow` for `POST`, and `404` for an unknown path.
+- `bash scripts/check_dependencies.sh`: **passed**, no warnings.
+- `bash scripts/check_theme_literals.sh`: **passed**, 164 pairs (was 208).
+- `bash scripts/check_theme_parity.sh`: **passed**, 89 checks, 0 failed.
+- `bash scripts/check_hosting_config.sh`: **passed**.
+- Every replacement jar was checked for Java 8 compatibility (base class-file
+  major <= 52, only the root `module-info.class` newer) and for being a real
+  jar with the expected classes before installation.
+
+### Not verified (and why)
+- No human visual pass: no display. All client presentation changes are
+  compile- and guard-verified only.
+- Discord was not exercised live; JDA is still the unchanged 4.0.0_55 shade.
+- MySQL/MariaDB was not exercised against a real server; boot checks used
+  SQLite.
+- Docker Compose was not run (no daemon); Android was not compiled (AGP needs
+  JDK 11+).
+
+### Exact next tasks
+1. Human visual pass on the seven newly themed windows in premium mode, and a
+   pixel-identity spot check in classic mode.
+2. `BankPinInterface`, `DoSkillInterface`, `OnlineListInterface`,
+   `ProgressBarInterface`, `FishingTrawlerInterface` and `PartyGUI` still carry
+   raw draw-layer literals - migrate them, then extend `ThemeParityTest`.
+3. UI scaling for the legacy custom windows. Two approaches were analysed and
+   both rejected for now: centralising it in `NComponent` breaks
+   `NRightClickMenu` (it sizes from already-scaled `stringWidth`/`fontHeight`)
+   and the screen-space `setLocation` calls in `BankPinInterface`/
+   `OnlineListInterface`/`PartyGUI`/`ProgressBarInterface`; per-file `ui()`
+   wrapping is safe but needs a display to confirm, because glyphs already
+   scale by `sqrt(uiScale)` while boxes do not, so the boxes are currently
+   `uiScale`x larger than the text needs and the padding will change.
+4. Consider making `core.jar` thin (server classes only) so the redundant
+   `lib/*` + fat-jar classpath, and with it the duplicate-SLF4J-binder log
+   line, disappears. Needs a decision on undocumented `java -jar core.jar` use.
+5. Operator follow-up: publish `ws_server_port`, attach an external uptime
+   monitor to `/healthz` and a scrape of `/metrics`.

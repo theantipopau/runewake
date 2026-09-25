@@ -1595,4 +1595,224 @@ the bundled Portable_Windows JDK/Ant).
   natural next `Theme` slice), and everything listed as pending live
   confirmation in sections 3/5/7/7p (needs a display).
 
+## 8. Hosting, database, and public-server readiness (2026-09-25)
+
+The next phase is operational rather than another broad UI/theme sweep. The
+objective is a genuinely deployable first world on a free or owned host,
+without pretending that cloud credentials or a public provider account
+already exist.
+
+- [x] **Secret-safe database configuration** — `ServerConfiguration` accepts
+  `DB_TYPE`, `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`, `DB_TABLE_PREFIX`,
+  `DB_SSL_MODE`, and `DB_CONNECT_TIMEOUT`; environment values take precedence
+  over checked-in YAML.
+  SQLite remains the zero-setup default, and malformed database types now
+  fail safely instead of silently selecting SQLite.
+- [x] **Configurable MySQL/MariaDB TLS** — Connector/J now receives an
+  explicit `sslMode` instead of hard-coded `useSSL=false`. Production docs
+  require `VERIFY_IDENTITY` for a remote certificate-verified connection;
+  `PREFERRED` is available for local compatibility.
+- [x] **Private local database path** — Compose uses a MariaDB 11.4 LTS
+  image, required explicit secrets, loopback-only port publication, a named
+  persistent volume, and the official health check. It does not start the
+  game server or replay schema automatically.
+- [x] **Ant launch failure propagation** — server run targets now fail when
+  the JVM exits unsuccessfully, so a systemd `Restart=on-failure` policy sees
+  real startup failures instead of a successful Ant wrapper.
+- [x] **Deployment preflight and service path** — added
+  `scripts/check_hosting_config.sh`, `scripts/backup_mariadb.sh`, and
+  `deployment/systemd/` for restart policy, protected environment files,
+  status checks, and restore-aware operations.
+- [x] **Update reliability improvement** — Android version/APK/cache requests
+  and desktop launcher manifest/client/self-update downloads now have bounded
+  connect/read timeouts and safe handling when content length is unknown. This
+  directly addresses the failure mode in OpenRSC #3525.
+- [ ] **Phase 1 public-world rehearsal** — provision one OCI/owned host, apply
+  the systemd unit, initialize one empty database, add HTTPS status, take an
+  off-host backup, restore it into scratch, and verify both public TCP ports
+  from an external network.
+- [ ] **Schema/value audit** — reproduce and resolve OpenRSC #3385's
+  `prayer` truncation risk, add a compatibility check, and test the ordered
+  patch set against production-shaped data.
+- [ ] **Observability** — add external uptime alerts and a player-count
+  metric/command after the first world has a stable baseline (OpenRSC #3599
+  and #3513).
+- [ ] **Optional multi-world architecture** — treat OpenRSC #2943's login
+  server, clusters, and master server as a later protocol project. First
+  prove one world with explicit account/session ownership and tested backups.
+
+See `docs/FREE_HOSTING.md`, `server/CENTRALIZED_DATABASE.md`, and
+`docs/OPENRSC_ISSUE_TRIAGE.md` for the operational checklist and issue
+mapping.
+
+## 9. Premium login console frame (2026-09-25)
+
+The login flow now has a consistent premium-only visual layer rather than
+leaving each form's controls floating directly over the splash art:
+
+- [x] **Onboarding console chrome** (working tree, not committed): welcome,
+  existing-user, registration, and password-recovery forms receive a dark
+  translucent backing, two-step bronze bevel, and restrained rune-blue rules.
+  The registration heading uses light text only in premium mode; classic keeps
+  its inherited black text. The existing status scrim uses the same `Theme`
+  token family.
+- [x] **Scaling and classic safety**: every frame dimension uses `ui(...)`;
+  the helper exits before drawing with `C_PREMIUM_THEME` off, and the status
+  scrim retains its inherited black fill/alpha on the classic path. No control
+  geometry, hitbox, or focus behaviour changed.
+- [x] **Static verification**: Client_Base compiles with the bundled JDK 8;
+  the theme-literal, dependency, Pages, and whitespace guards pass.
+- [ ] **Human visual verification**: inspect the minimum/maximum resolutions,
+  both registration layouts, Android keyboard spacing, recovery clipping, and
+  login error/connection states. This remains unverified because the agent
+  environment has no display.
+
+The next visual decision should follow that pass rather than adding more
+chrome blindly: retain, soften, or remove the frame based on contrast over
+`login.png`, then move to another panel family only if the login result is
+stable.
+
+## 10. Adaptive login console (2026-09-26)
+
+The login console no longer relies on per-screen magic numbers. The frame is
+now measured from the form it backs, so it follows the real layout instead of
+approximating it:
+
+- [x] **Content-bounds measurement** (working tree, not committed):
+  `Panel.getContentBounds()` reports the axis-aligned bounds of every visible
+  control a panel draws (buttons, backgrounds, text entries, centred/left
+  text with live font metrics, decorated boxes, lists). It is read-only and
+  mutates no control or focus state.
+- [x] **Data-driven frame**: `drawPremiumLoginFrame(Panel, padX, padY)` derives
+  its rectangle from those bounds, so the free/members welcome layouts, both
+  `wantEmail()` registration layouts, Android offsets, and any future field
+  move are covered automatically. The width/height are clamped to a sane
+  envelope so a long server name cannot stretch the console past the window.
+- [x] **Status-scrim alignment**: on the existing-user screen the premium
+  scrim now matches the console width (never narrower than the status line
+  itself) instead of banding across the whole window; classic keeps the
+  inherited full-width scrim and black fill.
+- [x] **Dead-code footgun removed**: `panelLoginOptions` is never created, so
+  the unreachable screen-3 draw is now null-guarded rather than dereferencing
+  a null panel if that path is ever wired up.
+- [x] **Static verification**: Client_Base compiles with the bundled JDK 8;
+  the theme-literal, dependency, Pages, and whitespace guards pass.
+- [ ] **Human visual verification**: confirm the adaptive frame tracks each
+  form at minimum/maximum scale and in both registration layouts, and that
+  the premium scrim reads as part of the console. Still unverified without a
+  display.
+
+## 11. Server observability surface (2026-09-26)
+
+The world's small HTTP face on the WebSocket port is now a real observability
+surface instead of a single JSON route:
+
+- [x] **Routes**: `/status` (JSON, unchanged fields plus `maxPlayers` and
+  `uptimeSeconds`), `/healthz` (cheap liveness probe returning `ok`), and
+  `/metrics` (Prometheus text gauges: `runewake_players_online`,
+  `runewake_players_max`, `runewake_uptime_seconds`). All reuse already-public
+  server state and never touch the database.
+- [x] **HTTP semantics**: `GET`/`HEAD` supported (`HEAD` reports the body
+  length without sending it), other methods return `405` with an `Allow`
+  header, unknown paths return `404`, and every response is
+  `Cache-Control: no-store`. Query strings no longer turn a known route into a
+  miss.
+- [x] **Verified at runtime**: the world was booted locally on the bundled
+  JDK 8 with the zero-setup SQLite backend, and every route was exercised with
+  `curl` (see `docs/RUNEWAKE_AGENT_STATE.md` for the raw results). This is a
+  real end-to-end pass, not a compile-only claim.
+- [x] **Consumer**: `web/server-browser/` shows `players / maxPlayers` and its
+  footer documents the `/healthz` and `/metrics` routes; the hosting docs
+  describe pointing an off-host uptime monitor at `/healthz`.
+- [ ] **Operator follow-up**: provision one host, publish the port, and wire a
+  real external monitor/alert on `/healthz` and a scrape of `/metrics`. That
+  needs a provider and credentials this environment does not have.
+
+## 12. Ironman + Skill guide theme migration, and an executable parity guard (2026-09-26)
+
+Two more player-facing panels moved onto `Theme`, and the migration's central
+promise is now checked by code rather than asserted in prose:
+
+- [x] **Ironman setup window** (working tree, not committed): the 12 literals in
+  `IronManInterface` (window body/border, heading, inset plate + hover,
+  dividers, badge, sub-menu, close button, choice-box border) are now the
+  `Theme.ironman*` family. Off-path values reproduce the inherited literals
+  exactly; premium uses `PANEL_ELEVATED`/`PANEL_INSET`, `BORDER_DARK`/
+  `BORDER_DARK_MID`, `ACCENT_PRIMARY` and `TEXT_PRIMARY`.
+- [x] **Skill guide window**: the 8 literals in `SkillGuideInterface` move to
+  `Theme.skillGuide*` (translucent body, border, text, table header band, row
+  band, button and tab fill states, button border).
+- [x] **Baseline**: `scripts/theme_literal_baseline.txt` 228 -> 208 pairs
+  (254 -> 208 across this arc, all pure removals).
+- [x] **Executable parity guard**: `Client_Base/test/orsc/graphics/gui/ThemeParityTest.java`
+  and `scripts/check_theme_parity.sh` compile and run a headless check (57
+  assertions) that every migrated accessor returns its exact inherited literal
+  when `C_PREMIUM_THEME` is off and the intended premium token when it is on.
+  It runs in CI as `themeParityGuard` in the `build` stage, after the client
+  compile.
+- [ ] **Human visual verification**: confirm the premium Ironman and Skill-guide
+  windows read as the same visual language as the login console, and that
+  classic versions are unchanged. Still unverified without a display.
+
+## 13. Dependency refresh, texture-pipeline de-duplication, and the legacy-panel theme sweep (2026-09-26)
+
+The entire vendored server runtime moved forward and the last large block of
+unthemed client windows was migrated. See `docs/DEPENDENCIES.md` for the full
+inventory and the per-jar rationale.
+
+- [x] **Vendored jars**: netty-all 4.1.33 -> 4.1.67 (the last release of that
+  artifact that is still a true uber-jar, so the single-file vendoring model
+  holds), log4j 2.17.0 -> 2.25.2, commons-compress 1.18 -> 1.28.0,
+  commons-lang3 3.12.0 -> 3.18.0, commons-collections4 4.0 -> 4.5.0,
+  commons-codec 1.14 -> 1.19.0, xstream 1.4.18 -> 1.4.21,
+  json 20190722 -> 20250517, guava 30.1.1-jre -> 33.4.8-jre,
+  sqlite-jdbc 3.34.0 -> 3.50.3.0, disruptor 3.3.11 -> 3.4.4. Newly vendored:
+  `commons-io-2.20.0.jar` (commons-compress 1.27+ declares it as a hard
+  dependency). Removed: `slf4j-nop-2.0.0-alpha5.jar`, which competed with the
+  real binder.
+- [x] **Gradle/Ant drift removed**: `server/build.gradle` asked for
+  `netty-all:4.1.107.Final`, `xstream:1.4.9`, `guice:5.0.1` and
+  `emoji-java:4.0.0`, none of which matched `server/lib/`, so the two build
+  systems compiled against different artifacts. Every version string now
+  matches the vendored filename, the unused `repo.spring.io/libs-release`
+  repository is gone, and JUnit was pinned for the (currently empty) test
+  source set.
+- [x] **Discord/SLF4J logging fixed**: `log4j-slf4j-impl-2.25.2.jar` (the SLF4J
+  1.7 binder) replaces the 1.8 adapter, so the SLF4J 1.7 API shaded inside
+  `JDA-4.0.0_55-withDependencies.jar` now binds to Log4j instead of falling
+  back to the no-op logger. The residual "multiple SLF4J bindings" line is a
+  fat-jar/classpath artifact and is explained in `docs/DEPENDENCIES.md`.
+- [x] **Runtime-verified, not just compile-verified**: the world was booted on
+  the bundled JDK 8 against SQLite with the whole new dependency set, and every
+  observability route was re-exercised. This caught a regression compilation
+  could not: commons-compress 1.28 reaches
+  `org.apache.commons.io.input.CloseShieldInputStream` while loading world
+  data, so without the newly vendored `commons-io` the server died with
+  `NoClassDefFoundError`.
+- [x] **Texture pipeline de-duplicated**: the blur / transparency-sentinel /
+  256-colour-quantisation block that was byte-identical in `loadTextures` and
+  `loadTexturesAuthentic` is now one `prepareTexturePalette` helper. The
+  sentinel handling previously had to be fixed twice because it was duplicated;
+  that can no longer happen.
+- [x] **Legacy custom windows themed**: `PointInterface`, `PointsToGpInterface`,
+  `TerritorySignupInterface`, `ExperienceConfigInterface`,
+  `QuestGuideInterface` and `LostOnDeathInterface` - which draw straight onto
+  the game surface and still used raw literals - now share new
+  `Theme.legacy*` / `Theme.points*` tokens, as does the achievement window.
+  Off-path values reproduce the inherited literals exactly. Literal baseline
+  208 -> 164 pairs; parity checks 57 -> 89.
+- [ ] **Human visual verification**: confirm the premium versions of those seven
+  windows read as one language, and that classic mode is pixel-unchanged. No
+  display is available here.
+- [ ] **Still carrying raw draw-layer literals**: `BankPinInterface` (its own
+  brown/red PIN-pad palette), `DoSkillInterface`, `OnlineListInterface`,
+  `ProgressBarInterface`, `FishingTrawlerInterface`, `PartyGUI`, plus the
+  remaining `mudclient`/`GraphicsController` engine literals that are expected
+  to stay (fog, hit-splat, minimap internals).
+- [ ] **UI-scaling debt**: the legacy custom windows still lay out in fixed
+  pixels while glyphs already scale by `sqrt(uiScale)`, so they read as
+  oversized text in fixed boxes above the enforced minimum window size. See
+  `UI_SCALING_PLAN.md` for the two approaches considered and why neither was
+  taken without a display.
+
 

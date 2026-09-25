@@ -76,7 +76,9 @@ engineering.
 - Vendored Java dependencies are documented in
   [`docs/DEPENDENCIES.md`](docs/DEPENDENCIES.md).
 - `scripts/check_dependencies.sh` fails verification when a named jar is
-  missing; `scripts/check_theme_literals.sh` guards the theme migration.
+  missing; `scripts/check_theme_literals.sh` guards the theme migration
+  structurally and `scripts/check_theme_parity.sh` executes it (classic values
+  unchanged, premium values themed).
 - Architecture, branding, asset provenance, UI scaling, and visual test notes
   live in [`docs/`](docs/) rather than being hidden in commit messages.
 - No commercial RuneScape asset scraping: source-quality RuneWake artwork is
@@ -116,7 +118,7 @@ serves status on the WebSocket port.
 
 ## Downloads and launcher
 
-The first downloadable package is [RuneWake 0.1.0](https://github.com/theantipopau/runewake/releases/tag/v0.1.0). It is a clean player/operator bundle with the built client, launcher, server jars, server data, portable Windows JDK/Ant, and SHA-256 manifest. The release archive is not a source checkout and excludes local databases, logs, secrets, and developer state. See [`docs/RELEASES.md`](docs/RELEASES.md) for the contents, verification steps, and rebuild command.
+The current downloadable package is [RuneWake 0.1.1](https://github.com/theantipopau/runewake/releases/tag/v0.1.1). It is a clean player/operator bundle with the built client, launcher, server jars, server data, portable Windows JDK/Ant, and SHA-256 manifest. The release archive is not a source checkout and excludes local databases, logs, secrets, and developer state. See [`docs/RELEASES.md`](docs/RELEASES.md) for the contents, verification steps, and rebuild command.
 
 `PC_Launcher` builds `OpenRSC.jar`, a self-updating launcher that downloads
 and maintains the client cache through MD5 diffing. Published client assets
@@ -158,10 +160,13 @@ From the repository root, the lightweight project checks are:
 ```sh
 bash scripts/check_dependencies.sh
 bash scripts/check_theme_literals.sh
+# needs the client built first: ant -f Client_Base/build.xml compile
+bash scripts/check_theme_parity.sh
 ```
 
-The CI pipeline runs both checks before compiling the server core, server
-plugins, client, and launcher. Build outputs and the exact verification
+The CI pipeline runs the theme-literal and dependency checks, then compiles the
+server core, server plugins, client, and launcher; the theme-parity check runs
+after the client compile. Build outputs and the exact verification
 matrix are recorded in the [visual test matrix](docs/RUNEWAKE_VISUAL_TEST_MATRIX.md)
 and [modernisation audit](docs/RUNEWAKE_MODERNISATION_AUDIT.md).
 
