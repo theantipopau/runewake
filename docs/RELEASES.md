@@ -68,6 +68,23 @@ observability work.
   `scripts/check_theme_parity.sh` (89 checks), `scripts/check_hosting_config.sh`
   and `scripts/build_pages.sh` all pass.
 
+### Rebuild the bundle
+
+From a clean checkout at the `v0.1.1` tag, with the portable Windows JDK/Ant
+available:
+
+```sh
+python scripts/build_release.py --version 0.1.1
+```
+
+The command rebuilds the client, server core/plugins, and launcher before
+staging the distribution, and records the source commit it was built from in
+`RELEASE.txt` inside the bundle. Build the bundle *after* the last commit for
+the release: `RELEASE.txt` is captured from `HEAD` at build time, so building
+from a dirty or stale tree produces an archive that names the wrong commit.
+It writes `dist/RuneWake-0.1.1/` and `dist/RuneWake-0.1.1.zip`. It does not
+commit, tag, push, or publish.
+
 ### Still unverified in this release
 
 - **No human visual pass.** There is no display available in the build
