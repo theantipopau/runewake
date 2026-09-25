@@ -56,11 +56,30 @@ http://<server-ip>:<ws_server_port>/status
 which returns JSON like:
 
 ```json
-{"serverName": "RuneWake", "players": 12, "uptimeMillis": 3600000}
+{"serverName": "RuneWake", "players": 12, "maxPlayers": 2000, "uptimeMillis": 3600000, "uptimeSeconds": 3600}
 ```
 
-The endpoint sends `Access-Control-Allow-Origin: *` so it can be fetched
-from a page hosted anywhere.
+`players`, `maxPlayers`, and `uptimeMillis`/`uptimeSeconds` are live; the page
+shows the count as `players / maxPlayers`. The endpoint sends
+`Access-Control-Allow-Origin: *` so it can be fetched from a page hosted
+anywhere, and `Cache-Control: no-store` so counts are never stale.
+
+### Health and metrics (same port)
+
+Two more read-only routes live on the same `ws_server_port`, for uptime
+monitors and dashboards rather than the browser page:
+
+```
+http://<server-ip>:<ws_server_port>/healthz   -> 200 "ok" (liveness probe)
+http://<server-ip>:<ws_server_port>/metrics   -> Prometheus text exposition
+```
+
+`/healthz` is the cheapest check (no JSON parsing). `/metrics` exposes
+gauges (`runewake_players_online`, `runewake_players_max`,
+`runewake_uptime_seconds`) in the Prometheus text format so a scrape target
+or dashboard can consume them. Both routes accept `GET` and `HEAD`; other
+methods get `405` with an `Allow` header, and unknown paths get `404`.
+Neither route touches the database.
 
 ## Adding your server
 

@@ -19,6 +19,19 @@ dependencyGuard:
   script:
     - bash scripts/check_dependencies.sh
 
+hostingConfigGuard:
+  stage: verify
+  script:
+    - bash -n scripts/check_hosting_config.sh scripts/backup_mariadb.sh
+    - bash scripts/check_hosting_config.sh
+
+themeParityGuard:
+  stage: build
+  script:
+    - bash -n scripts/check_theme_parity.sh
+    - cd Client_Base && ant compile && cd ../
+    - bash scripts/check_theme_parity.sh
+
 pagesBuild:
   stage: verify
   script:

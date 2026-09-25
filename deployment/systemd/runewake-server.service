@@ -1,0 +1,27 @@
+[Unit]
+Description=RuneWake game server
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=runewake
+Group=runewake
+WorkingDirectory=/opt/runewake/server
+EnvironmentFile=/etc/runewake/runewake.env
+ExecStartPre=/usr/bin/env bash /opt/runewake/scripts/check_hosting_config.sh /opt/runewake/server/connections.conf /opt/runewake/server/default.conf
+ExecStart=/usr/bin/ant -f /opt/runewake/server/build.xml -DconfFile=default runserver
+Restart=on-failure
+RestartSec=10s
+SuccessExitStatus=143
+TimeoutStopSec=45s
+LimitNOFILE=65536
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=runewake-server
+
+[Install]
+WantedBy=multi-user.target

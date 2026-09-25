@@ -1,8 +1,8 @@
 package com.openrsc.server.database;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 
 public enum DatabaseType {
 	MYSQL(0),
@@ -20,7 +20,7 @@ public enum DatabaseType {
 	}
 
 	public static DatabaseType getByType(Integer type) {
-		return byType.getOrDefault(type, DatabaseType.MYSQL);
+		return byType.getOrDefault(type, DatabaseType.DEFAULT);
 	}
 
 	DatabaseType(int type) {
@@ -29,14 +29,41 @@ public enum DatabaseType {
 
 	private final int type;
 
+	/**
+	 * Resolve a database type while retaining the historic permissive behaviour
+	 * for callers outside server startup. Invalid values fall back to SQLite.
+	 */
 	public static DatabaseType resolveType(String type) {
 		try {
-			return DatabaseType.valueOf(type.toUpperCase());
-		} catch (Exception e) {
+			return resolveTypeStrict(type);
+		} catch (IllegalArgumentException e) {
+			return DatabaseType.DEFAULT;
+		}
+	}
+
+	/**
+	 * Resolve a database type without silently falling back to SQLite. A missing
+	 * value still selects the default, but a malformed production value should
+	 * stop startup instead of opening the wrong database.
+	 */
+	public static DatabaseType resolveTypeStrict(String type) {
+		if (type == null || type.trim().isEmpty()) {
+			return DatabaseType.DEFAULT;
+		}
+
+		String normalized = type.trim().toUpperCase(Locale.ENGLISH);
+		try {
+			return DatabaseType.valueOf(normalized);
+		} catch (IllegalArgumentException e) {
 			try {
-				return DatabaseType.getByType(Integer.parseInt(type));
-			} catch (Exception ex) {
-				return DatabaseType.DEFAULT;
+				int numericType = Integer.parseInt(normalized);
+				DatabaseType resolved = byType.get(numericType);
+				if (resolved == null) {
+					throw new IllegalArgumentException("Unsupported database type: " + type, e);
+				}
+				return resolved;
+			} catch (NumberFormatException numberFormatException) {
+				throw new IllegalArgumentException("Unsupported database type: " + type, e);
 			}
 		}
 	}

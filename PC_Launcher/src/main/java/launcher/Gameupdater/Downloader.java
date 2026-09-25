@@ -15,6 +15,8 @@ import java.util.List;
 
 public class Downloader implements Runnable {
 
+  private static final int NETWORK_TIMEOUT_MILLIS = 5000;
+
   private final ArrayList<String> _EXCLUDED_FILES = new ArrayList<>();
   private final ArrayList<String> _REFUSE_UPDATE = new ArrayList<>();
   private final String _GAMEFOLDER;
@@ -90,12 +92,14 @@ public class Downloader implements Runnable {
       Logger.Info("Downloading: " + completeFileUrl);
 
       URLConnection connection = new URL(completeFileUrl).openConnection();
+      connection.setConnectTimeout(NETWORK_TIMEOUT_MILLIS);
+      connection.setReadTimeout(NETWORK_TIMEOUT_MILLIS);
 
       // File metadata
       String description = file.getName();
       long fileSize = connection.getContentLength();
 
-      try (BufferedInputStream inputStream = new BufferedInputStream(new URL(completeFileUrl).openStream());
+      try (BufferedInputStream inputStream = new BufferedInputStream(connection.getInputStream());
           FileOutputStream fileOS = new FileOutputStream(this._GAMEFOLDER + File.separator + filename)) {
         byte[] data = new byte[1024];
         int byteContent;
@@ -103,8 +107,12 @@ public class Downloader implements Runnable {
         while ((byteContent = inputStream.read(data, 0, 1024)) != -1) {
           totalRead += byteContent;
           fileOS.write(data, 0, byteContent);
-          float percent = (float) (totalRead / fileSize) * 100;
-          ProgressBar.setDownloadProgress(description, percent);
+          if (fileSize > 0) {
+            float percent = (float) totalRead / fileSize * 100;
+            ProgressBar.setDownloadProgress(description, percent);
+          } else {
+            ProgressBar.setDownloadProgress(description, 0.0f);
+          }
         }
       } catch (UnknownHostException uhe) {
         offline_start = true;

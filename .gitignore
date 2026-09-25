@@ -167,6 +167,10 @@ server/server_log.txt
 # Local environment (contains real credentials; see .env.example)
 .env
 
+# Local database backups (may contain player data and credentials metadata)
+backups/
+/backups/
+
 # Local release/build outputs
 /dist/
 scripts/__pycache__/

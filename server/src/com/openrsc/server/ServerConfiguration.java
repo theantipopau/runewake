@@ -54,6 +54,10 @@ public class ServerConfiguration {
 	public String DB_USER;
 	public String DB_PASS;
 	public String DB_TABLE_PREFIX;
+	/** Connector/J sslMode used for MySQL/MariaDB connections. */
+	public String DB_SSL_MODE;
+	/** Maximum time to wait for a MySQL/MariaDB socket connection, in milliseconds. */
+	public int DB_CONNECT_TIMEOUT;
 
 	public String SSL_SERVER_CERT_PATH;
 	public String SSL_SERVER_KEY_PATH;
@@ -387,13 +391,19 @@ public class ServerConfiguration {
 
 		notifyDeprecated();
 
-		// Database settings
-		DB_TYPE = DatabaseType.resolveType(tryReadString("db_type").orElse(null));
-		DB_NAME = tryReadString("db_name").orElse("preservation");
-		DB_HOST = tryReadString("db_host").orElse("localhost:3306");
-		DB_USER = tryReadString("db_user").orElse("root");
-		DB_PASS = tryReadString("db_pass").orElse("root");
-		DB_TABLE_PREFIX = tryReadString("db_table_prefix").orElse("");
+		// Database settings. Environment variables take precedence over checked-in
+		// configuration so production secrets do not need to be stored in the repo.
+		String configuredDbType = readSetting("DB_TYPE", "db_type", null);
+		DB_TYPE = DatabaseType.resolveTypeStrict(configuredDbType);
+		DB_NAME = readSetting("DB_NAME", "db_name", "preservation");
+		DB_HOST = readSetting("DB_HOST", "db_host", "localhost:3306");
+		DB_USER = readSetting("DB_USER", "db_user", "");
+		DB_PASS = readSetting("DB_PASS", "db_pass", "");
+		DB_TABLE_PREFIX = readSetting("DB_TABLE_PREFIX", "db_table_prefix", "");
+		String configuredSslMode = readSetting("DB_SSL_MODE", "db_ssl_mode", null);
+		DB_SSL_MODE = normalizeSslMode(configuredSslMode == null
+				? defaultSslMode(DB_HOST) : configuredSslMode);
+		DB_CONNECT_TIMEOUT = readIntSetting("DB_CONNECT_TIMEOUT", "db_connect_timeout", 10000);
 
 		// SSL settings
 		SSL_SERVER_CERT_PATH = tryReadString("ssl_server_cert_path").orElse("");
@@ -788,6 +798,58 @@ public class ServerConfiguration {
 					configFile + ".");
 			}
 		}
+	}
+
+	/**
+	 * Read a setting from the process environment first, then the YAML-like
+	 * configuration file, and finally the supplied default. Non-empty environment
+	 * values are returned verbatim so passwords may contain meaningful whitespace.
+	 */
+	private String readSetting(String environmentName, String configKey, String defaultValue) {
+		String environmentValue = System.getenv(environmentName);
+		if (environmentValue != null && !environmentValue.trim().isEmpty()) {
+			return environmentValue;
+		}
+		return tryReadString(configKey).orElse(defaultValue);
+	}
+
+	private int readIntSetting(String environmentName, String configKey, int defaultValue) {
+		String value = readSetting(environmentName, configKey, Integer.toString(defaultValue));
+		try {
+			int parsed = Integer.parseInt(value.trim());
+			if (parsed <= 0) {
+				throw new NumberFormatException("value must be positive");
+			}
+			return parsed;
+		} catch (NumberFormatException e) {
+			throw new IllegalArgumentException(environmentName + " must be a positive integer", e);
+		}
+	}
+
+	/** Use opportunistic TLS locally, but never silently downgrade a remote host. */
+	private String defaultSslMode(String host) {
+		String normalizedHost = host == null ? "" : host.trim().toLowerCase(java.util.Locale.ENGLISH);
+		if (normalizedHost.equals("localhost") || normalizedHost.startsWith("localhost:")
+				|| normalizedHost.equals("127.0.0.1") || normalizedHost.startsWith("127.0.0.1:")
+				|| normalizedHost.equals("::1") || normalizedHost.startsWith("::1:")) {
+			return "PREFERRED";
+		}
+		return "VERIFY_IDENTITY";
+	}
+
+	/** Normalize and validate Connector/J's sslMode value. */
+	private String normalizeSslMode(String mode) {
+		if (mode == null || mode.trim().isEmpty()) {
+			return "PREFERRED";
+		}
+		String normalized = mode.trim().toUpperCase(java.util.Locale.ENGLISH);
+		if (!normalized.equals("DISABLED") && !normalized.equals("PREFERRED")
+				&& !normalized.equals("REQUIRED") && !normalized.equals("VERIFY_CA")
+				&& !normalized.equals("VERIFY_IDENTITY")) {
+			throw new IllegalArgumentException("Unsupported DB_SSL_MODE: " + mode
+					+ " (expected DISABLED, PREFERRED, REQUIRED, VERIFY_CA, or VERIFY_IDENTITY)");
+		}
+		return normalized;
 	}
 
 	// Attempt to read in an integer property

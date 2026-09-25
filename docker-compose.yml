@@ -1,29 +1,45 @@
-version: '3'
 services:
-
   mariadb:
-    image: mariadb:latest
-    container_name: mariadb
-    restart: always
-    env_file:
-      - ".env"
-    command: [
-      '--wait_timeout=360000'
-    ]
+    # 11.4 is the MariaDB LTS line. Pin a tested digest for a production
+    # deployment after verifying the image in your own registry.
+    image: mariadb:11.4
+    restart: unless-stopped
     environment:
-      - MARIADB_DATABASE=mysql
-      - MARIADB_ROOT_USER=${MARIADB_ROOT_USER}
-      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
-      - MARIADB_ALLOW_EMPTY_PASSWORD=no
-      - MARIADB_USER=${MARIADB_USER}
-      - MARIADB_PASSWORD=${MARIADB_PASS}
+      MARIADB_DATABASE: ${MARIADB_DATABASE:?set MARIADB_DATABASE in .env}
+      MARIADB_ROOT_USER: ${MARIADB_ROOT_USER:?set MARIADB_ROOT_USER in .env}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?set MARIADB_ROOT_PASSWORD in .env}
+      MARIADB_USER: ${MARIADB_USER:?set MARIADB_USER in .env}
+      # MARIADB_PASS is accepted as a legacy alias for existing local .env files.
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-${MARIADB_PASS:?set MARIADB_PASSWORD (or legacy MARIADB_PASS) in .env}}
+      MARIADB_ALLOW_EMPTY_PASSWORD: "no"
+    # The database is private by default. A server in another Compose network
+    # can connect to mariadb:3306 without publishing a host port at all.
     ports:
-      - "0.0.0.0:3306:3306"
+      - "${MARIADB_BIND_ADDRESS:-127.0.0.1}:${MARIADB_HOST_PORT:-3306}:3306"
+    expose:
+      - "3306"
     volumes:
-      - ./server/inc/databases:/var/lib/mysql
+      - mariadb_data:/var/lib/mysql
       - ./server/inc/my.cnf:/etc/mysql/my.cnf:ro
       - ./server/inc/innodb.cnf:/etc/mysql/conf.d/innodb.cnf:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-networks: # Required for connectivity with separate docker-compose web framework
+volumes:
+  mariadb_data:
+
+networks:
   default:
-    name: database
+    name: runewake-database

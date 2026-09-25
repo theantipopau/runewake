@@ -28,6 +28,8 @@ import orsc.osConfig;
 
 public class ApplicationUpdater extends Activity {
 
+    private static final int NETWORK_TIMEOUT_MILLIS = 5000;
+
     private TextProgressBar progressBar;
     private TextView tv1;
 
@@ -109,7 +111,8 @@ public class ApplicationUpdater extends Activity {
             try {
                 updatePage = new URL(osConfig.ANDROID_DOWNLOAD_PATH + "android_version.txt");
 				HttpURLConnection conn = (HttpURLConnection)updatePage.openConnection();
-				conn.setConnectTimeout(1000);
+				conn.setConnectTimeout(NETWORK_TIMEOUT_MILLIS);
+				conn.setReadTimeout(NETWORK_TIMEOUT_MILLIS);
 
                 System.out.println(" ");
                 System.out.println(" ");
@@ -117,9 +120,12 @@ public class ApplicationUpdater extends Activity {
                 System.out.println(" ");
                 System.out.println(" ");
 
-                BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                String inputLine = in.readLine();
-				in.close();
+                String inputLine;
+                try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                    inputLine = in.readLine();
+                } finally {
+                    conn.disconnect();
+                }
 
                 System.out.println(" ");
                 System.out.println(" ");
@@ -166,11 +172,13 @@ public class ApplicationUpdater extends Activity {
             HttpURLConnection connection;
             try {
                 connection = (HttpURLConnection) new URL(osConfig.ANDROID_DOWNLOAD_PATH + "openrsc.apk").openConnection();
+                connection.setConnectTimeout(NETWORK_TIMEOUT_MILLIS);
+                connection.setReadTimeout(NETWORK_TIMEOUT_MILLIS);
                 connection.connect();
 
                 int fileLength = connection.getContentLength();
-				try (FileOutputStream fos = openFileOutput("openrsc.apk", Context.MODE_PRIVATE)) {
-					InputStream in = connection.getInputStream();
+				try (InputStream in = connection.getInputStream();
+					 FileOutputStream fos = openFileOutput("openrsc.apk", Context.MODE_PRIVATE)) {
 					byte[] buffer = new byte[4096];
 					long total = 0;
 					int len;
@@ -181,6 +189,8 @@ public class ApplicationUpdater extends Activity {
 							publishProgress("Downloading update...", "" + (int) ((total * 100) / fileLength));
 					}
 					fos.flush();
+				} finally {
+                    connection.disconnect();
 				}
             } catch (Exception e) {
                 e.printStackTrace();

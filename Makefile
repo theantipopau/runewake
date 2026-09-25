@@ -1,15 +1,25 @@
 include .env
+
+# The legacy maintenance targets below still use the administrative
+# MARIADB_ROOT_* values from .env. For unattended backups prefer
+# scripts/backup_mariadb.sh, which uses a restricted account and a private
+# temporary client file instead of putting a password in command arguments.
 #########################################
-#####      Production Scripts       ##### 
+#####      Legacy Maintenance       #####
 #########################################
+# Preferred secret-safe backup entry point. Configure MYSQL_* variables in the
+# environment; see scripts/backup_mariadb.sh.
+backup-mariadb-safe:
+	bash scripts/backup_mariadb.sh
+
 # Creates a full database export of the specified database and saves to the output directory specified in the .env file. Good for utilizing as a crontab.
 # Call via "make backup-mariadb-full db=cabbage"
 backup-mariadb-full:
 	@[ "${db}" ] || ( echo ">> db is not set"; exit 1 )
 	mkdir -p $(MYSQL_DUMPS_DIR)
-	chmod -R 777 $(MYSQL_DUMPS_DIR)
+	chmod 700 $(MYSQL_DUMPS_DIR)
 	mkdir -p $(MYSQL_DUMPS_DIR)/full/`date "+%Y%m"`
-	chmod -R 777 $(MYSQL_DUMPS_DIR)/full/`date "+%Y%m"`
+	chmod 700 $(MYSQL_DUMPS_DIR)/full/`date "+%Y%m"`
 	mysqldump -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} --single-transaction --quick --lock-tables=false 2> $(MYSQL_DUMPS_DIR)/mysqldump_errors.log | gzip > $(MYSQL_DUMPS_DIR)/full/`date "+%Y%m"`/`date "+%Y%m%d-%H%M-%Z"`-${db}-full.sql.gz
 
 # Creates a schema-only dump for all tables and data-only dump for selected tables (excluding log tables) of the specified database, then combines them into a single compressed file.
@@ -17,9 +27,9 @@ backup-mariadb-full:
 backup-mariadb:
 	@[ "${db}" ] || ( echo ">> db is not set"; exit 1 )
 	mkdir -p $(MYSQL_DUMPS_DIR)
-	chmod -R 777 $(MYSQL_DUMPS_DIR)
+	chmod 700 $(MYSQL_DUMPS_DIR)
 	mkdir -p $(MYSQL_DUMPS_DIR)/`date "+%Y%m"`
-	chmod -R 777 $(MYSQL_DUMPS_DIR)/`date "+%Y%m"`
+	chmod 700 $(MYSQL_DUMPS_DIR)/`date "+%Y%m"`
 	@if [ "${db}" = "board" ] || [ "${db}" = "wiki" ] || [ "${db}" = "laravel" ]; then \
 		mysqldump -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} --single-transaction --quick --lock-tables=false 2> $(MYSQL_DUMPS_DIR)/mysqldump_errors.log | gzip > $(MYSQL_DUMPS_DIR)/`date "+%Y%m"`/`date "+%Y%m%d-%H%M-%Z"`-${db}.sql.gz; \
 	else \
@@ -58,10 +68,10 @@ purge-old-logs:
 	curl -i -H "Accept: application/json" -H "Content-Type:application/json" -X POST --data "{ \"content\": \"\", \"embeds\": [ { \"title\": \"Clean-up of ${db} database completed.\", \"color\": 1087508, \"description\": \"Public, Private, and Global messages older than 3 months have been removed from the live database.\n\nAlso deleted were Generic logs (such as dropping items), logs of items received as drops by monsters, trade logs, and the live_feeds events older than 3 months.\n\nThese records now only exist in database backups.\" } ] }" $(TERMINAL_WEBHOOK)
 
 #########################################
-#####   End of Production Scripts   ##### 
+#####   End of Legacy Maintenance    #####
 #########################################
 #########################################
-#####      Development Scripts      ##### 
+#####      Development Scripts      #####
 #########################################
 start-linux:
 	`pwd`/Start-Linux.sh
@@ -176,7 +186,7 @@ import-retro-sqlite:
 backup-mariadb-local:
 	@[ "${db}" ] || ( echo ">> db is not set"; exit 1 )
 	mkdir -p $(MYSQL_DUMPS_DIR)
-	chmod -R 777 $(MYSQL_DUMPS_DIR)
+	chmod 700 $(MYSQL_DUMPS_DIR)
 	mysqldump -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} --single-transaction --quick --lock-tables=false | zip > $(MYSQL_DUMPS_DIR)/`date "+%Y%m%d-%H%M-%Z"`-${db}.zip
 
 # Creates a database export of the specified database and saves to the output directory specified in the .env file.  Good for utilizing as a crontab.
@@ -184,7 +194,7 @@ backup-mariadb-local:
 backup-sqlite-local:
 	@[ "${db}" ] || ( echo ">> db is not set"; exit 1 )
 	mkdir -p $(MYSQL_DUMPS_DIR)
-	chmod -R 777 $(MYSQL_DUMPS_DIR)
+	chmod 700 $(MYSQL_DUMPS_DIR)
 	echo .dump | sqlite3 server/inc/sqlite/${db}.db | zip > $(MYSQL_DUMPS_DIR)/`date "+%Y%m%d-%H%M-%Z"`-${db}.zip
 
 # Unzips a database backup zip file in the output directory specified in the .env file and then imports it into the specified database as a database restoration from backup method

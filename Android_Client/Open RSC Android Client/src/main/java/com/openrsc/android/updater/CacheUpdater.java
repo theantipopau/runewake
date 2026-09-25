@@ -42,6 +42,8 @@ import orsc.util.GenUtil;
 
 public class CacheUpdater extends Activity {
 
+    private static final int NETWORK_TIMEOUT_MILLIS = 5000;
+
     private TextProgressBar progressBar;
 
     private TextView tv1;
@@ -290,6 +292,8 @@ public class CacheUpdater extends Activity {
                 String description = getDescription(file);
                 publishProgress("Downloading " + description, String.valueOf(0));
                 HttpURLConnection connection = (HttpURLConnection) new URL(fileURL).openConnection();
+                connection.setConnectTimeout(NETWORK_TIMEOUT_MILLIS);
+                connection.setReadTimeout(NETWORK_TIMEOUT_MILLIS);
                 try (BufferedInputStream in = new BufferedInputStream(connection.getInputStream());
                      FileOutputStream fileOutputStream = new FileOutputStream(file)) {
                     int filesize = connection.getContentLength();
@@ -299,12 +303,15 @@ public class CacheUpdater extends Activity {
                     while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
                         totalRead += bytesRead;
                         fileOutputStream.write(dataBuffer, 0, bytesRead);
-                        publishProgress("Downloading " + description, "" + (100 * totalRead / filesize));
+                        if (filesize > 0) {
+                            publishProgress("Downloading " + description, "" + (100 * totalRead / filesize));
+                        }
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
+                } finally {
+                    connection.disconnect();
                 }
-                connection.disconnect();
             } catch (Exception a) {
                 a.printStackTrace();
             }

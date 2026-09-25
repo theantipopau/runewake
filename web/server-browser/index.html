@@ -90,6 +90,11 @@
     font-size: 1.4rem;
     font-weight: 700;
   }
+  .stat .count .capacity {
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: var(--muted);
+  }
   .stat .label {
     font-size: 0.75rem;
     color: var(--muted);
@@ -167,7 +172,8 @@
     Want your server listed? Add an entry to <code>servers.json</code> in this folder and
     open a pull request. Your server needs <code>want_feature_websockets: true</code> (the
     default) &mdash; the status endpoint is served on the <code>ws_server_port</code>, not the
-    main game port. See <code>ROADMAP.md</code> in the repo root for details.
+    main game port. Uptime monitors can use <code>/healthz</code> (liveness) and scrape
+    <code>/metrics</code> on the same port. See <code>ROADMAP.md</code> in the repo root for details.
   </footer>
 </div>
 
@@ -293,7 +299,9 @@
       const data = await res.json();
 
       dot.className = 'status-dot online';
-      stat.innerHTML = `<div class="count">${data.players}</div><div class="label">players online</div>`;
+      const capacity = (typeof data.maxPlayers === 'number' && data.maxPlayers > 0)
+        ? ` <span class="capacity">/ ${data.maxPlayers}</span>` : '';
+      stat.innerHTML = `<div class="count">${data.players}${capacity}</div><div class="label">players online</div>`;
       if (data.serverName) {
         nameEl.lastChild.textContent = data.serverName;
       }

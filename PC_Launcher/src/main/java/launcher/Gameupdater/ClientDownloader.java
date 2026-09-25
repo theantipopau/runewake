@@ -13,6 +13,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public class ClientDownloader {
+  private static final int NETWORK_TIMEOUT_MILLIS = 5000;
   private static final String PROPERTIES_FILE = Main.configFileLocation + File.separator + "client_versions.properties";
 
   public static void downloadOrUpdate(File gamePath, String fileName, String url, String versionStringVarName) {
@@ -109,6 +110,8 @@ public class ClientDownloader {
 
   private static void downloadFile(File gamePath, String fileName, String url) throws IOException {
     URLConnection connection = new URL(url).openConnection();
+    connection.setConnectTimeout(NETWORK_TIMEOUT_MILLIS);
+    connection.setReadTimeout(NETWORK_TIMEOUT_MILLIS);
     int fileSize = connection.getContentLength();
     try (BufferedInputStream inputStream = new BufferedInputStream(connection.getInputStream());
         FileOutputStream fileOS = new FileOutputStream(gamePath + File.separator + fileName)) {
@@ -117,7 +120,11 @@ public class ClientDownloader {
       while ((byteContent = inputStream.read(data, 0, 1024)) != -1) {
         totalRead += byteContent;
         fileOS.write(data, 0, byteContent);
-        ProgressBar.setDownloadProgress("Downloading " + fileName, (float) totalRead / fileSize * 100);
+        if (fileSize > 0) {
+          ProgressBar.setDownloadProgress("Downloading " + fileName, (float) totalRead / fileSize * 100);
+        } else {
+          ProgressBar.setDownloadProgress("Downloading " + fileName, 0.0f);
+        }
       }
     }
   }

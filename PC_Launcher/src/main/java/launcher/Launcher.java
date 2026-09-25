@@ -9,6 +9,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.*;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.net.URLConnection;
 
 public class Launcher extends Component {
@@ -158,36 +160,45 @@ public class Launcher extends Component {
     setStatus("Starting launcher update...");
     setProgress(0, 1);
 
+    File file = new File("./" + Defaults._LAUNCHER_FILENAME);
+    File temporaryFile = new File("./" + Defaults._LAUNCHER_FILENAME + ".part");
     try {
       URL url = new URL(Defaults._GAME_FILES_SERVER + Defaults._LAUNCHER_FILENAME);
 
-      // Open connection
+      // Use the same connection for metadata and content so its timeouts apply
+      // to the complete request. A blocked update host must not freeze launch.
       URLConnection connection = url.openConnection();
-      connection.setConnectTimeout(3000);
-      connection.setReadTimeout(3000);
-
+      connection.setConnectTimeout(5000);
+      connection.setReadTimeout(5000);
       int size = connection.getContentLength();
+
       int offset = 0;
-      byte[] data = new byte[size];
-
-      InputStream input = url.openStream();
-
-      int readSize;
-      while ((readSize = input.read(data, offset, size - offset)) != -1) {
-        offset += readSize;
-        setStatus("Updating launcher (" + (offset / 1024) + "KiB / " + (size / 1024) + "KiB)");
-        setProgress(offset, size);
+      byte[] data = new byte[8192];
+      try (InputStream input = connection.getInputStream();
+          FileOutputStream output = new FileOutputStream(temporaryFile)) {
+        int readSize;
+        while ((readSize = input.read(data)) != -1) {
+          output.write(data, 0, readSize);
+          offset += readSize;
+          if (size > 0) {
+            setStatus("Updating launcher (" + (offset / 1024) + "KiB / " + (size / 1024) + "KiB)");
+            setProgress(offset, size);
+          } else {
+            setStatus("Updating launcher (" + (offset / 1024) + "KiB)");
+          }
+        }
       }
-
-      if (offset == size) {
-        File file = new File("./" + Defaults._LAUNCHER_FILENAME);
-        FileOutputStream output = new FileOutputStream(file);
-        output.write(data);
-        output.close();
+      Files.move(temporaryFile.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+      return true;
+    } catch (Exception error) {
+      // Do not claim success after a partial download, and do not destroy the
+      // currently installed launcher if the transfer or staged move fails.
+      if (temporaryFile.exists()) {
+        temporaryFile.delete();
       }
-    } catch (Exception ignored) {
+      Logger.Error("Unable to download launcher update: " + error.getMessage());
+      return false;
     }
-    return true;
   }
 
   /**

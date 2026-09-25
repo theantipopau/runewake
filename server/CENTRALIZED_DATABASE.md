@@ -1,127 +1,161 @@
 # Sharing one account database across multiple RuneWake servers
 
-By default each server config (`default.conf`, `rsccabbage.conf`, etc.) uses
-the SQLite backend, which stores its database as a local file at
-`server/inc/sqlite/<db_name>.db`. Two server processes — even on the same
-machine — never see each other's SQLite file, so an account made on one
-doesn't exist on the other.
+By default each world uses SQLite and stores its data at
+`server/inc/sqlite/<db_name>.db`. Two processes using different SQLite files
+do not share accounts, even on the same machine. To share accounts, run a
+MySQL/MariaDB database and point every participating world at the same
+database name and table prefix.
 
-To share accounts, point every server instance at the same **MySQL/MariaDB**
-database instead. This is built into the server already (`db_type: mysql` in
-`connections.conf`) — no code changes needed, just configuration.
+This guide is for one shared account database. It does not implement the
+later OpenRSC multi-cluster/login-server design.
 
-## Where this fits on your Proxmox setup
+## Recommended topology
 
-Since you're already planning to run the dedicated server on your Windows
-VM, the simplest setup is to run MariaDB on that **same VM** and have the
-server connect to it over `localhost` — no port-forwarding or firewall
-changes needed for the database itself (only the game ports
-`server_port`/`ws_server_port` need to be reachable from players, same as
-today).
+For the first hosted world, run the database on the same VM as the game and
+connect through `127.0.0.1:3306`. Only the game and status TCP ports
+(`43594` and `43494` by default) need public reachability. Do not publish
+TCP `3306` to the Internet.
 
-If you later add a second server instance on a *different* machine that
-should share the same accounts, see "Connecting from another machine" below
-— that's the part that needs actual network exposure and hardening.
+For multiple worlds on the same VM, use one database and choose either:
 
-## 1. Install MariaDB on the Windows VM
+- one `DB_NAME` and an empty `DB_TABLE_PREFIX` when all worlds should share
+  the same account tables; or
+- separate database names/prefixes when worlds must remain isolated.
 
-Download and run the MariaDB Community Server MSI installer from the
-official MariaDB site (search "MariaDB Server download" — pick the current
-stable release, Windows x64 MSI). During setup:
-- Set a strong root password when prompted.
-- Leave the default port `3306` unless you already have something using it.
-- The installer can register it as a Windows service, so it starts
-  automatically with the VM (equivalent to what you already have for the
-  game server, just one more background service).
+A remote world should use a private network such as WireGuard or a provider's
+private database endpoint. Do not create a MySQL user for `%` merely to make
+a remote connection convenient.
 
-## 2. Create a dedicated database + user (don't use root)
+## Create the database and application user
 
-Open a command prompt and connect as root:
-
-```
-"C:\Program Files\MariaDB <version>\bin\mysql.exe" -u root -p
-```
-
-Then create a database and a **non-root** application user scoped to just
-that database:
+Use the MariaDB/MySQL administration account only for setup. Create a
+separate game account scoped to the intended database:
 
 ```sql
-CREATE DATABASE runewake;
-CREATE USER 'runewake'@'localhost' IDENTIFIED BY 'choose-a-strong-password-here';
+CREATE DATABASE runewake CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'runewake'@'localhost' IDENTIFIED BY 'use-a-generated-secret';
 GRANT ALL PRIVILEGES ON runewake.* TO 'runewake'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-(If a second server on another machine will also connect, see step 4 for
-using a specific host instead of `localhost` in the `CREATE USER` line.)
+`ALL PRIVILEGES` is limited to this one database and is useful for the
+initial schema/patch setup; narrow it to the permissions the chosen build
+actually needs after testing. Keep a separate administrative/backup account
+for recovery and schema changes. Never put either password in the repository.
 
-## 3. Import the schema
+## Configure the server without checked-in secrets
 
-The core table definitions live in the repo already — import them into the
-database you just created:
+The server reads `DB_*` environment variables before the corresponding
+`connections.conf` values. For a systemd deployment, put the values in the
+protected environment file described in
+[`deployment/systemd/README.md`](../deployment/systemd/README.md):
 
+```text
+DB_TYPE=mysql
+DB_HOST=127.0.0.1:3306
+DB_NAME=runewake
+DB_USER=runewake
+DB_PASS=<secret>
+DB_TABLE_PREFIX=
+DB_SSL_MODE=PREFERRED
+DB_CONNECT_TIMEOUT=10000
 ```
-"C:\Program Files\MariaDB <version>\bin\mysql.exe" -u runewake -p runewake < "server\database\mysql\core.sql"
-```
 
-If any of your servers run a retro ruleset, also import
-`server\database\mysql\retro.sql` the same way. Check
-`server\database\mysql\addons\` for any optional feature tables matching
-`custom_features` flags you've enabled in your `.conf` (e.g. clans,
-auction house, equipment tab) — only import the ones matching features you
-actually turned on.
+For a remote database, use `VERIFY_IDENTITY` and ensure the provider's CA is
+trusted by the JVM. Connector/J supports the following modes (see the official
+[SSL connection guide](https://dev.mysql.com/doc/connector-j/en/connector-j-reference-using-ssl.html)):
 
-## 4. Point the server(s) at it
+- `PREFERRED`: use TLS when available, but fall back to plaintext;
+- `REQUIRED`: require encryption without certificate identity verification;
+- `VERIFY_CA`: require encryption and validate the certificate chain;
+- `VERIFY_IDENTITY`: also require the certificate hostname to match;
+- `DISABLED`: explicit plaintext, for an isolated development network only.
 
-Edit `server/connections.conf` (this is shared by every world/config
-running from this checkout):
+A local MariaDB with no matching certificate can start with `PREFERRED` while
+its TLS setup is being completed. Do not use that compatibility mode for an
+Internet-facing managed database. Run
+`bash scripts/check_hosting_config.sh` before starting the service; it checks
+these settings without printing the password.
 
-```
+The YAML fallback remains available for local development. It should contain
+placeholders, not production credentials:
+
+```yaml
 db_type: mysql
-
 mysql:
-	db_host: localhost:3306
-	db_user: runewake
-	db_pass: choose-a-strong-password-here
-	db_table_prefix:
+    db_host: 127.0.0.1:3306
+    db_user: runewake
+    db_pass:
+    db_table_prefix:
+    db_ssl_mode: PREFERRED
 ```
 
-Then, in **every** `.conf` file for the servers that should share accounts
-(`default.conf`, `rsccabbage.conf`, whichever you're running), make sure
-`db_name` is set to the **same** value:
+## Initialize a new database safely
 
+The files in `server/database/mysql/` are split into initialization schema,
+optional add-ons, ordered patches, and legacy upgrade scripts. The
+`core.sql` and `retro.sql` initialization files contain destructive
+`DROP TABLE IF EXISTS` statements. They are safe only for a brand-new empty
+database. Never replay them over a live or backed-up production database.
+
+For a new MariaDB database:
+
+1. create the database and dedicated user;
+2. verify the target is empty;
+3. import `server/database/mysql/core.sql` once;
+4. import only the optional add-on tables required by the chosen config;
+5. import `retro.sql` only for a new retro schema, never as a migration;
+6. start the server once so its ordered patch mechanism can record and apply
+   future patches;
+7. take a backup and test a restore.
+
+The server's patch applier reads `server/database/mysql/patches/` and records
+successful patches. A failed patch is a deployment failure, not a reason to
+run the destructive initialization file again.
+
+## Existing SQLite data
+
+There is no automatic SQLite-to-MariaDB conversion. If real player accounts
+already exist, stop the server, make a copy of the SQLite file, inspect the
+source schema and row counts, and write/test a migration for that exact data
+set. Validate account/login credentials, characters, inventories, banks,
+friends, bans, and patch history before switching the public world over.
+
+A simple file copy into `server/inc/databases` is not a migration and may
+silently lose or corrupt data.
+
+## Backups and recovery
+
+For a local MariaDB instance, use the repository helper with a dedicated
+backup account:
+
+```sh
+read -rsp 'Database backup password: ' MYSQL_PASSWORD; echo
+export MYSQL_DATABASE=runewake MYSQL_USER=runewake_backup MYSQL_PASSWORD
+export MYSQL_BACKUP_DIR=/var/backups/runewake/mysql
+bash scripts/backup_mariadb.sh
+unset MYSQL_PASSWORD
 ```
-database:
-	db_name: runewake
-```
 
-Servers with a *different* `db_name` will still connect to the same MySQL
-instance but get their own separate set of tables — useful if you
-deliberately want, say, a hardcore/ironman mode to have isolated
-characters, but not what you want if the goal is one shared account across
-all of them.
+The helper uses a private temporary client option file, a consistent
+transaction, restrictive permissions, and a SHA-256 checksum. Copy the
+resulting archive off the host and periodically restore it into a scratch
+database. For a managed provider, use its snapshot/export feature as well;
+check retention, egress, and deletion policy.
 
-## Connecting from another machine
+For SQLite, stop the server or use a tested SQLite backup method, then copy
+`server/inc/sqlite/<db_name>.db` to off-host storage. A VM snapshot alone is
+not a tested restore.
 
-If a second server instance runs somewhere else (another VM, a friend's
-machine, a VPS) and needs to share this same database:
+## Remote connections
 
-- In step 2, create the user scoped to that machine's IP instead of
-  `localhost` — e.g. `CREATE USER 'runewake'@'203.0.113.5' ...` — rather
-  than `'runewake'@'%'`, which would allow connections from anywhere.
-- Open port `3306` on the Windows VM's firewall and, if the VM is behind
-  NAT, forward it on your router — but treat this the same as any other
-  exposed database port: prefer restricting it to a known set of source
-  IPs, or better, put a WireGuard tunnel (free, open-source) between the
-  two machines and only allow MySQL connections over the tunnel's private
-  IP range instead of the raw internet.
-- Set `db_host` in that other server's `connections.conf` to the VM's
-  reachable IP/hostname instead of `localhost`.
+Prefer, in order:
 
-## Migrating existing accounts
+1. database on the same VM over loopback;
+2. a provider private endpoint or WireGuard/Tailscale-style private network;
+3. a managed database with verified TLS and a restricted source network.
 
-If any of the servers you're consolidating already have real player data in
-their SQLite `.db` files, that data needs to be migrated into the new MySQL
-schema before switching — it won't happen automatically. Let me know if you
-have existing accounts you need carried over and I'll help write that
-migration rather than guessing at what's actually in those files.
+If raw TCP `3306` must be opened temporarily, restrict the cloud/firewall
+rule to known source addresses, use a dedicated account, require TLS, and
+close the rule after migration/testing. It should not be the permanent
+public topology.

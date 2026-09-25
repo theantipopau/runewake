@@ -20,9 +20,11 @@ the server's default database is file-based SQLite.
    See the `.conf` files at the repo root of `server/` for the full list.
 
 That's it — no database server to install or configure unless you
-specifically want MySQL/MariaDB instead of the SQLite default (see
-`docker-compose.yml` at the repo root, which sets up a MariaDB container if
-needed; SQLite needs nothing extra).
+specifically want MySQL/MariaDB instead of the SQLite default. For a hosted
+world, prefer the provider-neutral `deployment/systemd/` unit and the
+environment-based database settings described in
+`CENTRALIZED_DATABASE.md`; the root `docker-compose.yml` is a private local
+MariaDB helper, not a public database service.
 
 ## Making it reachable from outside your network
 
@@ -34,9 +36,11 @@ below are from `default.conf`):
   Players' clients connect here directly.
 - **`ws_server_port` (default `43494`, TCP)** — only needed if
   `want_feature_websockets: true` (the default). This also serves the
-  JSON status endpoint used by `web/server-browser/` (see that folder's
-  README) — so it's worth opening even if you don't care about websocket
-  clients, if you want your server listed in a server browser.
+  JSON status endpoint (`/status`) used by `web/server-browser/` (see that
+  folder's README), plus `/healthz` for uptime monitors and `/metrics` for
+  Prometheus-style scraping — so it's worth opening even if you don't care
+  about websocket clients, if you want your server listed in a server
+  browser or monitored from off-host.
 
 Both are plain TCP — no UDP forwarding needed.
 
@@ -144,6 +148,22 @@ supports `SSL_SERVER_CERT_PATH`/`SSL_SERVER_KEY_PATH` config for a real
 Let's Encrypt certificate, but that needs a domain name pointed at the VM
 and ports 80/443 reachable for the ACME challenge — more moving parts than
 the tunnel option above.
+
+## Production configuration and database safety
+
+The default file-based setup is still suitable for a small world. Before
+putting a world on the public Internet, run
+`bash scripts/check_hosting_config.sh`, use a non-root database account, and
+keep TCP `3306` private. The server accepts `DB_TYPE`, `DB_HOST`, `DB_NAME`,
+`DB_USER`, `DB_PASS`, `DB_TABLE_PREFIX`, and `DB_SSL_MODE` from the process
+environment, so credentials do not need to be committed to
+`server/connections.conf`. The schema files under `server/database/mysql/`
+are destructive initialization scripts, not migrations.
+
+For unattended Linux operation, use `deployment/systemd/runewake-server.service`
+and keep its environment file mode `0600`. See
+`docs/FREE_HOSTING.md` for Oracle Always Free limits and a provider-neutral
+rollout checklist.
 
 ## Sharing accounts across multiple servers
 

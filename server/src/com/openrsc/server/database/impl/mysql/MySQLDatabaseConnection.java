@@ -37,8 +37,7 @@ public class MySQLDatabaseConnection extends JDBCDatabaseConnection {
 		}
 
 		try {
-			connection = DriverManager.getConnection("jdbc:mysql://"
-					+ getServer().getConfig().DB_HOST + "/" + getServer().getConfig().DB_NAME + "?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&serverTimezone=UTC",
+			connection = DriverManager.getConnection(buildConnectionUrl(),
 				getServer().getConfig().DB_USER,
 				getServer().getConfig().DB_PASS);
 			statement = connection.createStatement();
@@ -57,6 +56,23 @@ public class MySQLDatabaseConnection extends JDBCDatabaseConnection {
 		}
 
 		return isConnected();
+	}
+
+	/**
+	 * Build the JDBC URL without ever embedding credentials in a log or exception
+	 * message. Connector/J 8+ uses sslMode; PREFERRED keeps local, certificate-less
+	 * MariaDB installations working while allowing hosted databases to require TLS.
+	 */
+	private String buildConnectionUrl() {
+		String sslMode = getServer().getConfig().DB_SSL_MODE;
+		if (sslMode == null || sslMode.trim().isEmpty()) {
+			sslMode = "PREFERRED";
+		}
+		return "jdbc:mysql://"
+				+ getServer().getConfig().DB_HOST + "/" + getServer().getConfig().DB_NAME
+				+ "?autoReconnect=true&rewriteBatchedStatements=true&serverTimezone=UTC"
+				+ "&connectTimeout=" + getServer().getConfig().DB_CONNECT_TIMEOUT
+				+ "&sslMode=" + sslMode;
 	}
 
 	@Override
