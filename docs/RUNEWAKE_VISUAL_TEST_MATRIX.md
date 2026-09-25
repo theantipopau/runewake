@@ -13,10 +13,10 @@ at the portable JDK (the system Java is a JRE and cannot run `ant compile`).
 
 | Target | Command | Status | Session |
 |---|---|---|---|
-| Client (base + PC sources) | `ant -f Client_Base/build.xml compile` | **passed** | 2026-09-16 (×3: baseline, Theme migration, branding pass) |
-| Server core | `ant -f server/build.xml compile_core` | **passed** | 2026-09-16 (baseline + after leak fixes) |
-| Server plugins | `ant -f server/build.xml compile_plugins` | **passed** | 2026-09-16 (baseline + after leak fixes) |
-| Launcher | `ant -f PC_Launcher/build.xml compile` | unverified this pass | — |
+| Client (base + PC sources) | `ant -f Client_Base/build.xml compile` | **passed** | 2026-09-26 (after the legacy-panel theme sweep and the texture-pipeline extraction) |
+| Server core | `ant -f server/build.xml compile_core` | **passed** | 2026-09-26 (after the full dependency refresh) |
+| Server plugins | `ant -f server/build.xml compile_plugins` | **passed** | 2026-09-26 (after the full dependency refresh) |
+| Launcher | `ant -f PC_Launcher/build.xml compile` | **passed** | 2026-09-26 (verification build; no launcher code changed) |
 
 ## Resolution matrix (interactive — human required)
 
@@ -150,3 +150,101 @@ The landing page can be checked in a browser separately from the Java client.
 6. **Landing-page captures**: `frame-0120.jpg` and `frame-0221.jpg` are
    pre-fix gameplay captures used only as illustrative site art. They must
    not be treated as evidence that the current client panels look correct.
+
+## Additions from the 2026-09-25 pass (all unverified visually)
+
+The latest client working-tree pass adds a premium-only console frame behind
+the welcome, existing-user, registration, and password-recovery forms. The
+frame uses a dark translucent fill, a two-step bronze bevel, and restrained
+rune-blue horizontal rules. The existing login status scrim now uses the same
+Theme token family. No control geometry or hitbox was changed.
+
+1. **Premium login**: verify the frame is centred behind each form, leaves
+   the existing controls readable over `login.png`, and does not cover the
+   rotating fallback background or bottom BLUEBAR. The registration heading
+   should switch to light text in premium mode while remaining classic-black.
+2. **Registration and recovery**: check the taller registration frame against
+   both `wantEmail()` layouts and Android keyboard-hint spacing; check the
+   recovery frame at the minimum and maximum UI scales for clipping.
+3. **Status/error states**: exercise invalid credentials, connection failure,
+   and account-creation responses; the status scrim should remain behind both
+   status rows without making the rune-blue focus underline disappear.
+4. **Classic mode**: the frame helper exits before drawing, and the status
+   scrim resolves to its inherited black fill/alpha; compare against the
+   previous build for pixel identity.
+5. Per-resolution matrix above still applies; the human pass should include
+   1280x732, 1920x1080, 2560x1440, and 3440x1440.
+
+## Additions from the 2026-09-26 adaptive-console pass (all unverified visually)
+
+The premium console frame is now measured from the form's own control bounds
+(`Panel.getContentBounds()`) rather than per-screen hard-coded rectangles, and
+the existing-user status scrim tracks the console width instead of spanning the
+whole window. Classic mode still exits before drawing, so its output should be
+byte-identical.
+
+1. **Frame tracks the form**: on each of the welcome (free and members),
+   existing-user, registration (`wantEmail()` true and false), and recovery
+   screens, the console edges should sit an even padding outside the outermost
+   control, with no control touching or crossing the bevel at 100% and at the
+   maximum UI scale.
+2. **Long text**: set a deliberately long `SERVER_NAME_WELCOME`/`WELCOME_TEXT`
+   and confirm the welcome console clamps to the envelope rather than running
+   off-screen, and that its text is still centred.
+3. **Status scrim**: trigger an invalid-credential and a connection-failure
+   status. The premium scrim should read as a band inside the console (not a
+   full-width stripe across the splash art) and still back the whole status
+   line; the focused-field underline must remain visible.
+4. **Android layout**: confirm the measured frame follows the keyboard-offset
+   welcome/login forms and does not clip the bottom of the password row.
+5. **Classic regression**: with `C_PREMIUM_THEME` off, compare the login,
+   registration, and recovery screens against the previous build; both the
+   frame (never drawn) and the scrim (inherited full-width black) must be
+   pixel-identical.
+
+## Additions from the 2026-09-26 theme-migration pass (all unverified visually)
+
+The Ironman setup window and the skill guide are now drawn from `Theme`
+families. Classic values are preserved literal-for-literal (and the new
+`scripts/check_theme_parity.sh` asserts this), so only premium mode changes.
+
+1. **Ironman setup window** (`C_PREMIUM_THEME` on): confirm the window body,
+   outer border, heading, inset plate, radio badges, sub-menu plate, close
+   button (idle and hover) and both choice-box rows read as one coherent dark
+   panel, that hover states are still distinguishable from idle, and that the
+   orange heading/description text is legible on the premium plate.
+2. **Skill guide window** (premium): confirm the translucent body still lets
+   the world through where intended, the Level/Advancement header band and
+   table text contrast, and that the selected tab, hovered tab and per-skill
+   active button are each visually distinct from idle.
+3. **Classic regression**: with `C_PREMIUM_THEME` off, open both windows and
+   compare against the previous build; they must be pixel-identical (the
+   parity guard covers the values, not the rendering).
+
+## Additions from the 2026-09-26 legacy-panel theme sweep (all unverified visually)
+
+The six legacy custom windows that draw straight onto the game surface
+(Points, Points-to-GP, Territory Signup, Experience Config, Quest Guide,
+Lost on Death) plus the achievement window now route their plate, border, text
+and control colours through `Theme.legacy*` / `Theme.points*` /
+`Theme.achievement*`. Off-path values are the exact inherited literals, so
+classic mode should be unchanged.
+
+1. **Premium appearance**: open each window with `C_PREMIUM_THEME` on. The
+   0x989898 light-grey plate should now be a dark `PANEL_ELEVATED` plate, the
+   black border and rules should still separate the plate from the world, and
+   body text must stay legible against the darker fill (the inherited text was
+   white on light grey; the premium text token is parchment on charcoal).
+2. **Controls**: in each window, hover and press the close `X` and the
+   checked/unchecked buttons. Idle/hover/checked must remain three visually
+   distinct states - the premium palette moves all three, and the inherited
+   "hover" was blue with "checked" red.
+3. **Points window specifics**: the brown title band and yellow title text are
+   the two colours with the least headroom for a dark theme; confirm the
+   premium accent title still reads as a heading rather than blending into the
+   plate.
+4. **Achievement window**: confirm the header band, the reward-slot backing and
+   the close-footer rule are still distinguishable from each other, and that
+   the `@gre@`/`@yel@` status prefixes in the title still contrast.
+5. **Classic regression**: with `C_PREMIUM_THEME` off, open all seven and
+   compare against the previous build; they must be pixel-identical.

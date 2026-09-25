@@ -5,6 +5,7 @@ import com.openrsc.client.entityhandling.defs.ItemDef;
 import com.openrsc.client.entityhandling.defs.NPCDef;
 import orsc.Config;
 import orsc.graphics.gui.Panel;
+import orsc.graphics.gui.Theme;
 import orsc.graphics.two.GraphicsController;
 import orsc.mudclient;
 
@@ -51,9 +52,9 @@ public final class SkillGuideInterface {
 		int x = (mc.getGameWidth() - width) / 2;
 		int y = (mc.getGameHeight() - height) / 2;
 
-		panelColour = 0x989898;
-		textColour = 0xffffff;
-		bordColour = 0x000000;
+		panelColour = Theme.skillGuidePanelFill();
+		textColour = Theme.skillGuideText();
+		bordColour = Theme.skillGuideBorder();
 
 		skillGuide.handleMouse(mc.getMouseX(), mc.getMouseY(), mc.getMouseButtonDown(), mc.getLastMouseDown());
 
@@ -103,11 +104,11 @@ public final class SkillGuideInterface {
 		}
 
 		mc.getSurface().drawLineHoriz(x + 1, y + 81, width - 2, 0);
-		mc.getSurface().drawBoxAlpha(x + 1, y + 82, width - 2, 16, 0x6580B7, 192);
+		mc.getSurface().drawBoxAlpha(x + 1, y + 82, width - 2, 16, Theme.skillGuideHeaderBand(), 192);
 
-		mc.getSurface().drawString("Level", x + 5, y + 94, 0xffffff, 2);
-		//mc.getSurface().drawString("Item", x + 5 + 35, y + 94, 0xffffff, 2);
-		mc.getSurface().drawString("Advancement", x + 5 + 80, y + 94, 0xffffff, 2);
+		mc.getSurface().drawString("Level", x + 5, y + 94, textColour, 2);
+		//mc.getSurface().drawString("Item", x + 5 + 35, y + 94, textColour, 2);
+		mc.getSurface().drawString("Advancement", x + 5 + 80, y + 94, textColour, 2);
 
 		drawSkillItems();
 	}
@@ -146,7 +147,7 @@ public final class SkillGuideInterface {
 
 			int gapHeight = (curItem instanceof SkillMenuItem) ? 37 : 37;
 
-			mc.getSurface().drawBoxAlpha(detailX - 75, allY, width, gapHeight, 0x45454545, 90);
+			mc.getSurface().drawBoxAlpha(detailX - 75, allY, width, gapHeight, Theme.skillGuideRowFill(), 90);
 			drawString(curItem.getLevelReq(), levelX, allY + 25, 2, textColour);
 
 			drawString(curItem.getSkillDetail(), detailX + 10, allY + 25, 2, textColour);
@@ -195,32 +196,32 @@ public final class SkillGuideInterface {
 	}
 
 	private void drawButton(int x, int y, int width, int height, String text, int font, boolean checked, ButtonHandler handler) {
-		int bgBtnColour = 0x333333; // grey
+		int bgBtnColour = Theme.skillGuideButtonFill(false, false);
 		if (checked) {
-			bgBtnColour = 16711680; // red
+			bgBtnColour = Theme.skillGuideButtonFill(true, false);
 		}
 		if (mc.getMouseX() >= x && mc.getMouseY() >= y && mc.getMouseX() <= x + width && mc.getMouseY() <= y + height) {
 			if (!checked)
-				bgBtnColour = 16711680; // blue
+				bgBtnColour = Theme.skillGuideButtonFill(false, true);
 			if (mc.getMouseClick() == 1) {
 				handler.handle();
 				mc.setMouseClick(0);
 			}
 		}
 		mc.getSurface().drawBoxAlpha(x, y, width, height, bgBtnColour, 192);
-		mc.getSurface().drawBoxBorder(x, width, y, height, 0x242424);
+		mc.getSurface().drawBoxBorder(x, width, y, height, Theme.skillGuideButtonBorder());
 		mc.getSurface().drawString(text, x + (width / 2) - (mc.getSurface().stringWidth(font, text) / 2) - 1, y + height / 2 + 5, textColour, font);
 	}
 
 	// Used for drawing tabs
 	// Keeps track of current tab and tab hovered over
 	private void drawTab(int x, int y, int width, int height, String text, int font) {
-		int bgBtnColour = 0x333333; // grey
+		int bgBtnColour = Theme.skillGuideTabFill(false, false);
 		boolean current = mc.skillGuideChosenTabs.get(curTab).equals(text);
 		if (current) {
-			bgBtnColour = 0x659CDE; // red
+			bgBtnColour = Theme.skillGuideTabFill(true, false);
 		} else if (mc.getMouseX() >= x && mc.getMouseY() >= y && mc.getMouseX() <= x + width && mc.getMouseY() <= y + height) {
-			bgBtnColour = 0x6580B7; // blue
+			bgBtnColour = Theme.skillGuideTabFill(false, true);
 			if (mc.getMouseClick() == 1) {
 				for (int i = 0; i < mc.skillGuideChosenTabs.size(); i++) {
 					if (mc.skillGuideChosenTabs.get(i) == text) {
@@ -231,7 +232,7 @@ public final class SkillGuideInterface {
 			}
 		}
 		mc.getSurface().drawBoxAlpha(x, y, width, height, bgBtnColour, 192);
-		mc.getSurface().drawBoxBorder(x, width, y, height, 0x242424);
+		mc.getSurface().drawBoxBorder(x, width, y, height, Theme.skillGuideButtonBorder());
 		mc.getSurface().drawString(text, x + (width / 2) - (mc.getSurface().stringWidth(font, text) / 2), y + height / 2 + 5, textColour, font);
 	}
 

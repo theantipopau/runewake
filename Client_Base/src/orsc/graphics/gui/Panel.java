@@ -501,6 +501,116 @@ public final class Panel {
 		}
 	}
 
+	/**
+	 * Reports the axis-aligned bounds of every visible control this panel would
+	 * draw, as {left, top, right, bottom} in the same client coordinates
+	 * drawPanel() uses, or null when nothing measurable is visible.
+	 *
+	 * Text is measured with the live font metrics so a caller can wrap a whole
+	 * form (e.g. the premium login console) without hard-coded sizes that drift
+	 * when fields move. Read-only: no control or focus state is mutated.
+	 */
+	public final int[] getContentBounds() {
+		try {
+			int left = 0;
+			int top = 0;
+			int right = 0;
+			int bottom = 0;
+			boolean any = false;
+
+			for (int i = 0; i < this.controlCount; ++i) {
+				if (!this.controlVisible[i]) {
+					continue;
+				}
+
+				int font = this.controlArgInt[i];
+				int cLeft;
+				int cTop;
+				int cRight;
+				int cBottom;
+
+				switch (this.controlType[i]) {
+					case CENTERED_TEXT: {
+						String text = this.controlText[i];
+						if (text == null || text.length() == 0) {
+							continue;
+						}
+						int halfText = this.graphics.stringWidth(font, text) / 2;
+						int fontPx = this.graphics.fontHeight(font);
+						cLeft = this.controlX[i] - halfText;
+						cRight = this.controlX[i] + halfText;
+						// Controls anchor text by its centre line; widen by the
+						// baseline skew renderText() applies so no glyph is missed.
+						cTop = this.controlY[i] - fontPx / 3;
+						cBottom = this.controlY[i] + fontPx;
+						break;
+					}
+					case LEFT_TEXT: {
+						String text = this.controlText[i];
+						if (text == null || text.length() == 0) {
+							continue;
+						}
+						cLeft = this.controlX[i];
+						cRight = cLeft + this.graphics.stringWidth(font, text);
+						cTop = this.controlY[i] - this.graphics.fontHeight(font) / 3;
+						cBottom = this.controlY[i] + this.graphics.fontHeight(font);
+						break;
+					}
+					case CENTERED_TEXT_ENTRY:
+						cLeft = this.controlX[i] - this.controlWidth[i] / 2;
+						cTop = this.controlY[i] - this.controlHeight[i] / 2;
+						cRight = cLeft + this.controlWidth[i];
+						cBottom = cTop + this.controlHeight[i];
+						break;
+					case LEFT_TEXT_ENTRY:
+						cLeft = this.controlX[i];
+						cTop = this.controlY[i] - this.controlHeight[i] / 2;
+						cRight = cLeft + this.controlWidth[i];
+						cBottom = cTop + this.controlHeight[i];
+						break;
+					case HORIZ_LINE:
+						cLeft = this.controlX[i];
+						cTop = this.controlY[i];
+						cRight = cLeft + this.controlWidth[i];
+						cBottom = cTop + 1;
+						break;
+					case BUTTON:
+					case BUTTON_BACKGROUND:
+					case DECORATED_BOX:
+					case TOGGLE_BUTTON:
+					case SCROLLING_LIST:
+					case SCROLLING_LIST_2:
+					case SCROLLING_LIST3:
+						cLeft = this.controlX[i];
+						cTop = this.controlY[i];
+						cRight = cLeft + this.controlWidth[i];
+						cBottom = cTop + this.controlHeight[i];
+						break;
+					default:
+						// Lists/sprites have no reliable box in this space: skip.
+						continue;
+				}
+
+				if (!any) {
+					left = cLeft;
+					top = cTop;
+					right = cRight;
+					bottom = cBottom;
+					any = true;
+				} else {
+					left = Math.min(left, cLeft);
+					top = Math.min(top, cTop);
+					right = Math.max(right, cRight);
+					bottom = Math.max(bottom, cBottom);
+				}
+			}
+
+			return any ? new int[]{left, top, right, bottom} : null;
+		} catch (RuntimeException var3) {
+			throw GenUtil.makeThrowable(var3, "qa.JB(" + "dummy" + ')');
+		}
+	}
+
 	public final int getControlClickedListIndex(int control) {
 		try {
 

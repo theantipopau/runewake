@@ -4,6 +4,7 @@ import com.openrsc.client.entityhandling.EntityHandler;
 import com.openrsc.client.entityhandling.defs.ItemDef;
 import orsc.Config;
 import orsc.graphics.gui.Panel;
+import orsc.graphics.gui.Theme;
 import orsc.mudclient;
 
 import java.text.NumberFormat;
@@ -43,9 +44,9 @@ public final class LostOnDeathInterface {
 	public void onRender() {
 		reposition();
 
-		panelColour = 0x989898;
-		textColour = 0xFFFFFF;
-		bordColour = 0x000000;
+		panelColour = Theme.legacyPanelFill();
+		textColour = Theme.legacyPanelText();
+		bordColour = Theme.legacyPanelBorder();
 
 		lostOnDeathPanel.handleMouse(mc.getMouseX(), mc.getMouseY(), mc.getMouseButtonDown(), mc.getLastMouseDown());
 
@@ -232,20 +233,20 @@ public final class LostOnDeathInterface {
 	}
 
 	private void drawButton(int x, int y, int width, int height, String text, int font, boolean checked, ButtonHandler handler) {
-		int bgBtnColour = 0x333333; // grey
+		int bgBtnColour = Theme.legacyControlFill(); // grey
 		if (checked) {
-			bgBtnColour = 16711680; // red
+			bgBtnColour = Theme.legacyControlActiveFill(); // red
 		}
 		if (mc.getMouseX() >= x && mc.getMouseY() >= y && mc.getMouseX() <= x + width && mc.getMouseY() <= y + height) {
 			if (!checked)
-				bgBtnColour = 16711680; // blue
+				bgBtnColour = Theme.legacyControlActiveFill(); // blue
 			if (mc.getMouseClick() == 1) {
 				handler.handle();
 				mc.setMouseClick(0);
 			}
 		}
 		mc.getSurface().drawBoxAlpha(x, y, width, height, bgBtnColour, 192);
-		mc.getSurface().drawBoxBorder(x, width, y, height, 0x242424);
+		mc.getSurface().drawBoxBorder(x, width, y, height, Theme.legacyControlBorder());
 		mc.getSurface().drawString(text, x + (width / 2) - (mc.getSurface().stringWidth(font, text) / 2) - 1, y + height / 2 + 5, textColour, font);
 	}
 

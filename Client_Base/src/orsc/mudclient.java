@@ -2259,7 +2259,8 @@ public final class mudclient implements Runnable {
 			menuNewUser = new Panel(getSurface(), 50);
 			Theme.applyBronzeButtonScheme(menuNewUser);
 			// Section heading: anchors the registration form's grouped rows.
-			menuNewUser.addCenteredText(halfGameWidth(), halfGameHeight() - ui(150), "Create Your Character's Account", 4, false);
+			menuNewUser.addCenteredText(halfGameWidth(), halfGameHeight() - ui(150), "Create Your Character's Account", 4,
+				Config.C_PREMIUM_THEME);
 			if (isAndroid()) {
 					// Sits in the gap below the heading, above the two instruction
 					// rows (-ui(127)/-ui(116)); the old -ui(149) slot is now taken
@@ -6340,6 +6341,61 @@ public final class mudclient implements Runnable {
 		}
 	}
 
+	/**
+	 * Draws the premium-only console chrome behind an onboarding form. The
+	 * frame is derived from the panel's own control bounds, so it tracks the
+	 * real form geometry (free/members welcome layouts, both registration
+	 * layouts, Android offsets, and any future field moves) instead of
+	 * hard-coded sizes that drift. Presentation only: it creates no controls
+	 * and changes no hitbox, and the entire method is a no-op in classic mode.
+	 */
+	private int[] drawPremiumLoginFrame(Panel panel, int padX, int padY) {
+		if (!Config.C_PREMIUM_THEME || panel == null) {
+			return null;
+		}
+
+		int[] bounds = panel.getContentBounds();
+		if (bounds == null) {
+			return null;
+		}
+
+		int x = bounds[0] - padX;
+		int y = bounds[1] - padY;
+		int width = bounds[2] - bounds[0] + padX * 2;
+		int height = bounds[3] - bounds[1] + padY * 2;
+
+		// Keep the console inside a sane envelope so an unusually long server
+		// name or welcome line cannot stretch it past the window edges.
+		int maxWidth = ui(560);
+		if (width > maxWidth) {
+			x += (width - maxWidth) / 2;
+			width = maxWidth;
+		}
+		int maxHeight = ui(440);
+		if (height > maxHeight) {
+			y += (height - maxHeight) / 2;
+			height = maxHeight;
+		}
+
+		int bevelInset = ui(3);
+		int ruleInset = ui(12);
+		this.getSurface().drawBoxAlpha(x, y, width, height, Theme.loginFrameFill(), 224);
+		this.getSurface().drawBoxBorder(x, width, y, height, Theme.loginFrameBorder());
+		if (width > bevelInset * 2 && height > bevelInset * 2) {
+			this.getSurface().drawBoxBorder(x + bevelInset, width - bevelInset * 2,
+				y + bevelInset, height - bevelInset * 2, Theme.loginFrameInnerBorder());
+		}
+		if (width > ruleInset * 2) {
+			int ruleWidth = width - ruleInset * 2;
+			this.getSurface().drawLineHoriz(x + ruleInset, y + ui(5), ruleWidth, Theme.loginFrameAccent());
+			if (height > ui(10)) {
+				this.getSurface().drawLineHoriz(x + ruleInset, y + height - ui(5), ruleWidth, Theme.loginFrameAccent());
+			}
+		}
+
+		return new int[] {x, y, width, height};
+	}
+
 	private void drawLogin() {
 		try {
 			this.getSurface().interlace = false;
@@ -6380,12 +6436,15 @@ public final class mudclient implements Runnable {
 			}
 
 			if (this.loginScreenNumber == 0) {
+				this.drawPremiumLoginFrame(this.panelLoginWelcome, ui(28), ui(24));
 				this.panelLoginWelcome.drawPanel();
 			}
 			if (this.loginScreenNumber == 1) {
+				this.drawPremiumLoginFrame(menuNewUser, ui(28), ui(24));
 				menuNewUser.drawPanel();
 			}
 			if (this.loginScreenNumber == 2) {
+				int[] loginFrame = this.drawPremiumLoginFrame(this.panelLogin, ui(28), ui(24));
 				String var4 = this.panelLogin.getControlText(this.controlLoginStatus1);
 				if (null != var4 && var4.length() > 0) {
 					// Status scrim sized to the status rows it protects (two font-4 lines
@@ -6394,15 +6453,33 @@ public final class mudclient implements Runnable {
 					// against the anchors' +35/+55 offsets so the panel fields still
 					// start on clean background.
 					int statusScrimHeight = ui(18) + getSurface().fontHeight(4) / 2;
-					this.getSurface().drawBoxAlpha(0, halfGameHeight() + ui(22), this.getGameWidth(), statusScrimHeight, 0, 100);
+					int statusScrimX = 0;
+					int statusScrimWidth = this.getGameWidth();
+					if (Config.C_PREMIUM_THEME && loginFrame != null) {
+						// In premium the scrim sits inside the console, so match the
+						// console width instead of banding across the whole window -
+						// but stay at least as wide as the status line itself so a long
+						// custom message keeps its readability backing.
+						statusScrimWidth = Math.max(loginFrame[2] - loginFrame[0],
+							getSurface().stringWidth(4, var4) + ui(56));
+						statusScrimX = halfGameWidth() - statusScrimWidth / 2;
+					}
+					this.getSurface().drawBoxAlpha(statusScrimX, halfGameHeight() + ui(22), statusScrimWidth,
+						statusScrimHeight, Theme.loginFrameFill(), 100);
 				}
 
 				this.panelLogin.drawPanel();
 			}
 			if (this.loginScreenNumber == 3) {
-				panelLoginOptions.drawPanel();
+				// panelLoginOptions is currently never created (the options screen
+				// is unreachable), so guard the draw defensively instead of
+				// dereferencing a null panel if that ever changes.
+				if (panelLoginOptions != null) {
+					panelLoginOptions.drawPanel();
+				}
 			}
 			if (this.loginScreenNumber == 4) {
+				this.drawPremiumLoginFrame(this.panelRecovery, ui(28), ui(24));
 				this.panelRecovery.drawPanel();
 			}
 
@@ -14945,6 +15022,99 @@ public final class mudclient implements Runnable {
 		return out;
 	}
 
+	/**
+	 * Shared texture preparation for both loaders ({@link #loadTextures} and
+	 * {@link #loadTexturesAuthentic}): two edge-clamped box-blur passes soften
+	 * texel edges at the large on-screen stretches the widescreen renderer
+	 * produces, the 0x000000 transparency sentinel is passed through unblurred
+	 * and remapped to the magenta palette marker, then the result is quantised
+	 * to the 256-entry palette the software rasteriser needs.
+	 *
+	 * Extracted so the two loaders cannot drift apart: this logic used to be
+	 * duplicated verbatim, which is why the sentinel bug had to be fixed twice.
+	 *
+	 * @param sprite  source texture; never mutated
+	 * @param indices receives one palette index per source texel; must be
+	 *                {@code sprite.getWidth() * sprite.getHeight()} long
+	 * @return the 256-entry colour dictionary the indices refer to
+	 */
+	private int[] prepareTexturePalette(Sprite sprite, byte[] indices) {
+		int length = sprite.getWidth() * sprite.getHeight();
+		boolean[] wasBlackTexel = new boolean[length];
+		for (int k = 0; k < length; k++) {
+			wasBlackTexel[k] = sprite.getPixels()[k] == 0x000000;
+		}
+		// Two passes reads as a noticeably softer blur than one (closer to a small
+		// gaussian than a single 3x3 box), since a single pass proved too subtle to
+		// register as a visible change. Both passes run before the transparency-marker
+		// restore below, so the magenta marker itself never gets blurred into neighbors.
+		int[] pixels = boxBlurTexture(sprite.getPixels(), sprite.getWidth(), sprite.getHeight());
+		pixels = boxBlurTexture(pixels, sprite.getWidth(), sprite.getHeight());
+		for (int k = 0; k < length; k++) {
+			if (wasBlackTexel[k]) {
+				pixels[k] = 16711935;
+			}
+		}
+		int[] ai1 = new int[32768];
+		for (int k = 0; k < length; k++) {
+			ai1[((pixels[k] & 0xf80000) >> 9) + ((pixels[k] & 0xf800) >> 6) + ((pixels[k] & 0xf8) >> 3)]++;
+		}
+
+		for (int pixel = 0; pixel < pixels.length; ++pixel) {
+			if (pixels[pixel] == 0x000000) {
+				pixels[pixel] = 16711935;
+			}
+		}
+
+		int[] dictionary = new int[256];
+		dictionary[0] = 0xff00ff;
+		int[] temp = new int[256];
+		for (int i1 = 0; i1 < ai1.length; i1++) {
+			int j1 = ai1[i1];
+			if (j1 > temp[255]) {
+				for (int k1 = 1; k1 < 256; k1++) {
+					if (j1 <= temp[k1]) {
+						continue;
+					}
+					for (int i2 = 255; i2 > k1; i2--) {
+						dictionary[i2] = dictionary[i2 - 1];
+						temp[i2] = temp[i2 - 1];
+					}
+					dictionary[k1] = ((i1 & 0x7c00) << 9) + ((i1 & 0x3e0) << 6) + ((i1 & 0x1f) << 3) + 0x40404;
+					temp[k1] = j1;
+					break;
+				}
+			}
+			ai1[i1] = -1;
+		}
+		for (int l1 = 0; l1 < length; l1++) {
+			int j2 = pixels[l1];
+			int k2 = ((j2 & 0xf80000) >> 9) + ((j2 & 0xf800) >> 6) + ((j2 & 0xf8) >> 3);
+			int l2 = ai1[k2];
+			if (l2 == -1) {
+				int i3 = 0x3b9ac9ff;
+				int j3 = j2 >> 16 & 0xff;
+				int k3 = j2 >> 8 & 0xff;
+				int l3 = j2 & 0xff;
+				for (int i4 = 0; i4 < 256; i4++) {
+					int j4 = dictionary[i4];
+					int k4 = j4 >> 16 & 0xff;
+					int l4 = j4 >> 8 & 0xff;
+					int i5 = j4 & 0xff;
+					int j5 = (j3 - k4) * (j3 - k4) + (k3 - l4) * (k3 - l4) + (l3 - i5) * (l3 - i5);
+					if (j5 < i3) {
+						i3 = j5;
+						l2 = i4;
+					}
+				}
+
+				ai1[k2] = l2;
+			}
+			indices[l1] = (byte) l2;
+		}
+		return dictionary;
+	}
+
 	private void loadTextures() {
 		clientPort.showLoadingProgress(50, "Textures");
 		this.scene.setFrustum(0, 11, 7, getSurface().spriteTree.get("textures").size());
@@ -14952,80 +15122,8 @@ public final class mudclient implements Runnable {
 			Sprite sprite;
 			sprite = getSurface().spriteTree.get("textures").get(String.valueOf(i)).getFrames()[0].getSprite();
 
-			int length = sprite.getWidth() * sprite.getHeight();
-			boolean[] wasBlackTexel = new boolean[length];
-			for (int k = 0; k < length; k++) {
-				wasBlackTexel[k] = sprite.getPixels()[k] == 0x000000;
-			}
-			// Two passes reads as a noticeably softer blur than one (closer to a small
-			// gaussian than a single 3x3 box), since a single pass proved too subtle to
-			// register as a visible change. Both passes run before the transparency-marker
-			// restore below, so the magenta marker itself never gets blurred into neighbors.
-			int[] pixels = boxBlurTexture(sprite.getPixels(), sprite.getWidth(), sprite.getHeight());
-			pixels = boxBlurTexture(pixels, sprite.getWidth(), sprite.getHeight());
-			for (int k = 0; k < length; k++) {
-				if (wasBlackTexel[k]) {
-					pixels[k] = 16711935;
-				}
-			}
-			int[] ai1 = new int[32768];
-			for (int k = 0; k < length; k++) {
-				ai1[((pixels[k] & 0xf80000) >> 9) + ((pixels[k] & 0xf800) >> 6) + ((pixels[k] & 0xf8) >> 3)]++;
-			}
-
-			for (int pixel = 0; pixel < pixels.length; ++pixel) {
-				if (pixels[pixel] == 0x000000) {
-					pixels[pixel] = 16711935;
-				}
-			}
-
-			int[] dictionary = new int[256];
-			dictionary[0] = 0xff00ff;
-			int[] temp = new int[256];
-			for (int i1 = 0; i1 < ai1.length; i1++) {
-				int j1 = ai1[i1];
-				if (j1 > temp[255]) {
-					for (int k1 = 1; k1 < 256; k1++) {
-						if (j1 <= temp[k1]) {
-							continue;
-						}
-						for (int i2 = 255; i2 > k1; i2--) {
-							dictionary[i2] = dictionary[i2 - 1];
-							temp[i2] = temp[i2 - 1];
-						}
-						dictionary[k1] = ((i1 & 0x7c00) << 9) + ((i1 & 0x3e0) << 6) + ((i1 & 0x1f) << 3) + 0x40404;
-						temp[k1] = j1;
-						break;
-					}
-				}
-				ai1[i1] = -1;
-			}
-			byte[] indices = new byte[length];
-			for (int l1 = 0; l1 < length; l1++) {
-				int j2 = pixels[l1];
-				int k2 = ((j2 & 0xf80000) >> 9) + ((j2 & 0xf800) >> 6) + ((j2 & 0xf8) >> 3);
-				int l2 = ai1[k2];
-				if (l2 == -1) {
-					int i3 = 0x3b9ac9ff;
-					int j3 = j2 >> 16 & 0xff;
-					int k3 = j2 >> 8 & 0xff;
-					int l3 = j2 & 0xff;
-					for (int i4 = 0; i4 < 256; i4++) {
-						int j4 = dictionary[i4];
-						int k4 = j4 >> 16 & 0xff;
-						int l4 = j4 >> 8 & 0xff;
-						int i5 = j4 & 0xff;
-						int j5 = (j3 - k4) * (j3 - k4) + (k3 - l4) * (k3 - l4) + (l3 - i5) * (l3 - i5);
-						if (j5 < i3) {
-							i3 = j5;
-							l2 = i4;
-						}
-					}
-
-					ai1[k2] = l2;
-				}
-				indices[l1] = (byte) l2;
-			}
+			byte[] indices = new byte[sprite.getWidth() * sprite.getHeight()];
+			int[] dictionary = prepareTexturePalette(sprite, indices);
 			this.scene.loadTexture(i, dictionary, sprite.getSomething1() / 64 - 1, indices);
 		}
 	}
@@ -15036,80 +15134,8 @@ public final class mudclient implements Runnable {
 		for (int i = 0; i < EntityHandler.textureCount(); i++) {
 			loadSprite(spriteTexture + i, "texture", 1);
 			Sprite sprite = getSurface().sprites[spriteTexture + i];
-			int length = sprite.getWidth() * sprite.getHeight();
-			boolean[] wasBlackTexel = new boolean[length];
-			for (int k = 0; k < length; k++) {
-				wasBlackTexel[k] = sprite.getPixels()[k] == 0x000000;
-			}
-			// Two passes reads as a noticeably softer blur than one (closer to a small
-			// gaussian than a single 3x3 box), since a single pass proved too subtle to
-			// register as a visible change. Both passes run before the transparency-marker
-			// restore below, so the magenta marker itself never gets blurred into neighbors.
-			int[] pixels = boxBlurTexture(sprite.getPixels(), sprite.getWidth(), sprite.getHeight());
-			pixels = boxBlurTexture(pixels, sprite.getWidth(), sprite.getHeight());
-			for (int k = 0; k < length; k++) {
-				if (wasBlackTexel[k]) {
-					pixels[k] = 16711935;
-				}
-			}
-			int[] ai1 = new int[32768];
-			for (int k = 0; k < length; k++) {
-				ai1[((pixels[k] & 0xf80000) >> 9) + ((pixels[k] & 0xf800) >> 6) + ((pixels[k] & 0xf8) >> 3)]++;
-			}
-
-			for (int pixel = 0; pixel < pixels.length; ++pixel) {
-				if (pixels[pixel] == 0x000000) {
-					pixels[pixel] = 16711935;
-				}
-			}
-
-			int[] dictionary = new int[256];
-			dictionary[0] = 0xff00ff;
-			int[] temp = new int[256];
-			for (int i1 = 0; i1 < ai1.length; i1++) {
-				int j1 = ai1[i1];
-				if (j1 > temp[255]) {
-					for (int k1 = 1; k1 < 256; k1++) {
-						if (j1 <= temp[k1]) {
-							continue;
-						}
-						for (int i2 = 255; i2 > k1; i2--) {
-							dictionary[i2] = dictionary[i2 - 1];
-							temp[i2] = temp[i2 - 1];
-						}
-						dictionary[k1] = ((i1 & 0x7c00) << 9) + ((i1 & 0x3e0) << 6) + ((i1 & 0x1f) << 3) + 0x40404;
-						temp[k1] = j1;
-						break;
-					}
-				}
-				ai1[i1] = -1;
-			}
-			byte[] indices = new byte[length];
-			for (int l1 = 0; l1 < length; l1++) {
-				int j2 = pixels[l1];
-				int k2 = ((j2 & 0xf80000) >> 9) + ((j2 & 0xf800) >> 6) + ((j2 & 0xf8) >> 3);
-				int l2 = ai1[k2];
-				if (l2 == -1) {
-					int i3 = 0x3b9ac9ff;
-					int j3 = j2 >> 16 & 0xff;
-					int k3 = j2 >> 8 & 0xff;
-					int l3 = j2 & 0xff;
-					for (int i4 = 0; i4 < 256; i4++) {
-						int j4 = dictionary[i4];
-						int k4 = j4 >> 16 & 0xff;
-						int l4 = j4 >> 8 & 0xff;
-						int i5 = j4 & 0xff;
-						int j5 = (j3 - k4) * (j3 - k4) + (k3 - l4) * (k3 - l4) + (l3 - i5) * (l3 - i5);
-						if (j5 < i3) {
-							i3 = j5;
-							l2 = i4;
-						}
-					}
-
-					ai1[k2] = l2;
-				}
-				indices[l1] = (byte) l2;
-			}
+			byte[] indices = new byte[sprite.getWidth() * sprite.getHeight()];
+			int[] dictionary = prepareTexturePalette(sprite, indices);
 			this.scene.loadTexture(i, dictionary, sprite.getSomething1() / 64 - 1, indices);
 		}
 	}

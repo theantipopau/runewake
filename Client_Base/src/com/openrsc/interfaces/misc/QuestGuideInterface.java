@@ -1,6 +1,7 @@
 package com.openrsc.interfaces.misc;
 
 import orsc.graphics.gui.Panel;
+import orsc.graphics.gui.Theme;
 import orsc.graphics.two.GraphicsController;
 import orsc.mudclient;
 
@@ -48,10 +49,10 @@ public final class QuestGuideInterface {
 		int x = (mc.getGameWidth() - width) / 2;
 		int y = (mc.getGameHeight() - height) / 2;
 
-		panelColour = 0x989898;
-		textColour = 0xffffff;
-		bordColour = 0x000000;
-		lineColour = 0x000000;
+		panelColour = Theme.legacyPanelFill();
+		textColour = Theme.legacyPanelText();
+		bordColour = Theme.legacyPanelBorder();
+		lineColour = Theme.legacyPanelBorder();
 
 		questGuide.handleMouse(mc.getMouseX(), mc.getMouseY(), mc.getMouseButtonDown(), mc.getLastMouseDown());
 
@@ -165,20 +166,20 @@ public final class QuestGuideInterface {
 	}
 
 	private void drawButton(int x, int y, int width, int height, String text, int font, boolean checked, ButtonHandler handler) {
-		int bgBtnColour = 0x333333; // grey
+		int bgBtnColour = Theme.legacyControlFill(); // grey
 		if (checked) {
-			bgBtnColour = 16711680; // red
+			bgBtnColour = Theme.legacyControlActiveFill(); // red
 		}
 		if (mc.getMouseX() >= x && mc.getMouseY() >= y && mc.getMouseX() <= x + width && mc.getMouseY() <= y + height) {
 			if (!checked)
-				bgBtnColour = 16711680; // blue
+				bgBtnColour = Theme.legacyControlActiveFill(); // blue
 			if (mc.getMouseClick() == 1) {
 				handler.handle();
 				mc.setMouseClick(0);
 			}
 		}
 		mc.getSurface().drawBoxAlpha(x, y, width, height, bgBtnColour, 192);
-		mc.getSurface().drawBoxBorder(x, width, y, height, 0x242424);
+		mc.getSurface().drawBoxBorder(x, width, y, height, Theme.legacyControlBorder());
 		mc.getSurface().drawString(text, x + (width / 2) - (mc.getSurface().stringWidth(font, text) / 2) - 1, y + height / 2 + 5, textColour, font);
 	}
 

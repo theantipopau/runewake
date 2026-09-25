@@ -3,6 +3,7 @@ package com.openrsc.interfaces.misc;
 
 import com.openrsc.client.entityhandling.EntityHandler;
 import orsc.graphics.gui.Panel;
+import orsc.graphics.gui.Theme;
 import orsc.graphics.two.GraphicsController;
 import orsc.mudclient;
 
@@ -75,32 +76,32 @@ public final class IronManInterface {
 	}
 
 	private void drawIronmanInterface(GraphicsController graphics) {
-		graphics.drawBoxAlpha(x, y, width, height, 0x483E33, 255);
-		graphics.drawLineHoriz(x, y + 24, width, 0x2A2926);
-		graphics.drawBoxBorder(x, width, y, height, 0x2A2926);
-		graphics.drawColoredStringCentered(mc.getGameWidth() / 2, "Ironman Setup", 0xFF981F, 0, 3, y + 17);
+		graphics.drawBoxAlpha(x, y, width, height, Theme.ironmanBodyFill(), 255);
+		graphics.drawLineHoriz(x, y + 24, width, Theme.ironmanWindowBorder());
+		graphics.drawBoxBorder(x, width, y, height, Theme.ironmanWindowBorder());
+		graphics.drawColoredStringCentered(mc.getGameWidth() / 2, "Ironman Setup", Theme.ironmanHeadingText(), 0, 3, y + 17);
 
 		//content box
-		graphics.drawBoxAlpha(x + 5, y + 29, 380, 185, 0x534A3F, 255);
-		graphics.drawBoxBorder(x + 5, 380, y + 29, 185, 0x777775);
-		graphics.drawLineHoriz(x + 5, y + 48, 380, 0x777775);
-		graphics.drawLineHoriz(x + 5, y + 49, 380, 0x777775);
-		graphics.drawColoredStringCentered(mc.getGameWidth() / 2 - 46, "Ironman Mode", 0xFFFFFF, 0, 2, y + 43);
+		graphics.drawBoxAlpha(x + 5, y + 29, 380, 185, Theme.ironmanInsetFill(), 255);
+		graphics.drawBoxBorder(x + 5, 380, y + 29, 185, Theme.ironmanInsetBorder());
+		graphics.drawLineHoriz(x + 5, y + 48, 380, Theme.ironmanInsetBorder());
+		graphics.drawLineHoriz(x + 5, y + 49, 380, Theme.ironmanInsetBorder());
+		graphics.drawColoredStringCentered(mc.getGameWidth() / 2 - 46, "Ironman Mode", Theme.ironmanText(), 0, 2, y + 43);
 
 
 		//deactivation box
-		graphics.drawBoxAlpha(x + 5, y + 221, 260, 38, 0x534A3F, 255);
-		graphics.drawBoxBorder(x + 5, 260, y + 221, 38, 0x777775);
+		graphics.drawBoxAlpha(x + 5, y + 221, 260, 38, Theme.ironmanInsetFill(), 255);
+		graphics.drawBoxBorder(x + 5, 260, y + 221, 38, Theme.ironmanInsetBorder());
 
 		//deactivation status
-		graphics.drawBoxAlpha(x + 5 + 259, y + 221, 121, 38, 0x534A3F, 255);
-		graphics.drawBoxBorder(x + 5 + 259, 121, y + 221, 38, 0x777775);
+		graphics.drawBoxAlpha(x + 5 + 259, y + 221, 121, 38, Theme.ironmanInsetFill(), 255);
+		graphics.drawBoxBorder(x + 5 + 259, 121, y + 221, 38, Theme.ironmanInsetBorder());
 
 		//Deactivation select text
-		graphics.drawString("Selected ", x + (width / 2 - graphics.stringWidth(1, "Selected ") / 2) + 56, y + 243, 0xFFFFFF, 0);
+		graphics.drawString("Selected ", x + (width / 2 - graphics.stringWidth(1, "Selected ") / 2) + 56, y + 243, Theme.ironmanText(), 0);
 
 		//Deactivation selected option display
-		graphics.drawString("- " + (getIronManMode() >= 1 ? this.iron_man_restriction == 0 ? "PIN." : "Permanent." : "None."), x + (width / 2) + 49 + 27, y + 243, 0xFF981F, 0);
+		graphics.drawString("- " + (getIronManMode() >= 1 ? this.iron_man_restriction == 0 ? "PIN." : "Permanent." : "None."), x + (width / 2) + 49 + 27, y + 243, Theme.ironmanHeadingText(), 0);
 
 		// iron helm, plate, legs sprites
 		graphics.drawSpriteClipping(mc.spriteSelect(EntityHandler.getItemDef(8)), x + 410, y + 60, 48, 32, 0, 0, 0, false, 0, 1);
@@ -157,7 +158,7 @@ public final class IronManInterface {
 				}
 			});
 
-			graphics.drawCircle(drawBoxX + 8 + 5, circleY, 8, 0x3A3026, 255, 0);
+			graphics.drawCircle(drawBoxX + 8 + 5, circleY, 8, Theme.ironmanBadgeFill(), 255, 0);
 			if (i == order[iron_man_mode]) {
 				graphics.drawSpriteClipping(mc.spriteSelect(EntityHandler.GUIparts.get(EntityHandler.GUIPARTS.CHECKMARK.id())), drawBoxX + 8, circleY - 5, 13, 10, 0, 0, 0, false, 0, 1);
 			}
@@ -178,9 +179,9 @@ public final class IronManInterface {
 	}
 
 	private void drawDeactivationMenu(GraphicsController graphics) {
-		graphics.drawBoxAlpha(x + (width / 2) - 190, y + (height / 2) - 44, 380, 90, 0x524B40, 255);
-		graphics.drawBoxBorder(x + (width / 2) - 190, 380, y + (height / 2) - 44, 90, 0x777775);
-		graphics.drawLineHoriz(x + (width / 2) - 190, y + (height / 2) - 24, 380, 0x777775);
+		graphics.drawBoxAlpha(x + (width / 2) - 190, y + (height / 2) - 44, 380, 90, Theme.ironmanMenuFill(), 255);
+		graphics.drawBoxBorder(x + (width / 2) - 190, 380, y + (height / 2) - 44, 90, Theme.ironmanInsetBorder());
+		graphics.drawLineHoriz(x + (width / 2) - 190, y + (height / 2) - 24, 380, Theme.ironmanInsetBorder());
 
 		drawCloseButton(graphics, x + (width) - 72, y + (height / 2) - 43, 21, 19, "X", new ButtonHandler() {
 			@Override
@@ -189,7 +190,7 @@ public final class IronManInterface {
 			}
 		});
 
-		graphics.drawColoredStringCentered(mc.getGameWidth() / 2, "After leaving Tutorial Island...", 0xFFFFFF, 0, 2, y + (height / 2) - 30);
+		graphics.drawColoredStringCentered(mc.getGameWidth() / 2, "After leaving Tutorial Island...", Theme.ironmanText(), 0, 2, y + (height / 2) - 30);
 		int drawBoxX = x + 50;
 		int drawBoxY = y + 85;
 		int drawBoxWidth = 370;
@@ -211,7 +212,7 @@ public final class IronManInterface {
 					mc.packetHandler.getClientStream().finishPacket();
 				}
 			});
-			graphics.drawCircle(drawBoxX + 8 + 5, circleY, 8, 0x3A3026, 255, 0);
+			graphics.drawCircle(drawBoxX + 8 + 5, circleY, 8, Theme.ironmanBadgeFill(), 255, 0);
 			if (i == this.iron_man_restriction) {
 				graphics.drawSpriteClipping(mc.spriteSelect(EntityHandler.GUIparts.get(EntityHandler.GUIPARTS.CHECKMARK.id())), drawBoxX + 8, circleY - 5, 13, 10, 0, 0, 0, false, 0, 1);
 			}
@@ -259,9 +260,9 @@ public final class IronManInterface {
 	}
 
 	private void drawCloseButton(GraphicsController graphics, int x, int y, int width, int height, String text, ButtonHandler handler) {
-		int allColor = 0x5F523C;
+		int allColor = Theme.ironmanCloseButtonFill(false);
 		if (mc.getMouseX() >= x && mc.getMouseY() >= y && mc.getMouseX() <= x + width && mc.getMouseY() <= y + height) {
-			allColor = 0x544838;
+			allColor = Theme.ironmanCloseButtonFill(true);
 			if (mc.getMouseClick() == 1) {
 				handler.handle();
 				mc.setMouseClick(0);
@@ -273,9 +274,9 @@ public final class IronManInterface {
 	}
 
 	private void drawClickBox(GraphicsController graphics, int x, int y, int width, int wrapWidth, int height, String title, int titleY, String description, int descriptionX, int descriptionY, ButtonHandler handler) {
-		int allColor = 0x534A3F;
+		int allColor = Theme.ironmanInsetFill();
 		if (mc.getMouseX() >= x && mc.getMouseY() >= y && mc.getMouseX() <= x + width && mc.getMouseY() <= y + height && !deactivationMenu) {
-			allColor = 0x675F56;
+			allColor = Theme.ironmanInsetHoverFill();
 			if (mc.getMouseClick() == 1) {
 
 				handler.handle();
@@ -283,15 +284,15 @@ public final class IronManInterface {
 			}
 		}
 		graphics.drawBoxAlpha(x, y, width, height, allColor, 192);
-		graphics.drawBoxBorder(x, width, y, height, 0x464644);
-		graphics.drawString(title, x + 20, y + titleY, 0xFFFFFF, 0);
-		graphics.drawWrappedCenteredString(description, x + descriptionX, y + titleY + descriptionY, wrapWidth, 0, 0xFF981F, true, false);
+		graphics.drawBoxBorder(x, width, y, height, Theme.ironmanClickBoxBorder());
+		graphics.drawString(title, x + 20, y + titleY, Theme.ironmanText(), 0);
+		graphics.drawWrappedCenteredString(description, x + descriptionX, y + titleY + descriptionY, wrapWidth, 0, Theme.ironmanHeadingText(), true, false);
 	}
 
 	private void drawClickRestrictionBox(GraphicsController graphics, int x, int y, int width, int wrapWidth, int height, String title, int titleY, String description, int descriptionX, int descriptionY, ButtonHandler handler) {
-		int allColor = 0x534A3F;
+		int allColor = Theme.ironmanInsetFill();
 		if (mc.getMouseX() >= x && mc.getMouseY() >= y && mc.getMouseX() <= x + width && mc.getMouseY() <= y + height && deactivationMenu) {
-			allColor = 0x675F56;
+			allColor = Theme.ironmanInsetHoverFill();
 			if (mc.getMouseClick() == 1) {
 
 				handler.handle();
@@ -299,7 +300,7 @@ public final class IronManInterface {
 			}
 		}
 		graphics.drawBoxAlpha(x, y, width, height, allColor, 192);
-		graphics.drawString(title, x + 20, y + titleY, 0xFFFFFF, 0);
-		graphics.drawWrappedCenteredString(description, x + descriptionX, y + titleY + descriptionY, wrapWidth, 0, 0xFF981F, true, false);
+		graphics.drawString(title, x + 20, y + titleY, Theme.ironmanText(), 0);
+		graphics.drawWrappedCenteredString(description, x + descriptionX, y + titleY + descriptionY, wrapWidth, 0, Theme.ironmanHeadingText(), true, false);
 	}
 }

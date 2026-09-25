@@ -250,6 +250,30 @@ public final class Theme {
 	// ------------------------------------------------------------------
 
 	/**
+	 * Dark, lightly translucent console behind the login/onboarding controls.
+	 * Classic mode is deliberately a no-op: the frame is only drawn when the
+	 * premium theme is enabled, so the authentic presentation remains intact.
+	 */
+	public static int loginFrameFill() {
+		return Config.C_PREMIUM_THEME ? OVERLAY_SCRIM : 0;
+	}
+
+	/** Outer bevel of the premium login/onboarding console. */
+	public static int loginFrameBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : 0;
+	}
+
+	/** Inner bevel of the premium login/onboarding console. */
+	public static int loginFrameInnerBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK : 0;
+	}
+
+	/** Rune-blue rule used to separate the console chrome from its content. */
+	public static int loginFrameAccent() {
+		return Config.C_PREMIUM_THEME ? ACCENT_PRIMARY : 0;
+	}
+
+	/**
 	 * Underline drawn under the keyboard-focused text entry (login username /
 	 * password, registration fields). Classic mode keeps the inherited asterisk
 	 * only (no underline); premium mode marks focus with the rune-blue accent.
@@ -838,5 +862,271 @@ public final class Theme {
 	/** Border of the submit-style buttons. */
 	public static int socialGuiSubmitBorder() {
 		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : 0x474745;
+	}
+
+	// ------------------------------------------------------------------
+	// Ironman setup window (IronManInterface.java). A single self-contained
+	// modal: warm-brown chrome around a content plate with a small row of
+	// mode/restriction choice boxes. Off-path values reproduce the inherited
+	// literals exactly; premium values reuse the established Runewake palette.
+	// ------------------------------------------------------------------
+
+	private static final int CLASSIC_IRONMAN_BODY_FILL = 0x483E33;
+	private static final int CLASSIC_IRONMAN_WINDOW_BORDER = 0x2A2926;
+	private static final int CLASSIC_IRONMAN_HEADING_TEXT = 0xFF981F;
+	private static final int CLASSIC_IRONMAN_INSET_FILL = 0x534A3F;
+	private static final int CLASSIC_IRONMAN_INSET_HOVER_FILL = 0x675F56;
+	private static final int CLASSIC_IRONMAN_INSET_BORDER = 0x777775;
+	private static final int CLASSIC_IRONMAN_TEXT = 0xFFFFFF;
+	private static final int CLASSIC_IRONMAN_BADGE_FILL = 0x3A3026;
+	private static final int CLASSIC_IRONMAN_MENU_FILL = 0x524B40;
+	private static final int CLASSIC_IRONMAN_CLOSE_FILL = 0x5F523C;
+	private static final int CLASSIC_IRONMAN_CLOSE_HOVER_FILL = 0x544838;
+	private static final int CLASSIC_IRONMAN_CLICK_BOX_BORDER = 0x464644;
+
+	/** Body fill of the Ironman setup window. */
+	public static int ironmanBodyFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_IRONMAN_BODY_FILL;
+	}
+
+	/** Outer border and title rule of the Ironman setup window. */
+	public static int ironmanWindowBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK : CLASSIC_IRONMAN_WINDOW_BORDER;
+	}
+
+	/** Title and highlighted-value text. */
+	public static int ironmanHeadingText() {
+		return Config.C_PREMIUM_THEME ? ACCENT_PRIMARY : CLASSIC_IRONMAN_HEADING_TEXT;
+	}
+
+	/** Recessed content plate fill. */
+	public static int ironmanInsetFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_INSET : CLASSIC_IRONMAN_INSET_FILL;
+	}
+
+	/** Hover fill of the mode/restriction choice boxes. */
+	public static int ironmanInsetHoverFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_IRONMAN_INSET_HOVER_FILL;
+	}
+
+	/** Borders and dividers inside the content plate. */
+	public static int ironmanInsetBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : CLASSIC_IRONMAN_INSET_BORDER;
+	}
+
+	/** Primary (white) body text. */
+	public static int ironmanText() {
+		return Config.C_PREMIUM_THEME ? TEXT_PRIMARY : CLASSIC_IRONMAN_TEXT;
+	}
+
+	/** Radio-badge fill beside each choice. */
+	public static int ironmanBadgeFill() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK : CLASSIC_IRONMAN_BADGE_FILL;
+	}
+
+	/** Deactivation sub-menu plate fill. */
+	public static int ironmanMenuFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_IRONMAN_MENU_FILL;
+	}
+
+	/** Close-button fill, idle or hovered. */
+	public static int ironmanCloseButtonFill(boolean hovered) {
+		return Config.C_PREMIUM_THEME
+			? (hovered ? PANEL_ELEVATED : PANEL_INSET)
+			: (hovered ? CLASSIC_IRONMAN_CLOSE_HOVER_FILL : CLASSIC_IRONMAN_CLOSE_FILL);
+	}
+
+	/** Border of the mode/restriction choice boxes. */
+	public static int ironmanClickBoxBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : CLASSIC_IRONMAN_CLICK_BOX_BORDER;
+	}
+
+	// ------------------------------------------------------------------
+	// Skill guide window (SkillGuideInterface.java). A translucent skill-list
+	// window: tab strip, Level/Advancement table and per-tab buttons.
+	// Off-path values reproduce the inherited literals exactly.
+	// ------------------------------------------------------------------
+
+	private static final int CLASSIC_SKILLGUIDE_PANEL_FILL = 0x989898;
+	private static final int CLASSIC_SKILLGUIDE_BORDER = 0x000000;
+	private static final int CLASSIC_SKILLGUIDE_TEXT = 0xFFFFFF;
+	private static final int CLASSIC_SKILLGUIDE_HEADER_BAND = 0x6580B7;
+	private static final int CLASSIC_SKILLGUIDE_ROW_FILL = 0x45454545;
+	private static final int CLASSIC_SKILLGUIDE_BUTTON_FILL = 0x333333;
+	private static final int CLASSIC_SKILLGUIDE_BUTTON_ACTIVE = 16711680;
+	private static final int CLASSIC_SKILLGUIDE_TAB_CURRENT = 0x659CDE;
+	private static final int CLASSIC_SKILLGUIDE_TAB_HOVER = 0x6580B7;
+	private static final int CLASSIC_SKILLGUIDE_BUTTON_BORDER = 0x242424;
+
+	/** Translucent window body, drawn over the game world. */
+	public static int skillGuidePanelFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_SKILLGUIDE_PANEL_FILL;
+	}
+
+	/** Window outer border. */
+	public static int skillGuideBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK : CLASSIC_SKILLGUIDE_BORDER;
+	}
+
+	/** Skill-title and table text. */
+	public static int skillGuideText() {
+		return Config.C_PREMIUM_THEME ? TEXT_PRIMARY : CLASSIC_SKILLGUIDE_TEXT;
+	}
+
+	/** Level/Advancement table header band. */
+	public static int skillGuideHeaderBand() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_SKILLGUIDE_HEADER_BAND;
+	}
+
+	/** Translucent backing band behind skill-list rows. */
+	public static int skillGuideRowFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_INSET : CLASSIC_SKILLGUIDE_ROW_FILL;
+	}
+
+	/** Per-skill button fill: <code>active</code> (checked) or <code>hovered</code>.
+	 *  The inherited look uses the same red for both, kept for classic parity. */
+	public static int skillGuideButtonFill(boolean active, boolean hovered) {
+		if (active || hovered) {
+			return Config.C_PREMIUM_THEME ? PRESSED : CLASSIC_SKILLGUIDE_BUTTON_ACTIVE;
+		}
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_SKILLGUIDE_BUTTON_FILL;
+	}
+
+	/** Tab fill: selected tab, hovered tab, or idle. */
+	public static int skillGuideTabFill(boolean current, boolean hovered) {
+		if (current) {
+			return Config.C_PREMIUM_THEME ? SELECTION : CLASSIC_SKILLGUIDE_TAB_CURRENT;
+		}
+		if (hovered) {
+			return Config.C_PREMIUM_THEME ? PANEL_INSET : CLASSIC_SKILLGUIDE_TAB_HOVER;
+		}
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_SKILLGUIDE_BUTTON_FILL;
+	}
+
+	/** Border of the skill buttons and tabs. */
+	public static int skillGuideButtonBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : CLASSIC_SKILLGUIDE_BUTTON_BORDER;
+	}
+
+	// ------------------------------------------------------------------
+	// Legacy custom-interface palette. PointInterface, PointsToGpInterface,
+	// TerritorySignupInterface, ExperienceConfigInterface, QuestGuideInterface
+	// and LostOnDeathInterface all draw straight onto the game surface (rather
+	// than through Panel) with the same inherited idiom: a 0x989898 translucent
+	// plate, black border/rules, white text, and 0x333333 buttons that turn
+	// blue on hover and red when checked/pressed. They still carried raw
+	// literals, so premium mode left them light-grey slabs inside an otherwise
+	// dark UI. Off-path values reproduce the inherited literals exactly.
+	// ------------------------------------------------------------------
+
+	private static final int CLASSIC_LEGACY_PANEL_FILL = 0x989898;
+	private static final int CLASSIC_LEGACY_PANEL_BORDER = 0x000000;
+	private static final int CLASSIC_LEGACY_PANEL_TEXT = 0xFFFFFF;
+	private static final int CLASSIC_LEGACY_CONTROL_FILL = 0x333333;
+	private static final int CLASSIC_LEGACY_CONTROL_HOVER_FILL = 0x6580B7;
+	private static final int CLASSIC_LEGACY_CONTROL_ACTIVE_FILL = 0xFF0000;
+	private static final int CLASSIC_LEGACY_CONTROL_BORDER = 0x242424;
+
+	/** Translucent body fill of a legacy custom panel. */
+	public static int legacyPanelFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_LEGACY_PANEL_FILL;
+	}
+
+	/** Outer border and horizontal rules of a legacy custom panel. */
+	public static int legacyPanelBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK : CLASSIC_LEGACY_PANEL_BORDER;
+	}
+
+	/** Primary body text drawn on a legacy custom panel. */
+	public static int legacyPanelText() {
+		return Config.C_PREMIUM_THEME ? TEXT_PRIMARY : CLASSIC_LEGACY_PANEL_TEXT;
+	}
+
+	/** Idle fill of a legacy square control (button, close 'X'). */
+	public static int legacyControlFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_LEGACY_CONTROL_FILL;
+	}
+
+	/** Hovered fill of a legacy control. */
+	public static int legacyControlHoverFill() {
+		return Config.C_PREMIUM_THEME ? HOVER : CLASSIC_LEGACY_CONTROL_HOVER_FILL;
+	}
+
+	/** Pressed / checked fill of a legacy control (the inherited red). */
+	public static int legacyControlActiveFill() {
+		return Config.C_PREMIUM_THEME ? PRESSED : CLASSIC_LEGACY_CONTROL_ACTIVE_FILL;
+	}
+
+	/** Border of a legacy control. */
+	public static int legacyControlBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : CLASSIC_LEGACY_CONTROL_BORDER;
+	}
+
+	// ------------------------------------------------------------------
+	// Skill-points allocation window (PointInterface). A self-contained warm
+	// brown window with its own title band and a slightly different checked
+	// red. Off-path values reproduce the inherited literals exactly.
+	// ------------------------------------------------------------------
+
+	private static final int CLASSIC_POINTS_PANEL_FILL = 0x3A2A10;
+	private static final int CLASSIC_POINTS_PANEL_SHADE = 0x2A1C08;
+	private static final int CLASSIC_POINTS_TITLE_FILL = 0x4A3620;
+	private static final int CLASSIC_POINTS_TITLE_TEXT = 0xFFFF00;
+	private static final int CLASSIC_POINTS_CONTROL_ACTIVE_FILL = 0x871E1E;
+
+	/** Points-window body fill (alternating row bands use it with
+	 *  {@link #pointsPanelShade()}). */
+	public static int pointsPanelFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_INSET : CLASSIC_POINTS_PANEL_FILL;
+	}
+
+	/** Points-window alternate row band / inner shade. */
+	public static int pointsPanelShade() {
+		return Config.C_PREMIUM_THEME ? PANEL_INSET : CLASSIC_POINTS_PANEL_SHADE;
+	}
+
+	/** Points-window title-band fill. */
+	public static int pointsTitleFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_POINTS_TITLE_FILL;
+	}
+
+	/** Points-window title and column-header text. */
+	public static int pointsTitleText() {
+		return Config.C_PREMIUM_THEME ? ACCENT_SECONDARY : CLASSIC_POINTS_TITLE_TEXT;
+	}
+
+	/** Points-window checked (+/- allocation) button fill. */
+	public static int pointsControlActiveFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_INSET : CLASSIC_POINTS_CONTROL_ACTIVE_FILL;
+	}
+
+	// ------------------------------------------------------------------
+	// Achievement window (AchievementGUI). Header band, reward slots and the
+	// close footer, all inherited-literals preserved off-path.
+	// ------------------------------------------------------------------
+
+	private static final int CLASSIC_ACHIEVEMENT_HEADER_FILL = 0x313439;
+	private static final int CLASSIC_ACHIEVEMENT_HEADER_HOVER_FILL = 0x263751;
+	private static final int CLASSIC_ACHIEVEMENT_HEADER_CHECKED_FILL = 0x659CDE;
+	private static final int CLASSIC_ACHIEVEMENT_RULE = 0xBFA086;
+
+	/** Achievement header band and reward-slot backing. */
+	public static int achievementHeaderFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_ACHIEVEMENT_HEADER_FILL;
+	}
+
+	/** Achievement close-button fill while hovered. */
+	public static int achievementHeaderHoverFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_INSET : CLASSIC_ACHIEVEMENT_HEADER_HOVER_FILL;
+	}
+
+	/** Achievement close-button fill in its checked state. */
+	public static int achievementHeaderCheckedFill() {
+		return Config.C_PREMIUM_THEME ? SELECTION : CLASSIC_ACHIEVEMENT_HEADER_CHECKED_FILL;
+	}
+
+	/** Top rule above the achievement close button. */
+	public static int achievementRule() {
+		return Config.C_PREMIUM_THEME ? BORDER_LIGHT_MID : CLASSIC_ACHIEVEMENT_RULE;
 	}
 }

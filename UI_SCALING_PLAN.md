@@ -542,3 +542,51 @@ Not visually verified (no display): all of the above needs the manual
 matrix pass; chip/label collision at extreme interface-scale cap values is
 the only new geometry-adjacent risk and it uses the same `ui()` scale as
 everything else in the panel.
+
+## The `NComponent` family and the legacy custom windows (2026-09-26 analysis)
+
+Still unscaled, and now the largest remaining scaling gap. Everything below
+uses absolute pixel constants with no `ui()` anywhere:
+
+| Window | Base class | Literal scale |
+|---|---|---|
+| `BankPinInterface` | `NComponent` | ~30 numbers, 300x250 window |
+| `OnlineListInterface` | `NComponent` | window centred from `getGameWidth()` |
+| `FishingTrawlerInterface` | `NComponent` | 310x40 HUD |
+| `NRightClickMenu` | `NComponent` | sizes itself from font metrics |
+| `PointInterface`, `PointsToGpInterface`, `TerritorySignupInterface`, `ExperienceConfigInterface`, `QuestGuideInterface`, `LostOnDeathInterface`, `AchievementGUI`, `IronManInterface`, `SkillGuideInterface`, `DoSkillInterface`, `PartyGUI`, `ClanInterface`, `PartyInterface`, `AuctionHouse`, `ProgressBarInterface` | plain classes | draw straight onto the surface with literals |
+
+This is a live defect, not just a missing nicety: `GraphicsController.fontScale()`
+already scales glyphs (damped by `sqrt(uiScale)`, so ~1.47x at the enforced
+1280x732 minimum) while these boxes stay at 1x, which is why the windows read
+as oversized text in tight boxes at any normal window size.
+
+Two ways to fix it were analysed and both were rejected for now:
+
+1. **Centralise it in `NComponent`** (scale in `setSize`/`setLocation`,
+   convert rendering and hit-testing). Rejected because it is not actually
+   central: only `BankPinInterface`, `OnlineListInterface`,
+   `FishingTrawlerInterface` and `NRightClickMenu` extend `NComponent`; the
+   other fifteen windows are plain classes. Worse, `NRightClickMenu` derives
+   its width and row height from `stringWidth`/`fontHeight`, which are
+   *already* scaled, so scaling its `setSize` would double-scale it; and
+   `BankPinInterface`, `OnlineListInterface`, `PartyGUI` and
+   `ProgressBarInterface` pass screen-space coordinates (derived from
+   `getGameWidth()`/`getGameHeight()`) into `setLocation`, which would be
+   scaled a second time. A partial or mixed result would look worse than a
+   uniformly unscaled one.
+2. **Per-file `ui()` wrapping**, the technique already used for the panels in
+   `mudclient.java`. This is mechanically safe (scaling every constant by the
+   same factor preserves relative layout) but there is no display available to
+   confirm the result, and because glyphs scale more gently than boxes, the
+   padding-to-text ratio does change at every scale. Doing fifteen windows
+   blind and shipping them in a release was judged the wrong risk.
+
+Recommended order when a display is available: `BankPinInterface` (seen on
+every bank visit), then `SkillGuideInterface`, then `OnlineListInterface` and
+`FishingTrawlerInterface`, then the rest. Migrate one file, look at it, and
+only then continue.
+
+Already themed in the 2026-09-26 pass (so scaling is the only thing left for
+them) are the six legacy custom windows and the achievement window - see
+`Theme.legacy*` / `Theme.points*` / `Theme.achievement*`.

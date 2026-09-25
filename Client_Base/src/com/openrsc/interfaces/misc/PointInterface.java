@@ -2,6 +2,7 @@ package com.openrsc.interfaces.misc;
 
 import orsc.Config;
 import orsc.graphics.gui.Panel;
+import orsc.graphics.gui.Theme;
 import orsc.graphics.two.GraphicsController;
 import orsc.enumerations.InputXAction;
 import orsc.graphics.gui.InputXPrompt;
@@ -10,18 +11,6 @@ import orsc.mudclient;
 import java.util.Arrays;
 
 public final class PointInterface {
-	// Classic RSC style colours
-	private static final int WINDOW_BG = 0x3A2A10;      // dark brown
-	private static final int WINDOW_BG_SHADE = 0x2A1C08; // darker shade
-	private static final int WINDOW_BORDER = 0x000000;   // black
-	private static final int TITLE_BG = 0x4A3620;       // mid brown
-	private static final int TITLE_TEXT = 0xFFFF00;     // yellow
-	private static final int CONTENT_TEXT = 0xFFFFFF;   // white
-	private static final int GRID_LINE = 0x000000;      // black lines
-	private static final int BUTTON_BG = 0x333333;      // neutral
-	private static final int BUTTON_HOVER_BG = 0x6580B7;// hover blue
-	private static final int BUTTON_ACTIVE_BG = 0x871E1E;// active / checked red tone
-
 	// Layout constants
 	private static final int STAT_ROW_HEIGHT = 40;
 	private static final int HEADER_HEIGHT = 29;
@@ -91,11 +80,11 @@ public final class PointInterface {
 
 	private void drawExperienceConfig() {
 		reposition();
-		panelColour = WINDOW_BG;
-		textColour = CONTENT_TEXT;
-		bordColour = WINDOW_BORDER;
-		lineColour = GRID_LINE;
-		pColour = WINDOW_BG_SHADE;
+		panelColour = Theme.pointsPanelFill();
+		textColour = Theme.legacyPanelText();
+		bordColour = Theme.legacyPanelBorder();
+		lineColour = Theme.legacyPanelBorder();
+		pColour = Theme.pointsPanelShade();
 
 		experienceConfig.handleMouse(mc.getMouseX(), mc.getMouseY(), mc.getMouseButtonDown(), mc.getLastMouseDown());
 
@@ -104,9 +93,9 @@ public final class PointInterface {
 		mc.getSurface().drawBoxBorder(x, width, y, height, bordColour);
 
 		// Title bar (now taller to include two lines)
-		mc.getSurface().drawBoxAlpha(x, y, width, TITLE_BAR_HEIGHT, TITLE_BG, 220);
+		mc.getSurface().drawBoxAlpha(x, y, width, TITLE_BAR_HEIGHT, Theme.pointsTitleFill(), 220);
 		// Title line
-		drawStringCentered("Skill Points Manager", x, y + 14, 2, TITLE_TEXT);
+		drawStringCentered("Skill Points Manager", x, y + 14, 2, Theme.pointsTitleText());
 
 		// Header labels (second line within title bar) now centered per column
 		int statColStart = x;
@@ -150,7 +139,7 @@ public final class PointInterface {
 			int levelsPlusY = pointsMinusY;
 
 			// Background strip for row (subtle shading)
-			mc.getSurface().drawBoxAlpha(x + 1, baseY - 20, width - 2, STAT_ROW_HEIGHT - 4, (i % 2 == 0 ? WINDOW_BG : WINDOW_BG_SHADE), 90);
+			mc.getSurface().drawBoxAlpha(x + 1, baseY - 20, width - 2, STAT_ROW_HEIGHT - 4, (i % 2 == 0 ? Theme.pointsPanelFill() : Theme.pointsPanelShade()), 90);
 
 			// Data
 			int expToNext = getExpToNextLevel(skillIdFinal);
@@ -263,13 +252,13 @@ public final class PointInterface {
 	}
 
 	private void drawHeaderLabel(String text, int x, int y) {
-		this.drawString(text, x, y + 1, 2, TITLE_TEXT);
+		this.drawString(text, x, y + 1, 2, Theme.pointsTitleText());
 	}
 
 	private void drawHeaderCentered(String text, int startX, int endX, int baselineY) {
 		int w = mc.getSurface().stringWidth(2, text);
 		int cx = startX + ((endX - startX) - w) / 2;
-		this.drawString(text, cx, baselineY + 1, 2, TITLE_TEXT);
+		this.drawString(text, cx, baselineY + 1, 2, Theme.pointsTitleText());
 	}
 
 	// Added helper used for footer alignment
@@ -283,7 +272,7 @@ public final class PointInterface {
 		reposition();
 		mc.getSurface().drawBoxAlpha(x + 90, y + 5, 166, height - 10, panelColour, 160);
 		mc.getSurface().drawBoxBorder(x + 90, 166, y + 5, height - 10, bordColour);
-		this.drawStringCentered("Select a skill to track", x - 12, y + 22, 3, TITLE_TEXT);
+		this.drawStringCentered("Select a skill to track", x - 12, y + 22, 3, Theme.pointsTitleText());
 		mc.getSurface().drawLineHoriz(x + 90, y + 30, 166, lineColour);
 		drawCloseButton(x + 237, y + 6, 18, 18, "X", 2, new ButtonHandler() {
 			@Override void handle() {
@@ -308,7 +297,7 @@ public final class PointInterface {
 	}
 
 	private void drawString(String str, int x, int y, int font, int color) {
-		if (color == 0xFFFFFF) {
+		if (color == Theme.legacyPanelText()) {
 			mc.getSurface().drawShadowText(str, x, y, color, font, false);
 		} else {
 			mc.getSurface().drawString(str, x, y, color, font);
@@ -321,24 +310,24 @@ public final class PointInterface {
 	}
 
 	private void drawCloseButton(int x, int y, int width, int height, String text, int font, ButtonHandler handler) {
-		int bgBtnColour = BUTTON_BG;
+		int bgBtnColour = Theme.legacyControlFill();
 		if (mc.getMouseX() >= x && mc.getMouseY() >= y && mc.getMouseX() <= x + width && mc.getMouseY() <= y + height) {
-			bgBtnColour = BUTTON_HOVER_BG;
+			bgBtnColour = Theme.legacyControlHoverFill();
 			if (mc.getMouseClick() == 1) {
 				handler.handle();
 				mc.setMouseClick(0);
 			}
 		}
 		mc.getSurface().drawBoxAlpha(x, y, width, height, bgBtnColour, 192);
-		mc.getSurface().drawBoxBorder(x, width, y, height, 0x242424);
+		mc.getSurface().drawBoxBorder(x, width, y, height, Theme.legacyControlBorder());
 		int textY = y + (height - BUTTON_FONT_HEIGHT_APPROX) / 2 + BUTTON_FONT_HEIGHT_APPROX - 2; // refined centering
 		mc.getSurface().drawString(text, x + (width / 2) - (mc.getSurface().stringWidth(font, text) / 2) - 1, textY, textColour, font);
 	}
 
 	private void drawButton(int bx, int by, int w, int h, String text, int font, boolean checked, ButtonHandler handler) {
 		if (mc.inputX_Action != InputXAction.ACT_0 || mc.isInputXConsumeNextClick()) {
-			mc.getSurface().drawBoxAlpha(bx, by, w, h, BUTTON_BG, 192);
-			mc.getSurface().drawBoxBorder(bx, w, by, h, 0x242424);
+			mc.getSurface().drawBoxAlpha(bx, by, w, h, Theme.legacyControlFill(), 192);
+			mc.getSurface().drawBoxBorder(bx, w, by, h, Theme.legacyControlBorder());
 			int baseTextY = by + (h - BUTTON_FONT_HEIGHT_APPROX) / 2 + BUTTON_FONT_HEIGHT_APPROX - 2;
 			int textY = baseTextY;
 			if (text.indexOf('+') >= 0) textY += BUTTON_PLUS_ADDITIONAL_OFFSET;
@@ -348,14 +337,14 @@ public final class PointInterface {
 			return;
 		}
 
-		int bgBtnColour = BUTTON_BG;
-		if (checked) bgBtnColour = BUTTON_ACTIVE_BG;
+		int bgBtnColour = Theme.legacyControlFill();
+		if (checked) bgBtnColour = Theme.pointsControlActiveFill();
 
 		boolean inside = mc.getMouseX() >= bx && mc.getMouseY() >= by &&
 				mc.getMouseX() <= bx + w && mc.getMouseY() <= by + h && !selectSkillMenu;
 
 		if (inside) {
-			if (!checked) bgBtnColour = BUTTON_HOVER_BG;
+			if (!checked) bgBtnColour = Theme.legacyControlHoverFill();
 			if (mc.getMouseClick() == 1) {
 				handler.handle();
 				mc.setMouseClick(0); // consume click
@@ -363,7 +352,7 @@ public final class PointInterface {
 		}
 
 		mc.getSurface().drawBoxAlpha(bx, by, w, h, bgBtnColour, 192);
-		mc.getSurface().drawBoxBorder(bx, w, by, h, 0x242424);
+		mc.getSurface().drawBoxBorder(bx, w, by, h, Theme.legacyControlBorder());
 
 		int baseTextY = by + (h - BUTTON_FONT_HEIGHT_APPROX) / 2 + BUTTON_FONT_HEIGHT_APPROX - 2;
 		int textY = baseTextY;

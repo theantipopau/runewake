@@ -3,6 +3,7 @@ package com.openrsc.interfaces.misc;
 import com.openrsc.client.entityhandling.EntityHandler;
 import orsc.Config;
 import orsc.graphics.gui.Panel;
+import orsc.graphics.gui.Theme;
 import orsc.graphics.two.GraphicsController;
 import orsc.mudclient;
 
@@ -33,17 +34,17 @@ public final class AchievementGUI {
 
 	public boolean onRender(GraphicsController graphics) {
 		reposition();
-		int boxColor = 0x989898;
-		int headerColor = 0x313439;
-		int textColor = 16777215;
+		int boxColor = Theme.legacyPanelFill();
+		int headerColor = Theme.achievementHeaderFill();
+		int textColor = Theme.legacyPanelText();
 		// HEADER
 		//(mc.achievementProgress[getAchievement()] == 2 ? "@gre@" : "@yel@") + mc.achievementNames[getAchievement()]
 		graphics.drawBox(x, y, width, 15, headerColor);
-		graphics.drawColoredStringCentered(width / 2 + x, "Achievement:" + (mc.achievementProgress[getAchievement()] == 2 ? "@gre@ Completed" : ""), 16777215, 0, 1, y + 12);
+		graphics.drawColoredStringCentered(width / 2 + x, "Achievement:" + (mc.achievementProgress[getAchievement()] == 2 ? "@gre@ Completed" : ""), Theme.legacyPanelText(), 0, 1, y + 12);
 
 		// CONTENT
 		graphics.drawBoxAlpha(x, y + 15, width, height, boxColor, 160);
-		graphics.drawColoredStringCentered(width / 2 + x, (mc.achievementProgress[getAchievement()] == 2 ? "@gre@" : "@yel@") + mc.achievementNames[getAchievement()], 16777215, 0, 5, y + 36);
+		graphics.drawColoredStringCentered(width / 2 + x, (mc.achievementProgress[getAchievement()] == 2 ? "@gre@" : "@yel@") + mc.achievementNames[getAchievement()], Theme.legacyPanelText(), 0, 5, y + 36);
 		graphics.drawWrappedCenteredString(mc.achievementDescs[getAchievement()], width / 2 + x, y + 55, width - 14, 1, textColor, true);
 
 		graphics.drawString("Rewards: ", x + 6, y + 135, textColor, 1);
@@ -105,20 +106,20 @@ public final class AchievementGUI {
 
 	private void drawButton(GraphicsController graphics, int x, int y, int width, int height, String text,
 							boolean checked, ButtonHandler handler) {
-		int allColor = 0x313439;
+		int allColor = Theme.achievementHeaderFill();
 		if (checked) {
-			allColor = 0x659CDE;
+			allColor = Theme.achievementHeaderCheckedFill();
 		}
 		if (mc.getMouseX() >= x && mc.getMouseY() >= y && mc.getMouseX() <= x + width && mc.getMouseY() <= y + height) {
 			if (!checked)
-				allColor = 0x263751;
+				allColor = Theme.achievementHeaderHoverFill();
 			if (mc.getMouseClick() == 1) {
 				handler.handle();
 				mc.setMouseClick(0);
 			}
 		}
 		graphics.drawBoxAlpha(x, y, width, height, allColor, 255);
-		graphics.drawLineHoriz(x, y, width, 0xBFA086);
-		graphics.drawString(text, x + (width / 2 - graphics.stringWidth(1, text) / 2), y + height / 2 + 5, 0xffffff, 1);
+		graphics.drawLineHoriz(x, y, width, Theme.achievementRule());
+		graphics.drawString(text, x + (width / 2 - graphics.stringWidth(1, text) / 2), y + height / 2 + 5, Theme.legacyPanelText(), 1);
 	}
 }
