@@ -2,7 +2,7 @@ image: eclipse-temurin:8-jdk
 
 before_script:
   - apt-get --quiet update --yes
-  - apt-get --quiet install --yes ant curl
+  - apt-get --quiet install --yes ant curl python3
 
 stages:
   - verify

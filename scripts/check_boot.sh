@@ -19,7 +19,13 @@
 #   * an unknown path returns 404
 #   * the log records the game world listener and the startup banner
 #
-# Requirements: server/core.jar + server/plugins.jar, a JDK, and curl.
+# server/inc/sqlite/*.db is gitignored, so a fresh checkout has no database and
+# SqliteGameDatabaseConnection exits when the file is absent. The script seeds
+# the configured database from the tracked schema (server/database/sqlite) the
+# same way scripts/build_release.py seeds a release bundle.
+#
+# Requirements: server/core.jar + server/plugins.jar, a JDK, curl, and python3
+# (only when the database has to be seeded).
 # Build the jars first with:
 #   ant -f server/build.xml compile
 #
@@ -128,6 +134,73 @@ PORT=$(awk '
 
 if curl -s -m 2 "http://127.0.0.1:$PORT/healthz" >/dev/null 2>&1; then
 	die "port $PORT already answers /healthz; another server is running - stop it first"
+fi
+
+# --- database provisioning ---------------------------------------------------
+
+# Fresh clones (every CI runner) have no server/inc/sqlite/<db_name>.db because
+# *.db is gitignored, and the server refuses to start without it. Seed it from
+# the checked-in schema instead of requiring a developer's local copy.
+DB_NAME=$(awk '
+	{
+		sub(/\r$/, "", $0)
+		colon = index($0, ":"); hash = index($0, "#")
+		if (hash > 0 && (colon == 0 || hash < colon)) next
+		if (hash > 0) $0 = substr($0, 1, hash - 1)
+		colon = index($0, ":"); if (colon <= 0) next
+		key = substr($0, 1, colon - 1); value = substr($0, colon + 1)
+		gsub(/^[ \t]+|[ \t]+$/, "", key); gsub(/^[ \t]+|[ \t]+$/, "", value)
+		if (key == "db_name") { print value; found = 1; exit }
+	}
+	END { if (!found) exit 1 }
+' "$CONF_FILE") || DB_NAME=""
+
+if [ -z "$DB_NAME" ]; then
+	note "NOTE no db_name in $CONF_FILE; skipping database provisioning"
+elif ! printf '%s' "$DB_NAME" | grep -Eq '^[A-Za-z0-9_$-]+$'; then
+	die "db_name '$DB_NAME' contains unsupported characters"
+else
+	DB_FILE="$SERVER_DIR/inc/sqlite/$DB_NAME.db"
+	if [ -f "$DB_FILE" ]; then
+		note "OK  database $DB_FILE present"
+	else
+		note "Seeding absent $DB_FILE from server/database/sqlite (fresh checkout)"
+		PY_BIN=""
+		for candidate in python3 python; do
+			candidate_path=$(command -v "$candidate" 2>/dev/null) || continue
+			if "$candidate_path" -c "import sqlite3" >/dev/null 2>&1; then
+				PY_BIN=$candidate_path
+				break
+			fi
+		done
+		[ -n "$PY_BIN" ] || die "python3 (or python) with sqlite3 is required to seed the absent SQLite database $DB_FILE"
+		"$PY_BIN" - "$DB_NAME" <<'PY_SEED_EOF'
+import pathlib
+import sqlite3
+import sys
+
+root = pathlib.Path("server")
+schema = root / "database" / "sqlite"
+db_path = root / "inc" / "sqlite" / (sys.argv[1] + ".db")
+db_path.parent.mkdir(parents=True, exist_ok=True)
+connection = sqlite3.connect(str(db_path))
+try:
+    connection.executescript((schema / "core.sqlite").read_text(encoding="utf-8"))
+    for addon in ("add_auctionhouse.sqlite", "add_bank_presets.sqlite", "add_clans.sqlite",
+                  "add_equipment_tab.sqlite", "add_npc_kill_counting.sqlite"):
+        connection.executescript((schema / "addons" / addon).read_text(encoding="utf-8"))
+    connection.commit()
+finally:
+    connection.close()
+PY_SEED_EOF
+		seed_status=$?
+		if [ "$seed_status" -ne 0 ]; then
+			rm -f "$DB_FILE"
+			die "failed to seed $DB_FILE from the checked-in schema (python exit $seed_status)"
+		fi
+		[ -f "$DB_FILE" ] || die "seed step reported success but $DB_FILE is missing"
+		note "OK  seeded $DB_FILE from the checked-in schema"
+	fi
 fi
 
 # --- boot --------------------------------------------------------------------
