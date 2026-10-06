@@ -162,12 +162,19 @@ bash scripts/check_dependencies.sh
 bash scripts/check_theme_literals.sh
 # needs the client built first: ant -f Client_Base/build.xml compile
 bash scripts/check_theme_parity.sh
+# needs the server built first: ant -f server/build.xml compile
+bash scripts/check_boot.sh
 ```
 
-The CI pipeline runs the theme-literal and dependency checks, then compiles the
-server core, server plugins, client, and launcher; the theme-parity check runs
-after the client compile. Build outputs and the exact verification
-matrix are recorded in the [visual test matrix](docs/RUNEWAKE_VISUAL_TEST_MATRIX.md)
+Two pipelines run the same checks: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
+on GitHub Actions, where releases are actually published, and
+[`.gitlab-ci.yml`](.gitlab-ci.yml) in the upstream OpenRSC format. They run the
+theme-literal and dependency checks, compile the server core, server plugins,
+client and launcher, execute the theme-parity assertions after the client
+compile, and `bootSmoke` boots the world on SQLite and asserts `/healthz`,
+`/status`, `/metrics` and the 404 path before merge. Build outputs and the
+exact verification matrix are recorded in the
+[visual test matrix](docs/RUNEWAKE_VISUAL_TEST_MATRIX.md)
 and [modernisation audit](docs/RUNEWAKE_MODERNISATION_AUDIT.md).
 
 ## Community

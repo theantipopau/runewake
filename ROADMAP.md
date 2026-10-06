@@ -1815,4 +1815,71 @@ inventory and the per-jar rationale.
   `UI_SCALING_PLAN.md` for the two approaches considered and why neither was
   taken without a display.
 
+## 14. HUD-window theme sweep and a world-boot smoke test (2026-10-05)
+
+The last block of raw draw-layer literals in the custom windows is gone, and CI
+now boots the world instead of only compiling it. This closes §13's
+"still carrying raw draw-layer literals" item.
+
+- [x] **Seven more windows themed**: `BankPinInterface` (its own brown/red
+  PIN-pad palette, `Theme.bankPin*`), `DoSkillInterface` (reuses
+  `Theme.legacy*` plus a new `legacyMenu*` trio for its crafting menu),
+  `OnlineListInterface` (`onlineList*`), `ProgressBarInterface` and
+  `FishingTrawlerInterface` (`progress*`), `PartyGUI` (`party*`), and the
+  shared `NRightClickMenu` that every right-click in the game draws through.
+  Off-path values reproduce the inherited literals exactly, so classic mode is
+  unchanged apart from the one deliberate fix below.
+- [x] **Shared HUD palette**: the grey/white/red control colours that
+  `NRightClickMenu`, the batch-progress window and the party menu already had
+  in common are now one `Theme.hud*` family instead of three copies.
+- [x] **Two inherited quirks surfaced**: `PartyGUI`'s "Party" button hover
+  colour was written as the 7-digit literal `0xFF00000`; the screen's
+  `DirectColorModel(32, 0xFF0000, 0xFF00, 0xFF)` has no alpha mask, so it
+  rendered as RGB(240,0,0) rather than the palette red - it now uses the shared
+  hover token (255,0,0). The crafting window's hover branch was commented
+  "blue" while carrying the red value; it now calls the same active-red
+  accessor with a corrected comment, value unchanged.
+- [x] **Literal baseline**: `scripts/theme_literal_baseline.txt` 164 -> 132
+  pairs, all pure removals; only commented-out code still carries literals.
+- [x] **Parity guard**: `ThemeParityTest` 89 -> 141 assertions, covering every
+  new accessor on both the classic and premium paths.
+- [x] **`scripts/check_boot.sh` + the `bootSmoke` CI job**: boots the world on
+  SQLite and asserts `/healthz`, `/status`, `/metrics`, the 404 path, the game
+  world listener line and the startup banner, then tears the process down.
+  Verified both ways locally: green on a healthy tree in ~7s, and a failure
+  (exit 1, stack trace dumped) when `core.jar` is rebuilt without `commons-io`,
+  reproducing the exact `NoClassDefFoundError ... CloseShieldInputStream` the
+  dependency refresh had to find by hand.
+- [ ] **Human visual verification**: no display here, so premium appearance of
+  the seven windows and classic pixel-identity still need the matrix pass added
+  to `docs/RUNEWAKE_VISUAL_TEST_MATRIX.md`.
+- [ ] **UI-scaling debt**: unchanged from §13 - these windows are themed but
+  still lay out in fixed pixels.
+
+## 15. CI where the releases actually ship, plus a `bash -n` fix (2026-10-05)
+
+- [x] **GitHub Actions pipeline**: `.github/workflows/ci.yml` mirrors
+  `.gitlab-ci.yml` job for job - `guards` (shell syntax, theme literals,
+  dependencies, hosting config, pages), `client-parity`, `server-boot` (the new
+  world-boot smoke test) and `build` with the launcher jar as an artifact - on
+  Temurin 8, matching the GitLab image. This fork releases on GitHub, so before
+  this the guards were not running anywhere at all.
+- [x] **`gitignore` narrowed**: the blanket `.github/` rule came from the
+  IntelliJ folder-layout commit, not from a decision against workflows. It is
+  now `.github/*` + `!.github/workflows/`, so local `.github/` scratch stays
+  ignored while the pipeline is trackable (both halves checked with
+  `git check-ignore`).
+- [x] **Fixed a real flaw in the GitLab pipeline**: `bash -n a.sh b.sh` parses
+  only `a.sh` - extra arguments become `$1` and are never syntax-checked - so
+  the second script in `hostingConfigGuard` was never checked. Proven with a
+  planted syntax error (exit 0 before, exit 1 after); each script now gets its
+  own invocation across `scripts/*.sh`.
+- [x] **Verified the way Actions would run it**: every `run:` block was
+  executed locally under `bash --noprofile --norc -e -o pipefail` and all
+  passed; only `sudo apt-get install ant` (runner provisioning) could not run
+  in this environment.
+- [ ] **First real pipeline run**: the workflow is parse-validated and its
+  commands are proven, but no Actions run has been observed yet - confirm it
+  goes green on the first push.
+
 

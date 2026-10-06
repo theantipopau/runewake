@@ -1,0 +1,116 @@
+# RuneWake CI - the GitHub Actions mirror of .gitlab-ci.yml.
+#
+# Releases are published on GitHub (see docs/RELEASES.md), so this is the
+# pipeline whose result actually means something for this fork; the GitLab file
+# is kept in step as the upstream OpenRSC format. Every job below corresponds
+# to a GitLab job and runs the same command, so the two stay interchangeable.
+#
+# Nothing is downloaded at build time: server/lib and PC_Client/lib are
+# vendored in the repository, so there is no dependency cache to manage - a run
+# is checkout + JDK 8 + Ant + compile.
+
+name: CI
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # themeGuard + dependencyGuard + hostingConfigGuard + pagesBuild
+  guards:
+    name: Static guards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Shell syntax (every script, each parsed on its own)
+        run: |
+          status=0
+          for f in scripts/*.sh; do
+            if ! bash -n "$f"; then status=1; fi
+          done
+          exit $status
+
+      - name: Theme-literal baseline
+        run: bash scripts/check_theme_literals.sh
+
+      - name: Dependency drift
+        run: bash scripts/check_dependencies.sh
+
+      - name: Hosting configuration
+        run: bash scripts/check_hosting_config.sh
+
+      - name: Pages build
+        run: bash scripts/build_pages.sh
+
+  # themeParityGuard: compile the client, then execute the off-path/on-path
+  # invariant (classic returns the exact inherited literal, premium resolves to
+  # the intended token) for all 141 assertions.
+  client-parity:
+    name: Client compile + theme parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Install Ant
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ant
+      - name: Compile client
+        run: ant -f Client_Base/build.xml compile
+      - name: Theme parity
+        run: bash scripts/check_theme_parity.sh
+
+  # bootSmoke: compile-clean is not enough - a runtime-only dependency gap (the
+  # missing commons-io after the commons-compress bump) only shows up at world
+  # load, so boot the world on SQLite and probe /healthz, /status and /metrics.
+  server-boot:
+    name: Server compile + world boot smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Install Ant
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ant
+      - name: Compile server
+        run: ant -f server/build.xml compile_core compile_plugins
+      - name: Boot the world and probe its endpoints
+        run: bash scripts/check_boot.sh
+
+  # build: the same three compiles GitLab runs, publishing the launcher jar as
+  # a downloadable artifact (GitLab exposes the same file from its build job).
+  build:
+    name: Full build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Install Ant
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ant
+      - name: Compile server, client and launcher
+        run: |
+          ant -f server/build.xml compile_core compile_plugins
+          ant -f Client_Base/build.xml compile
+          ant -f PC_Launcher/build.xml compile
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OpenRSC-jar
+          path: PC_Launcher/OpenRSC.jar
+          if-no-files-found: error

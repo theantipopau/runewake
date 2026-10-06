@@ -112,7 +112,11 @@ Client_Base/clientSettings.conf
 Android_Client/import-summary.txt
 Android_Client/.idea/
 
-.github/
+# Local .github/ scratch stays ignored (the IntelliJ layout commit added the
+# blanket rule), but the Actions pipeline must be trackable: releases are
+# cut on GitHub, so that is where CI has to run.
+.github/*
+!.github/workflows/
 
 PC_Launcher/OpenRSC.jar
 PC_Launcher/Cache/

@@ -2,7 +2,7 @@ image: eclipse-temurin:8-jdk
 
 before_script:
   - apt-get --quiet update --yes
-  - apt-get --quiet install --yes ant
+  - apt-get --quiet install --yes ant curl
 
 stages:
   - verify
@@ -22,7 +22,14 @@ dependencyGuard:
 hostingConfigGuard:
   stage: verify
   script:
-    - bash -n scripts/check_hosting_config.sh scripts/backup_mariadb.sh
+    # bash -n takes one script; extra args become $1 and are never parsed,
+    # so every script gets its own invocation here.
+    - |
+      status=0
+      for f in scripts/*.sh; do
+        bash -n "$f" || status=1
+      done
+      [ "$status" -eq 0 ] || exit 1
     - bash scripts/check_hosting_config.sh
 
 themeParityGuard:
@@ -31,6 +38,16 @@ themeParityGuard:
     - bash -n scripts/check_theme_parity.sh
     - cd Client_Base && ant compile && cd ../
     - bash scripts/check_theme_parity.sh
+
+# Boots the world on SQLite and asserts /healthz, /status and /metrics.
+# Compile-clean is not enough: a runtime-only dependency gap (the missing
+# commons-io after the commons-compress bump) only shows up at world load.
+bootSmoke:
+  stage: build
+  script:
+    - bash -n scripts/check_boot.sh
+    - cd server && ant compile_core && ant compile_plugins && cd ../
+    - bash scripts/check_boot.sh
 
 pagesBuild:
   stage: verify
