@@ -53,6 +53,26 @@ jobs:
       - name: Pages build
         run: bash scripts/build_pages.sh
 
+  # secretScan: Gitleaks over the FULL history, filtered by the reviewed
+  # redacted baseline (.gitleaks.baseline.json), so any new secret anywhere -
+  # tree or history - fails the build. Config: .gitleaks.toml.
+  secret-scan:
+    name: Secret scan (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Install Gitleaks
+        run: |
+          curl -sSL -o /tmp/gitleaks.tgz https://github.com/gitleaks/gitleaks/releases/download/v8.28.0/gitleaks_8.28.0_linux_x64.tar.gz
+          mkdir -p /tmp/gitleaks-bin
+          tar -xzf /tmp/gitleaks.tgz -C /tmp/gitleaks-bin gitleaks
+          sudo mv /tmp/gitleaks-bin/gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+      - name: Scan repository history for secrets
+        run: gitleaks git . -c .gitleaks.toml -b .gitleaks.baseline.json --redact --no-banner
+
   # themeParityGuard: compile the client, then execute the off-path/on-path
   # invariant (classic returns the exact inherited literal, premium resolves to
   # the intended token) for all 141 assertions.

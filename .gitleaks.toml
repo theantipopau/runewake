@@ -1,0 +1,22 @@
+# Gitleaks configuration for RuneWake.
+#
+# Default rules are extended; the allowlist below contains ONLY verified
+# false positives from the 2026-10-06 Phase 1 audit (no live secrets are
+# allowlisted here). Each entry documents why it is safe.
+#
+# CI runs: gitleaks git (recent commit range) on GitHub Actions and GitLab.
+# Full-history scans are run manually - see docs/security/secret-rotation.md
+# for the historical findings that a full scan reports.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Verified false positives in the current tree"
+paths = [
+    # Stock OpenJDK security policy files shipped inside the vendored Zulu
+    # runtime; gitleaks' generic-api-key rule matches their documentation
+    # examples, not credentials.
+    '''Portable_Windows/zulu8\.50\.0\.51-ca-jdk8\.0\.275-win_x64/jre/lib/security/java\.security$''',
+    '''Portable_Windows/zulu8\.50\.0\.51-ca-jdk8\.0\.275-win_x64/jre/lib/security/openjsse\.security$''',
+]

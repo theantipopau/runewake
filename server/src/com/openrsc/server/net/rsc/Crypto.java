@@ -140,8 +140,9 @@ public class Crypto {
             LOGGER.error("Server will be unable to run.");
         }
 
+        // The literals below are PEM headers stripped from generated keys, not key material.
         fileString = fileString.replace(
-            "-----BEGIN PRIVATE KEY-----\n", "").replace(
+            "-----BEGIN PRIVATE KEY-----\n", "").replace( // gitleaks:allow
                 "-----END PRIVATE KEY-----", "").replace(
                     "-----BEGIN PUBLIC KEY-----\n", "").replace(
             "-----END PUBLIC KEY-----", "");
