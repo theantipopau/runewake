@@ -1,5 +1,7 @@
 package com.openrsc.interfaces;
 
+import orsc.graphics.gui.Theme;
+
 public class NRightClickMenu extends NComponent {
 
 	private int currentHeight = 0;
@@ -13,7 +15,7 @@ public class NRightClickMenu extends NComponent {
 		setTextSize(1);
 		setBackground(0, 0, 192);
 		setBorderColors(0, 0);
-		setFontColor(0xFFFFFF, 0xFFFFFF);
+		setFontColor(Theme.hudText(), Theme.hudText());
 		setInputListener(new InputListener() {
 			@Override
 			public boolean onMouseDown(int clickX, int clickY, int mButtonDown, int mButtonClick) {
@@ -59,13 +61,12 @@ public class NRightClickMenu extends NComponent {
 				c.setWidth(biggestWidth);
 		}
 		menu.setSize(biggestWidth, textHeight - 1);
-		menu.setBackground(0, 0x454545, 192);
-		menu.setFontColor(0xFFFFFF, 0xFF0000);
+		menu.setBackground(0, Theme.hudControlFill(), 192);
 		menu.setLocation(0, currentHeight);
 		menu.setTextCentered(true);
 		menu.setText(text);
 		menu.setTextSize(0);
-		menu.setFontColor(0xFFFFFF, 0xFFFFFF);
+		menu.setFontColor(Theme.hudText(), Theme.hudText());
 		menu.setInputListener(new InputListener() {
 			@Override
 			public boolean onMouseDown(int clickX, int clickY, int mButtonDown, int mButtonClick) {
@@ -102,13 +103,12 @@ public class NRightClickMenu extends NComponent {
 		}
 		final int curHeight = currentHeight;
 		menu.setSize(biggestWidth, textHeight);
-		menu.setBackground(0, 0x454545, 192);
-		menu.setFontColor(0xFFFFFF, 0xFF0000);
+		menu.setBackground(0, Theme.hudControlFill(), 192);
 		menu.setLocation(0, currentHeight);
 		menu.setTextCentered(true);
 		menu.setText(text);
 		menu.setTextSize(0);
-		menu.setFontColor(0xFFFFFF, 0xFFFFFF);
+		menu.setFontColor(Theme.hudText(), Theme.hudText());
 		menu.setInputListener(new InputListener() {
 			@Override
 			public boolean onMouseMove(int x, int y) {

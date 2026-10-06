@@ -96,6 +96,44 @@ public final class ThemeParityTest {
 		expect("achievementHeaderHoverFill", Theme.achievementHeaderHoverFill(), 0x263751);
 		expect("achievementHeaderCheckedFill", Theme.achievementHeaderCheckedFill(), 0x659CDE);
 		expect("achievementRule", Theme.achievementRule(), 0xBFA086);
+
+		// Floating HUD controls (right-click menus, batch progress, party menu).
+		expect("hudControlFill", Theme.hudControlFill(), 0x454545);
+		expect("hudControlHoverFill", Theme.hudControlHoverFill(), 0xFFFFFF);
+		expect("hudControlBorder", Theme.hudControlBorder(), 0xFFFFFF);
+		expect("hudControlHoverBorder", Theme.hudControlHoverBorder(), 0x454545);
+		expect("hudText", Theme.hudText(), 0xFFFFFF);
+		expect("hudHoverText", Theme.hudHoverText(), 0xFF0000);
+
+		// Progress bars (batch window, fishing-trawler gauge).
+		expect("progressPanelFill", Theme.progressPanelFill(), 0xFFFFFF);
+		expect("progressTrackFill", Theme.progressTrackFill(), 0xFFFFFF);
+		expect("progressFill", Theme.progressFill(), 0x0000FF);
+
+		// Party status health bars.
+		expect("partyHealthEmptyFill", Theme.partyHealthEmptyFill(), 0xFF0000);
+		expect("partyHealthFill", Theme.partyHealthFill(), 0x00FF00);
+
+		// Online-player list title band.
+		expect("onlineListTitleFill", Theme.onlineListTitleFill(), 3093151);
+		expect("onlineListTitleHoverFill", Theme.onlineListTitleHoverFill(), 0x7E8D09);
+
+		// Bank PIN window.
+		expect("bankPinPanelFill", Theme.bankPinPanelFill(), 0x483E33);
+		expect("bankPinPanelBorder", Theme.bankPinPanelBorder(), 0x4E4836);
+		expect("bankPinAltFill", Theme.bankPinAltFill(), 0x524B31);
+		expect("bankPinAltBorder", Theme.bankPinAltBorder(), 0x565040);
+		expect("bankPinGold", Theme.bankPinGold(), 0xBF751D);
+		expect("bankPinBrightGold", Theme.bankPinBrightGold(), 0xFF981F);
+		expect("bankPinTitleText", Theme.bankPinTitleText(), 0x9B0907);
+		expect("bankPinDigitFill", Theme.bankPinDigitFill(), 0x4C0E09);
+		expect("bankPinDigitHoverFill", Theme.bankPinDigitHoverFill(), 0x63140B);
+		expect("bankPinDigitBorder", Theme.bankPinDigitBorder(), 0xAB837F);
+
+		// Crafting right-click menu (DoSkillInterface).
+		expect("legacyMenuHeaderFill", Theme.legacyMenuHeaderFill(), 0x000000);
+		expect("legacyMenuFill", Theme.legacyMenuFill(), 0x5C5548);
+		expect("legacyMenuItemHoverText", Theme.legacyMenuItemHoverText(), 0xFF0000);
 	}
 
 	/** On-path: each themed role resolves to its intended premium token. */
@@ -149,6 +187,38 @@ public final class ThemeParityTest {
 		expect("achievementHeaderHoverFill", Theme.achievementHeaderHoverFill(), Theme.PANEL_INSET);
 		expect("achievementHeaderCheckedFill", Theme.achievementHeaderCheckedFill(), Theme.SELECTION);
 		expect("achievementRule", Theme.achievementRule(), Theme.BORDER_LIGHT_MID);
+
+		expect("hudControlFill", Theme.hudControlFill(), Theme.PANEL_ELEVATED);
+		expect("hudControlHoverFill", Theme.hudControlHoverFill(), Theme.HOVER);
+		expect("hudControlBorder", Theme.hudControlBorder(), Theme.BORDER_LIGHT);
+		expect("hudControlHoverBorder", Theme.hudControlHoverBorder(), Theme.BORDER_DARK_MID);
+		expect("hudText", Theme.hudText(), Theme.TEXT_PRIMARY);
+		expect("hudHoverText", Theme.hudHoverText(), Theme.DANGER);
+
+		expect("progressPanelFill", Theme.progressPanelFill(), Theme.PANEL_ELEVATED);
+		expect("progressTrackFill", Theme.progressTrackFill(), Theme.PANEL_INSET);
+		expect("progressFill", Theme.progressFill(), Theme.ACCENT_PRIMARY);
+
+		expect("partyHealthEmptyFill", Theme.partyHealthEmptyFill(), Theme.DANGER);
+		expect("partyHealthFill", Theme.partyHealthFill(), Theme.SUCCESS);
+
+		expect("onlineListTitleFill", Theme.onlineListTitleFill(), Theme.PANEL_ELEVATED);
+		expect("onlineListTitleHoverFill", Theme.onlineListTitleHoverFill(), Theme.HOVER);
+
+		expect("bankPinPanelFill", Theme.bankPinPanelFill(), Theme.PANEL_ELEVATED);
+		expect("bankPinPanelBorder", Theme.bankPinPanelBorder(), Theme.BORDER_DARK);
+		expect("bankPinAltFill", Theme.bankPinAltFill(), Theme.PANEL_INSET);
+		expect("bankPinAltBorder", Theme.bankPinAltBorder(), Theme.BORDER_DARK_MID);
+		expect("bankPinGold", Theme.bankPinGold(), Theme.ACCENT_SECONDARY);
+		expect("bankPinBrightGold", Theme.bankPinBrightGold(), Theme.ACCENT_PRIMARY);
+		expect("bankPinTitleText", Theme.bankPinTitleText(), Theme.DANGER);
+		expect("bankPinDigitFill", Theme.bankPinDigitFill(), Theme.PANEL_INSET);
+		expect("bankPinDigitHoverFill", Theme.bankPinDigitHoverFill(), Theme.PANEL_ELEVATED);
+		expect("bankPinDigitBorder", Theme.bankPinDigitBorder(), Theme.BORDER_LIGHT_MID);
+
+		expect("legacyMenuHeaderFill", Theme.legacyMenuHeaderFill(), Theme.PANEL_INSET);
+		expect("legacyMenuFill", Theme.legacyMenuFill(), Theme.PANEL_ELEVATED);
+		expect("legacyMenuItemHoverText", Theme.legacyMenuItemHoverText(), Theme.DANGER);
 	}
 
 	private static void expect(String name, int actual, int expected) {

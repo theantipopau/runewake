@@ -2,6 +2,7 @@ package com.openrsc.interfaces.misc;
 
 import com.openrsc.interfaces.InputListener;
 import com.openrsc.interfaces.NComponent;
+import orsc.graphics.gui.Theme;
 import orsc.mudclient;
 
 public class BankPinInterface extends NComponent {
@@ -19,8 +20,8 @@ public class BankPinInterface extends NComponent {
 	public BankPinInterface(mudclient client) {
 		super(client);
 
-		setBackground(0x483E33, 0x483E33, 255);
-		setBorderColors(0x4E4836, 0x4E4836);
+		setBackground(Theme.bankPinPanelFill(), Theme.bankPinPanelFill(), 255);
+		setBorderColors(Theme.bankPinPanelBorder(), Theme.bankPinPanelBorder());
 		setSize(300, 250);
 		setLocation((client.getGameWidth() - getWidth()) / 2, (client.getGameHeight() - getHeight()) / 2);
 		setInputListener(new InputListener() {
@@ -36,7 +37,7 @@ public class BankPinInterface extends NComponent {
 		});
 
 		titleBox = new NComponent(client);
-		titleBox.setBorderColors(0x4E4836, 0x4E4836);
+		titleBox.setBorderColors(Theme.bankPinPanelBorder(), Theme.bankPinPanelBorder());
 		titleBox.setLocation(0, 0);
 		titleBox.setSize(300, 25);
 
@@ -46,8 +47,8 @@ public class BankPinInterface extends NComponent {
 		contentBox.setSize(285, 225);
 
 		alternativeBox = new NComponent(client);
-		alternativeBox.setBorderColors(0x565040, 0x565040);
-		alternativeBox.setBackground(0x524B31, 0x524B31, 255);
+		alternativeBox.setBorderColors(Theme.bankPinAltBorder(), Theme.bankPinAltBorder());
+		alternativeBox.setBackground(Theme.bankPinAltFill(), Theme.bankPinAltFill(), 255);
 		alternativeBox.setLocation(145 + 17, 193);
 		alternativeBox.setSize(123, 50);
 
@@ -58,7 +59,7 @@ public class BankPinInterface extends NComponent {
 		exitButton.setSize(140 - 17, 15);
 		exitButton.setLocation(0, 2);
 		exitButton.setTextSize(1);
-		exitButton.setFontColor(0xBF751D, 0xFF981F);
+		exitButton.setFontColor(Theme.bankPinGold(), Theme.bankPinBrightGold());
 		exitButton.setInputListener(new InputListener() {
 			@Override
 			public boolean onMouseDown(int clickX, int clickY, int mButtonDown, int mButtonClick) {
@@ -79,7 +80,7 @@ public class BankPinInterface extends NComponent {
 		resetPin.setLocation(0, 26);
 		resetPin.setTextSize(1);
 		resetPin.setSize(140 - 17, 15);
-		resetPin.setFontColor(0xBF751D, 0xFF981F);
+		resetPin.setFontColor(Theme.bankPinGold(), Theme.bankPinBrightGold());
 		resetPin.setInputListener(new InputListener() {
 			@Override
 			public boolean onMouseDown(int clickX, int clickY, int mButtonDown, int mButtonClick) {
@@ -91,13 +92,13 @@ public class BankPinInterface extends NComponent {
 
 		NComponent titleText = new NComponent(client);
 		titleText.setText("Bank of Runewake");
-		titleText.setFontColor(0x9B0907, 0x9B0907);
+		titleText.setFontColor(Theme.bankPinTitleText(), Theme.bankPinTitleText());
 		titleText.setTextSize(3);
 		titleText.setLocation(3, 2);
 
 		digitsEnteredText = new NComponent(client);
 		digitsEnteredText.setText("? ? ? ?");
-		digitsEnteredText.setFontColor(0xBF751D, 0xBF751D);
+		digitsEnteredText.setFontColor(Theme.bankPinGold(), Theme.bankPinGold());
 		digitsEnteredText.setTextSize(3);
 		digitsEnteredText.setLocation(243, 2);
 		digitsEnteredText.setSize(50, 15);
@@ -105,7 +106,7 @@ public class BankPinInterface extends NComponent {
 
 		NComponent descriptionText1 = new NComponent(client);
 		descriptionText1.setText("Please enter your PIN using the buttons below.");
-		descriptionText1.setFontColor(0xFF981F, 0xFF981F);
+		descriptionText1.setFontColor(Theme.bankPinBrightGold(), Theme.bankPinBrightGold());
 		descriptionText1.setTextSize(1);
 		descriptionText1.setTextCentered(true);
 		descriptionText1.setSize(270, 25);
@@ -113,7 +114,7 @@ public class BankPinInterface extends NComponent {
 
 		descriptionText2 = new NComponent(client);
 		descriptionText2.setText("First click the FIRST digit.");
-		descriptionText2.setFontColor(0xFFFFFF, 0xFFFFFF);
+		descriptionText2.setFontColor(Theme.hudText(), Theme.hudText());
 		descriptionText2.setTextSize(1);
 		descriptionText2.setTextCentered(true);
 		descriptionText2.setLocation(0, 16);
@@ -127,13 +128,13 @@ public class BankPinInterface extends NComponent {
 		for (int number = 0; number < 10; number++) {
 			final NComponent numberBox = new NComponent(client);
 			numberBox.setText(number + "");
-			numberBox.setFontColor(0xFF981F, 0xFF981F);
+			numberBox.setFontColor(Theme.bankPinBrightGold(), Theme.bankPinBrightGold());
 			numberBox.setTextSize(6);
 			numberBox.setLocation(numberBoxX + 1, numberBoxY);
 			numberBox.setSize(50, 50);
 			numberBox.setTextCentered(true);
-			numberBox.setBorderColors(0xAB837F, 0xAB837F);
-			numberBox.setBackground(0x4C0E09, 0x63140B, 255);
+			numberBox.setBorderColors(Theme.bankPinDigitBorder(), Theme.bankPinDigitBorder());
+			numberBox.setBackground(Theme.bankPinDigitFill(), Theme.bankPinDigitHoverFill(), 255);
 			numberBox.setInputListener(new InputListener() {
 				@Override
 				public boolean onMouseDown(int clickX, int clickY, int mButtonDown, int mButtonClick) {

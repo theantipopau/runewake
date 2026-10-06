@@ -3,6 +3,7 @@ package com.openrsc.interfaces.misc;
 import com.openrsc.client.entityhandling.EntityHandler;
 import com.openrsc.client.entityhandling.defs.ItemDef;
 import orsc.graphics.gui.Panel;
+import orsc.graphics.gui.Theme;
 import orsc.mudclient;
 
 import java.util.ArrayList;
@@ -46,9 +47,9 @@ public final class DoSkillInterface {
 	public void onRender() {
 		reposition();
 
-		panelColour = 0x989898;
-		textColour = 0xFFFFFF;
-		bordColour = 0x000000;
+		panelColour = Theme.legacyPanelFill();
+		textColour = Theme.legacyPanelText();
+		bordColour = Theme.legacyPanelBorder();
 
 		doSkillPanel.handleMouse(mc.getMouseX(), mc.getMouseY(), mc.getMouseButtonDown(), mc.getLastMouseDown());
 
@@ -126,23 +127,23 @@ public final class DoSkillInterface {
 			// Different size highlight box based on if there is text, and the length of the text
 			int boxWidth = skillDetail.isEmpty() ? 48 : (stringWidth < 48 ? 54 : stringWidth + 10);
 			int boxHeight = skillDetail.isEmpty() ? 38 : (lotsaText ? 64 : 52);
-			int boxColor = 16711680;
+			int boxColor = Theme.legacyControlActiveFill();
 
 			// Grays out box if player does not have required level to do
 			if (mc.getPlayerStatCurrent(skillDoing.equals("Cooking") ? 7 : skillDoing.equals("Fletching") ? 9 : skillDoing.equals("Crafting") ? 12 : skillDoing.equals("Smithing") ? 13 : 15) < levelReq) {
-				boxColor = 0x000000;
+				boxColor = Theme.legacyPanelBorder();
 			}
 
 			if (mc.getMouseX() >= curX - (boxWidth - 48) / 2 && mc.getMouseX() <= boxWidth + curX - (boxWidth - 48) / 2 && mc.getMouseY() >= spriteY - 2 && mc.getMouseY() <= spriteY + boxHeight
 				&& !rightClickMenu) {
 				mc.getSurface().drawBoxAlpha(curX - (boxWidth - 48) / 2, spriteY - 2, boxWidth, boxHeight, boxColor, 92);
-				if (mc.mouseButtonClick == 1 && boxColor != 0x000000) {
+				if (mc.mouseButtonClick == 1 && boxColor != Theme.legacyPanelBorder()) {
 					setVisible(false);
 					itemSelected = curItem.getItemID();
 					// send make all
 					mc.setMouseClick(0);
 				}
-				if (mc.mouseButtonClick == 2 && boxColor != 0x000000) {
+				if (mc.mouseButtonClick == 2 && boxColor != Theme.legacyPanelBorder()) {
 					rightClickMenuX = mc.getMouseX() - 10;
 					rightClickMenuY = mc.getMouseY() - 10;
 					itemSelected = curItem.getItemID();
@@ -176,12 +177,12 @@ public final class DoSkillInterface {
 
 			if (mc.getMouseX() >= rightClickMenuX && mc.getMouseX() <= rightClickMenuX + menuWidth && mc.getMouseY() >= rightClickMenuY && mc.getMouseY() <= rightClickMenuY + menuHeight) {
 				if (rightClickMenu) {
-					mc.getSurface().drawBoxAlpha(rightClickMenuX, rightClickMenuY, menuWidth, 15, 0x000000, 255);
-					mc.getSurface().drawBoxAlpha(rightClickMenuX, rightClickMenuY + 15, menuWidth, menuHeight - 15, 0x5C5548, 255);
-					mc.getSurface().drawBoxBorder(rightClickMenuX, menuWidth, rightClickMenuY, menuHeight, 0x000000);
+					mc.getSurface().drawBoxAlpha(rightClickMenuX, rightClickMenuY, menuWidth, 15, Theme.legacyMenuHeaderFill(), 255);
+					mc.getSurface().drawBoxAlpha(rightClickMenuX, rightClickMenuY + 15, menuWidth, menuHeight - 15, Theme.legacyMenuFill(), 255);
+					mc.getSurface().drawBoxBorder(rightClickMenuX, menuWidth, rightClickMenuY, menuHeight, Theme.legacyPanelBorder());
 
 
-					drawString(itemName, rightClickMenuX + 1, rightClickMenuY + 11, 2, 0xFFFFFF);
+					drawString(itemName, rightClickMenuX + 1, rightClickMenuY + 11, 2, Theme.legacyPanelText());
 
 					int hovering = 0;
 					for (int f = 1; f <= 6; f++) {
@@ -211,17 +212,17 @@ public final class DoSkillInterface {
 
 						switch (f) {
 							case 1:
-								drawString("Make-1", rightClickMenuX + 1, rightClickMenuY + 26, 2, hovering == 1 ? 0xFF0000 : 0xFFFFFF);
+								drawString("Make-1", rightClickMenuX + 1, rightClickMenuY + 26, 2, hovering == 1 ? Theme.legacyMenuItemHoverText() : Theme.legacyPanelText());
 							case 2:
-								drawString("Make-5", rightClickMenuX + 1, rightClickMenuY + 41, 2, hovering == 2 ? 0xFF0000 : 0xFFFFFF);
+								drawString("Make-5", rightClickMenuX + 1, rightClickMenuY + 41, 2, hovering == 2 ? Theme.legacyMenuItemHoverText() : Theme.legacyPanelText());
 							case 3:
-								drawString("Make-10", rightClickMenuX + 1, rightClickMenuY + 56, 2, hovering == 3 ? 0xFF0000 : 0xFFFFFF);
+								drawString("Make-10", rightClickMenuX + 1, rightClickMenuY + 56, 2, hovering == 3 ? Theme.legacyMenuItemHoverText() : Theme.legacyPanelText());
 							case 4:
-								drawString("Make-X", rightClickMenuX + 1, rightClickMenuY + 71, 2, hovering == 4 ? 0xFF0000 : 0xFFFFFF);
+								drawString("Make-X", rightClickMenuX + 1, rightClickMenuY + 71, 2, hovering == 4 ? Theme.legacyMenuItemHoverText() : Theme.legacyPanelText());
 							case 5:
-								drawString("Make-All", rightClickMenuX + 1, rightClickMenuY + 86, 2, hovering == 5 ? 0xFF0000 : 0xFFFFFF);
+								drawString("Make-All", rightClickMenuX + 1, rightClickMenuY + 86, 2, hovering == 5 ? Theme.legacyMenuItemHoverText() : Theme.legacyPanelText());
 							case 6:
-								drawString("Cancel", rightClickMenuX + 1, rightClickMenuY + 101, 2, hovering == 6 ? 0xFF0000 : 0xFFFFFF);
+								drawString("Cancel", rightClickMenuX + 1, rightClickMenuY + 101, 2, hovering == 6 ? Theme.legacyMenuItemHoverText() : Theme.legacyPanelText());
 								break;
 							default:
 								break;
@@ -265,20 +266,20 @@ public final class DoSkillInterface {
 	}
 
 	private void drawButton(int x, int y, int width, int height, String text, int font, boolean checked, ButtonHandler handler) {
-		int bgBtnColour = 0x333333; // grey
+		int bgBtnColour = Theme.legacyControlFill(); // grey
 		if (checked) {
-			bgBtnColour = 16711680; // red
+			bgBtnColour = Theme.legacyControlActiveFill(); // checked (inherited red)
 		}
 		if (mc.getMouseX() >= x && mc.getMouseY() >= y && mc.getMouseX() <= x + width && mc.getMouseY() <= y + height) {
 			if (!checked)
-				bgBtnColour = 16711680; // blue
+				bgBtnColour = Theme.legacyControlActiveFill(); // hover: the inherited value is the same red, the old comment said blue
 			if (mc.getMouseClick() == 1) {
 				handler.handle();
 				mc.setMouseClick(0);
 			}
 		}
 		mc.getSurface().drawBoxAlpha(x, y, width, height, bgBtnColour, 192);
-		mc.getSurface().drawBoxBorder(x, width, y, height, 0x242424);
+		mc.getSurface().drawBoxBorder(x, width, y, height, Theme.legacyControlBorder());
 		mc.getSurface().drawString(text, x + (width / 2) - (mc.getSurface().stringWidth(font, text) / 2) - 1, y + height / 2 + 5, textColour, font);
 	}
 

@@ -5,6 +5,7 @@ import com.openrsc.interfaces.MenuAction;
 import com.openrsc.interfaces.NComponent;
 import com.openrsc.interfaces.NRightClickMenu;
 import orsc.graphics.gui.Panel;
+import orsc.graphics.gui.Theme;
 import orsc.mudclient;
 
 public class OnlineListInterface extends NComponent {
@@ -38,13 +39,13 @@ public class OnlineListInterface extends NComponent {
 
 		});
 		NComponent title = new NComponent(client);
-		title.setBackground(3093151, 0x7e8d09, 192);
+		title.setBackground(Theme.onlineListTitleFill(), Theme.onlineListTitleHoverFill(), 192);
 		title.setLocation(0, 0);
 		title.setSize(408, 20);
 
 		titleText = new NComponent(client);
 		titleText.setText("Online Players");
-		titleText.setFontColor(0xFFFFFF, 0xFFFFFF);
+		titleText.setFontColor(Theme.hudText(), Theme.hudText());
 		titleText.setTextSize(1);
 		titleText.setLocation(2, 1);
 
@@ -63,13 +64,13 @@ public class OnlineListInterface extends NComponent {
 				return true;
 			}
 		});
-		close.setFontColor(0xFFFFFF, 0xFF0000);
+		close.setFontColor(Theme.hudText(), Theme.hudHoverText());
 		title.addComponent(close);
 		addComponent(title);
 		addComponent(titleText);
 
 		userListContainer = new NComponent(client);
-		userListContainer.setFontColor(0xFFFFFF, 0xFFFFFF);
+		userListContainer.setFontColor(Theme.hudText(), Theme.hudText());
 		userListContainer.setLocation(1, 21);
 		userListContainer.setSize(getWidth() - 3, getHeight());
 		addComponent(userListContainer);
@@ -92,7 +93,7 @@ public class OnlineListInterface extends NComponent {
 		}
 		final NComponent userComponent = new NComponent(getClient());
 		userComponent.setText(isLast ? text : text + ", ");
-		userComponent.setFontColor(0xFFFFFF, 0xFF0000);
+		userComponent.setFontColor(Theme.hudText(), Theme.hudHoverText());
 		userComponent.setTextSize(1);
 		userComponent.setLocation(currentX, currentY);
 		userComponent.setSize(textWidth, textHeight);

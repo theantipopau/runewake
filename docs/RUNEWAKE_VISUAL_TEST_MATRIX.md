@@ -248,3 +248,51 @@ classic mode should be unchanged.
    the `@gre@`/`@yel@` status prefixes in the title still contrast.
 5. **Classic regression**: with `C_PREMIUM_THEME` off, open all seven and
    compare against the previous build; they must be pixel-identical.
+
+## Additions from the 2026-10-05 HUD-window theme sweep (all unverified visually)
+
+`BankPinInterface`, `DoSkillInterface`, `OnlineListInterface`,
+`ProgressBarInterface`, `FishingTrawlerInterface`, `PartyGUI` and the shared
+`NRightClickMenu` now draw from `Theme.bankPin*`, `Theme.legacy*` /
+`legacyMenu*`, `onlineList*`, `progress*`, `party*` and the new shared `hud*`
+family. Off-path values are the exact inherited literals (asserted by
+`scripts/check_theme_parity.sh`, 141 checks), so only premium mode changes -
+except the single value in item 5.
+
+1. **Bank PIN window** (premium): the brown 0x483E33 body should read as a
+   charcoal panel with a bronze outer border, and the secondary row boxes
+   should sit darker inside it. The ten PIN digit boxes become dark insets with
+   a bronze frame; their hover state must stay clearly distinguishable from
+   idle, and the digits must stay legible. This is the one window whose
+   heading ("Bank of Runewake", inherited dark red) moves to the danger token -
+   confirm a security prompt's heading still reads as a heading and not an
+   error banner.
+2. **Online-player list** (premium): the inherited navy/olive title band
+   becomes the panel fill. Confirm the title, the "Close window" label and the
+   player rows all stay legible over the world, and that rows and the close
+   label still flip to red on hover.
+3. **Progress bars** (premium): batch progress and the fishing-trawler water
+   gauge should show a dark inset track with a teal fill where they used to be
+   white with blue. The `x/y` count label is drawn across both fill and track
+   and must stay readable on either. The batch window's translucent white
+   backdrop becomes a dark elevated panel with the black header unchanged -
+   confirm the header still separates from the body.
+4. **Party status HUD** (premium): the health bars move from pure red/green to
+   the status tokens; the empty and filled halves must remain obviously
+   different at a glance, and the member name rows must stay legible over the
+   world. Hovering the "Party" button should now match the hover language of
+   every other control.
+5. **The one non-cosmetic value change**: `PartyGUI`'s "Party" button hover
+   colour was written as `0xFF00000` and, with no alpha mask in the screen's
+   `DirectColorModel`, rendered as RGB(240,0,0); it is now the palette red
+   (255,0,0). This affects classic mode too, on hover of that one button - a
+   15/255 shift in the red channel, nothing more.
+6. **Crafting menu and right-click menus** (premium): the crafting right-click
+   menu's black header over warm-grey body becomes a dark header over an
+   elevated body, with item text in parchment and hovered entries in the danger
+   red; `NRightClickMenu` (friend/ignore/party/staff menus) should read as the
+   same language instead of white-on-black, with a visible row highlight.
+7. **Classic regression**: with `C_PREMIUM_THEME` off, open all seven and
+   compare against the previous build; they must be pixel-identical apart from
+   the single Party-button hover colour in item 5. The parity guard asserts the
+   values, not the rendering.

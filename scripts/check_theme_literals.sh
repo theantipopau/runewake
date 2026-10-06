@@ -9,6 +9,13 @@
 # deliberately extend the baseline) instead of silently reintroducing
 # hardcoded colours.
 #
+# It also fails on 7-digit literals. A colour is 6 or 8 hex digits, so a
+# 7-digit token can never be one - and the colour scan used to match only its
+# first 6 digits, which is how 0xFF00000 shipped as the party-menu hover
+# colour: the text path reads only the low 24 bits, so it rendered as
+# RGB(240,0,0) and nothing flagged it. Long runs (>= 9 digits, e.g. hash
+# constants) still contribute their leading 8 digits, exactly as before.
+#
 # Usage:
 #   scripts/check_theme_literals.sh
 #
@@ -37,16 +44,44 @@ fi
 
 scan_literals() {
 	grep -rEo --include='*.java' \
-		'0x[0-9a-fA-F]{6}([0-9a-fA-F]{2})?' \
+		'0x[0-9a-fA-F]+' \
 		Client_Base/src/orsc \
 		Client_Base/src/com/openrsc/interfaces \
 		PC_Client/src/orsc 2>/dev/null \
 		| grep -v 'graphics/gui/Theme' \
-		| awk -F: '{ literal = tolower($NF); sub(/:[^:]*$/, ":" literal, $0); print }' \
+		| awk -F: '
+			{
+				literal = tolower($NF)
+				n = length(literal) - 2
+				if (n < 6) next                    # 0x masks and flags, not colours
+				if (n > 8) literal = substr(literal, 1, 10)  # long constants: leading 8, as before
+				sub(/:[^:]*$/, ":" literal, $0)
+				print
+			}' \
 		| sort -u
 }
 
-CURRENT=$(scan_literals)
+# Exactly-7-digit tokens: never a valid colour, and never visible to the
+# colour scan above (which used to truncate them to 6 digits).
+scan_malformed() {
+	grep -rEo --include='*.java' \
+		'0x[0-9a-fA-F]{7}([^0-9a-fA-F]|$)' \
+		Client_Base/src/orsc \
+		Client_Base/src/com/openrsc/interfaces \
+		PC_Client/src/orsc 2>/dev/null \
+		| grep -v 'graphics/gui/Theme' \
+		| awk -F: '
+			{
+				literal = tolower($NF)
+				sub(/[^0-9a-fA-F]$/, "", literal)
+				sub(/:[^:]*$/, ":" literal, $0)
+				print
+			}' \
+		| sort -u
+}
+
+CURRENT=$({ scan_literals; scan_malformed; } | sort -u)
+MALFORMED=$(scan_malformed)
 
 if [ "$UPDATE" -eq 1 ]; then
 	{
@@ -78,6 +113,21 @@ echo "FAIL: colour literals changed in the UI layer without a baseline update." 
 echo >&2
 echo "Added or changed literals (+) and removed ones (-):" >&2
 cat /tmp/runewake_diff.$$ >&2
+
+# Name the malformed-literal case explicitly: it is a typo, not a migration.
+unclassified=$(printf '%s\n' "$MALFORMED" | awk -v base="$BASELINE" '
+	BEGIN { while ((getline line < base) > 0) if (line !~ /^#/) known[line] = 1 }
+	$0 != "" && !($0 in known) { print }')
+if [ -n "$unclassified" ]; then	echo >&2
+	echo "Malformed colour literal(s) - a colour is 0xRRGGBB or 0xAARRGGBB, so" >&2
+	echo "7 hex digits can never be one:" >&2
+	printf '%s\n' "$unclassified" >&2
+	echo "0xFF00000 shipped as the party-menu hover colour and rendered as" >&2
+	echo "RGB(240,0,0), because the text path reads only the low 24 bits. Fix" >&2
+	echo "the typo; if it is a genuine numeric constant, classify it in the" >&2
+	echo "baseline instead (step 3 above)." >&2
+fi
+
 echo >&2
 echo "Classify each change: migrate to a Theme accessor, or update the" >&2
 echo "baseline in the same commit with: scripts/check_theme_literals.sh --update-baseline" >&2

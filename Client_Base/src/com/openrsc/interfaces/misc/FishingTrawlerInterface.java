@@ -2,6 +2,7 @@ package com.openrsc.interfaces.misc;
 
 import com.openrsc.interfaces.NComponent;
 import com.openrsc.interfaces.NCustomComponent;
+import orsc.graphics.gui.Theme;
 import orsc.mudclient;
 
 public class FishingTrawlerInterface extends NComponent {
@@ -31,13 +32,13 @@ public class FishingTrawlerInterface extends NComponent {
 				float waterPercentage = waterF > 0 ? waterF / 1000 : 0;
 				float percentToWidth = (waterPercentage * progressBarWidth);
 				graphics().drawBoxAlpha(getX() - 2, getY() - 2, (int) progressBarWidth + 4, 10 + 4, 0, 128);
-				graphics().drawBoxAlpha(getX(), getY(), (int) progressBarWidth, 10, 0xffffff, 125);
+				graphics().drawBoxAlpha(getX(), getY(), (int) progressBarWidth, 10, Theme.progressTrackFill(), 125);
 				if (percentToWidth > progressBarWidth)
 					percentToWidth = progressBarWidth;
 				else if (percentToWidth < 0)
 					percentToWidth = 0;
 
-				graphics().drawBoxAlpha(getX(), getY(), (int) percentToWidth - 2, 10, 0x0000ff, 200);
+				graphics().drawBoxAlpha(getX(), getY(), (int) percentToWidth - 2, 10, Theme.progressFill(), 200);
 			}
 		};
 		waterLevelComponent.setLocation(45, 5);
@@ -47,25 +48,25 @@ public class FishingTrawlerInterface extends NComponent {
 		waterText.setTextSize(2);
 		waterText.setLocation(5, 0);
 		waterText.setSize(75, 25);
-		waterText.setFontColor(0xFFFFFF, 0xFFFFFF);
+		waterText.setFontColor(Theme.hudText(), Theme.hudText());
 
 		netStatus = new NComponent(graphics);
 		netStatus.setTextSize(2);
 		netStatus.setLocation(5, 15);
 		netStatus.setText("Net: @red@Ripped!");
 		netStatus.setSize(75, 25);
-		netStatus.setFontColor(0xFFFFFF, 0xFFFFFF);
+		netStatus.setFontColor(Theme.hudText(), Theme.hudText());
 
 		fishCaught = new NComponent(graphics);
 		fishCaught.setTextSize(2);
 		fishCaught.setLocation(105, 15);
 		fishCaught.setText("Catch: 600 fish");
 		fishCaught.setSize(75, 35);
-		fishCaught.setFontColor(0xFFFFFF, 0xFFFFFF);
+		fishCaught.setFontColor(Theme.hudText(), Theme.hudText());
 
 		timeLeft = new NComponent(graphics);
 		timeLeft.setSize(75, 25);
-		timeLeft.setFontColor(0xFFFFFF, 0xFFFFFF);
+		timeLeft.setFontColor(Theme.hudText(), Theme.hudText());
 		timeLeft.setTextSize(2);
 		timeLeft.setLocation(215, 15);
 		timeLeft.setText("Time left: 11 min");

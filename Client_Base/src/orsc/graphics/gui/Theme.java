@@ -1129,4 +1129,200 @@ public final class Theme {
 	public static int achievementRule() {
 		return Config.C_PREMIUM_THEME ? BORDER_LIGHT_MID : CLASSIC_ACHIEVEMENT_RULE;
 	}
+
+	// ------------------------------------------------------------------
+	// Floating HUD controls: right-click menus, the batch-progress window
+	// and the party status menu all inherit one grey/white/red palette.
+	// Off-path values reproduce it exactly.
+	// ------------------------------------------------------------------
+
+	private static final int CLASSIC_HUD_CONTROL_FILL = 0x454545;
+	private static final int CLASSIC_HUD_CONTROL_HOVER_FILL = 0xFFFFFF;
+	private static final int CLASSIC_HUD_CONTROL_BORDER = 0xFFFFFF;
+	private static final int CLASSIC_HUD_CONTROL_HOVER_BORDER = 0x454545;
+	private static final int CLASSIC_HUD_TEXT = 0xFFFFFF;
+	private static final int CLASSIC_HUD_HOVER_TEXT = 0xFF0000;
+
+	/** Idle fill of a floating HUD control (menu row, cancel/menu button). */
+	public static int hudControlFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_HUD_CONTROL_FILL;
+	}
+
+	/** Fill of a floating HUD control while hovered. */
+	public static int hudControlHoverFill() {
+		return Config.C_PREMIUM_THEME ? HOVER : CLASSIC_HUD_CONTROL_HOVER_FILL;
+	}
+
+	/** Border of a floating HUD control. */
+	public static int hudControlBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_LIGHT : CLASSIC_HUD_CONTROL_BORDER;
+	}
+
+	/** Border of a floating HUD control while hovered. */
+	public static int hudControlHoverBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : CLASSIC_HUD_CONTROL_HOVER_BORDER;
+	}
+
+	/** Label text drawn on a floating HUD window (headers, status lines, party rows). */
+	public static int hudText() {
+		return Config.C_PREMIUM_THEME ? TEXT_PRIMARY : CLASSIC_HUD_TEXT;
+	}
+
+	/** Text of a floating HUD control while hovered; also the danger colour. */
+	public static int hudHoverText() {
+		return Config.C_PREMIUM_THEME ? DANGER : CLASSIC_HUD_HOVER_TEXT;
+	}
+
+	// ------------------------------------------------------------------
+	// Progress bars: the batch/crafting window and the fishing-trawler
+	// water gauge. Off-path reproduces the inherited white track with its
+	// blue fill.
+	// ------------------------------------------------------------------
+
+	private static final int CLASSIC_PROGRESS_PANEL_FILL = 0xFFFFFF;
+	private static final int CLASSIC_PROGRESS_TRACK_FILL = 0xFFFFFF;
+	private static final int CLASSIC_PROGRESS_FILL = 0x0000FF;
+
+	/** Translucent backdrop of the batch-progress window. */
+	public static int progressPanelFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_PROGRESS_PANEL_FILL;
+	}
+
+	/** Unfilled portion of a progress bar. */
+	public static int progressTrackFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_INSET : CLASSIC_PROGRESS_TRACK_FILL;
+	}
+
+	/** Filled portion of a progress bar. */
+	public static int progressFill() {
+		return Config.C_PREMIUM_THEME ? ACCENT_PRIMARY : CLASSIC_PROGRESS_FILL;
+	}
+
+	// ------------------------------------------------------------------
+	// Party status HUD (PartyGUI) health bars. Off-path reproduces the
+	// inherited red-empty / green-filled bars.
+	// ------------------------------------------------------------------
+
+	private static final int CLASSIC_PARTY_HEALTH_EMPTY = 0xFF0000;
+	private static final int CLASSIC_PARTY_HEALTH_FILL = 0x00FF00;
+
+	/** Empty portion of a party member's health bar (drawn first, underneath). */
+	public static int partyHealthEmptyFill() {
+		return Config.C_PREMIUM_THEME ? DANGER : CLASSIC_PARTY_HEALTH_EMPTY;
+	}
+
+	/** Filled portion of a party member's health bar. */
+	public static int partyHealthFill() {
+		return Config.C_PREMIUM_THEME ? SUCCESS : CLASSIC_PARTY_HEALTH_FILL;
+	}
+
+	// ------------------------------------------------------------------
+	// Online-player list (OnlineListInterface) title band. Off-path
+	// reproduces the inherited navy/olive band.
+	// ------------------------------------------------------------------
+
+	private static final int CLASSIC_ONLINE_LIST_TITLE_FILL = 0x2F329F;
+	private static final int CLASSIC_ONLINE_LIST_TITLE_HOVER_FILL = 0x7E8D09;
+
+	/** Title band of the online-player list. */
+	public static int onlineListTitleFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_ONLINE_LIST_TITLE_FILL;
+	}
+
+	/** Title band of the online-player list while hovered. */
+	public static int onlineListTitleHoverFill() {
+		return Config.C_PREMIUM_THEME ? HOVER : CLASSIC_ONLINE_LIST_TITLE_HOVER_FILL;
+	}
+
+	// ------------------------------------------------------------------
+	// Bank PIN window (BankPinInterface). A self-contained brown window
+	// that inherits the same palette family as the Ironman setup window
+	// (see ironmanBodyFill/ironmanHeadingText); off-path values reproduce
+	// the inherited literals exactly.
+	// ------------------------------------------------------------------
+
+	private static final int CLASSIC_BANK_PIN_PANEL_FILL = 0x483E33;
+	private static final int CLASSIC_BANK_PIN_PANEL_BORDER = 0x4E4836;
+	private static final int CLASSIC_BANK_PIN_ALT_FILL = 0x524B31;
+	private static final int CLASSIC_BANK_PIN_ALT_BORDER = 0x565040;
+	private static final int CLASSIC_BANK_PIN_GOLD = 0xBF751D;
+	private static final int CLASSIC_BANK_PIN_BRIGHT_GOLD = 0xFF981F;
+	private static final int CLASSIC_BANK_PIN_TITLE_TEXT = 0x9B0907;
+	private static final int CLASSIC_BANK_PIN_DIGIT_FILL = 0x4C0E09;
+	private static final int CLASSIC_BANK_PIN_DIGIT_HOVER_FILL = 0x63140B;
+	private static final int CLASSIC_BANK_PIN_DIGIT_BORDER = 0xAB837F;
+
+	/** Body fill of the bank PIN window. */
+	public static int bankPinPanelFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_BANK_PIN_PANEL_FILL;
+	}
+
+	/** Outer border of the bank PIN window and its title box. */
+	public static int bankPinPanelBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK : CLASSIC_BANK_PIN_PANEL_BORDER;
+	}
+
+	/** Fill of the alternate (secondary) row boxes. */
+	public static int bankPinAltFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_INSET : CLASSIC_BANK_PIN_ALT_FILL;
+	}
+
+	/** Border of the alternate (secondary) row boxes. */
+	public static int bankPinAltBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_DARK_MID : CLASSIC_BANK_PIN_ALT_BORDER;
+	}
+
+	/** Dim gold: button text at rest and the digits-entered counter. */
+	public static int bankPinGold() {
+		return Config.C_PREMIUM_THEME ? ACCENT_SECONDARY : CLASSIC_BANK_PIN_GOLD;
+	}
+
+	/** Bright gold: button text while hovered, prompt text, entered digit. */
+	public static int bankPinBrightGold() {
+		return Config.C_PREMIUM_THEME ? ACCENT_PRIMARY : CLASSIC_BANK_PIN_BRIGHT_GOLD;
+	}
+
+	/** Heading text of the bank PIN window. */
+	public static int bankPinTitleText() {
+		return Config.C_PREMIUM_THEME ? DANGER : CLASSIC_BANK_PIN_TITLE_TEXT;
+	}
+
+	/** Fill of a PIN digit box at rest. */
+	public static int bankPinDigitFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_INSET : CLASSIC_BANK_PIN_DIGIT_FILL;
+	}
+
+	/** Fill of a PIN digit box while hovered. */
+	public static int bankPinDigitHoverFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_BANK_PIN_DIGIT_HOVER_FILL;
+	}
+
+	/** Border of a PIN digit box. */
+	public static int bankPinDigitBorder() {
+		return Config.C_PREMIUM_THEME ? BORDER_LIGHT_MID : CLASSIC_BANK_PIN_DIGIT_BORDER;
+	}
+
+	// ------------------------------------------------------------------
+	// Crafting right-click menu (DoSkillInterface): header band, body and
+	// hovered entry. Its panel and item colours reuse the legacy family.
+	// ------------------------------------------------------------------
+
+	private static final int CLASSIC_LEGACY_MENU_HEADER_FILL = 0x000000;
+	private static final int CLASSIC_LEGACY_MENU_FILL = 0x5C5548;
+	private static final int CLASSIC_LEGACY_MENU_HOVER_TEXT = 0xFF0000;
+
+	/** Header band (item name) of the crafting right-click menu. */
+	public static int legacyMenuHeaderFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_INSET : CLASSIC_LEGACY_MENU_HEADER_FILL;
+	}
+
+	/** Body fill of the crafting right-click menu. */
+	public static int legacyMenuFill() {
+		return Config.C_PREMIUM_THEME ? PANEL_ELEVATED : CLASSIC_LEGACY_MENU_FILL;
+	}
+
+	/** Entry text of the crafting right-click menu while hovered. */
+	public static int legacyMenuItemHoverText() {
+		return Config.C_PREMIUM_THEME ? DANGER : CLASSIC_LEGACY_MENU_HOVER_TEXT;
+	}
 }

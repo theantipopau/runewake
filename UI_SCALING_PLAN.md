@@ -590,3 +590,10 @@ only then continue.
 Already themed in the 2026-09-26 pass (so scaling is the only thing left for
 them) are the six legacy custom windows and the achievement window - see
 `Theme.legacy*` / `Theme.points*` / `Theme.achievement*`.
+
+The 2026-10-05 sweep finished the colour side for every window in the table
+above: `BankPinInterface` (`Theme.bankPin*`), `DoSkillInterface` (reused
+`Theme.legacy*` plus `legacyMenu*`), `OnlineListInterface` (`onlineList*`),
+`ProgressBarInterface` and `FishingTrawlerInterface` (`progress*`), `PartyGUI`
+(`party*`) and the shared `NRightClickMenu` (the new `hud*` family). Their
+geometry is still unscaled - that remains the open work item here.

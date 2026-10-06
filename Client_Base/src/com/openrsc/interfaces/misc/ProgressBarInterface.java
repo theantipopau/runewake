@@ -3,6 +3,7 @@ package com.openrsc.interfaces.misc;
 import com.openrsc.interfaces.InputListener;
 import com.openrsc.interfaces.NComponent;
 import com.openrsc.interfaces.NCustomComponent;
+import orsc.graphics.gui.Theme;
 import orsc.mudclient;
 
 public class ProgressBarInterface {
@@ -18,7 +19,7 @@ public class ProgressBarInterface {
 	public ProgressBarInterface(final mudclient graphics) {
 		progressBarComponent = new NComponent(graphics);
 		progressBarComponent.setSize(138, 59);
-		progressBarComponent.setBackground(0xFFFFFF, 0xFFFFFF, 128);
+		progressBarComponent.setBackground(Theme.progressPanelFill(), Theme.progressPanelFill(), 128);
 		progressBarComponent.setLocation((graphics.getGameWidth() - 138) / 2, graphics.getGameHeight() - 100);
 
 		NCustomComponent progressBarItself = new NCustomComponent(graphics) {
@@ -38,16 +39,16 @@ public class ProgressBarInterface {
 				float percentToWidth = (percentDone * progressBarWidth);
 
 				graphics().drawBoxAlpha(getX() - 2, getY() - 2, (int) progressBarWidth + 4, 10 + 4, 0, 128);
-				graphics().drawBoxAlpha(getX(), getY(), (int) progressBarWidth, 10, 0xffffff, 125);
+				graphics().drawBoxAlpha(getX(), getY(), (int) progressBarWidth, 10, Theme.progressTrackFill(), 125);
 
 				if (percentToWidth > progressBarWidth)
 					percentToWidth = progressBarWidth;
 				else if (percentToWidth < 0)
 					percentToWidth = 0;
 
-				graphics().drawBoxAlpha(getX(), getY(), (int) percentToWidth - 1, 10, 0x0000ff, 200);
+				graphics().drawBoxAlpha(getX(), getY(), (int) percentToWidth - 1, 10, Theme.progressFill(), 200);
 				int center = (batchTotalCount - batchCompletedCount) > 9 ? 13 : 7;
-				graphics().drawColoredString((int) (getX() + (progressBarWidth / 2) - center), getY() + 9, (batchCompletedCount) + "/" + batchTotalCount, 0, 0xffffff, 0);
+				graphics().drawColoredString((int) (getX() + (progressBarWidth / 2) - center), getY() + 9, (batchCompletedCount) + "/" + batchTotalCount, 0, Theme.hudText(), 0);
 //
 //				graphics().drawText((batchTotalCount - batchCompletedCount) + "/" + batchTotalCount,
 //						(int) (getX() + (progressBarWidth / 2)), getY() + 9, 0, 0xffffff);
@@ -59,7 +60,7 @@ public class ProgressBarInterface {
 		headerComponent.setSize(138, 19);
 		headerComponent.setBackground(0, 0, 156);
 		headerComponent.setLocation(0, 0);
-		headerComponent.setFontColor(0xFFFFFF, 0xFFFFFF);
+		headerComponent.setFontColor(Theme.hudText(), Theme.hudText());
 		headerComponent.setTextCentered(true);
 		headerComponent.setText("Batching");
 		headerComponent.setTextSize(1);
@@ -94,9 +95,9 @@ public class ProgressBarInterface {
 		NComponent cancelButton = new NComponent(graphics);
 		cancelButton.setTextCentered(true);
 		cancelButton.setText("Cancel");
-		cancelButton.setBorderColors(0xFFFFFF, 0xFFFFFF);
-		cancelButton.setBackground(0x454545, 0x454545, 128);
-		cancelButton.setFontColor(0xFFFFFF, 0xFF0000);
+		cancelButton.setBorderColors(Theme.hudControlBorder(), Theme.hudControlBorder());
+		cancelButton.setBackground(Theme.hudControlFill(), Theme.hudControlFill(), 128);
+		cancelButton.setFontColor(Theme.hudText(), Theme.hudHoverText());
 		cancelButton.setTextSize(0);
 		cancelButton.setLocation(31, 39);
 		cancelButton.setSize(75, 16);
