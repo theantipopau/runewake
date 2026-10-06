@@ -863,3 +863,178 @@ wrong everywhere, map tab opened briefly.
    line, disappears. Needs a decision on undocumented `java -jar core.jar` use.
 5. Operator follow-up: publish `ws_server_port`, attach an external uptime
    monitor to `/healthz` and a scrape of `/metrics`.
+
+## Session: 2026-10-05 (HUD-window theme sweep + world-boot smoke test)
+
+### What was done
+1. **Finished the raw-literal sweep in the custom windows** - the exact list
+   item 2 of the previous session left open, plus one file that was not on it:
+   - `BankPinInterface` (11 literals) -> new `Theme.bankPin*` family (10
+     accessors): panel/alternate fills and borders, two gold tones, title text,
+     and the digit-box fill/hover/border. Its inherited brown window is the
+     same palette family as `IronManInterface`, so the premium tokens mirror
+     `ironman*`.
+   - `DoSkillInterface` (7) -> the existing `Theme.legacy*` family (its panel,
+     text, border, control fill/border really are the literals that family was
+     built for) plus three new `legacyMenu*` accessors for its right-click menu
+     (header band, body, hovered entry).
+   - `OnlineListInterface` (3 + one decimal literal) -> `onlineListTitleFill()` /
+     `onlineListTitleHoverFill()` for the navy/olive band, and the shared
+     `hudText()`/`hudHoverText()` for its labels.
+   - `ProgressBarInterface` (4) and `FishingTrawlerInterface` (2) -> new
+     `progressPanelFill()`/`progressTrackFill()`/`progressFill()`.
+   - `PartyGUI` (4) -> `partyHealthEmptyFill()`/`partyHealthFill()` plus `hud*`.
+   - `NRightClickMenu` (3, added beyond the list because it is the right-click
+     menu every player sees and shares the same palette) -> `hud*`.
+2. **New shared `Theme.hud*` family** (6 accessors) for the grey/white/red
+   control palette that `NRightClickMenu`, the batch-progress window and the
+   party menu already had in common; before this they were three copies.
+3. **Two inherited quirks surfaced instead of being silently carried forward**:
+   - `PartyGUI`'s "Party" button hover colour was written as the 7-digit
+     literal `0xFF00000`. The display is `new DirectColorModel(32, 0xFF0000,
+     0xFF00, 255)` (no alpha mask), so it rendered as RGB(240,0,0) - a typo, not
+     an alpha value. It now resolves to the palette red (255,0,0). This is the
+     only place classic rendering changes, by 15/255 in the red channel on one
+     hover state.
+   - `DoSkillInterface`'s hover branch was commented `// blue` while carrying
+     `16711680` (= 0xFF0000). Left behaviour-preserving: it now calls
+     `Theme.legacyControlActiveFill()` (identical classic value) with a comment
+     that records what was actually inherited. The sibling `// red` branch was
+     the same literal and is now the same accessor.
+4. **Dead code removed**: `NRightClickMenu.createOption`/`createSubMenuOption`
+   each set `setFontColor(white, red)` and then overwrote it with
+   `(white, white)` two lines later, so the red never rendered. The two dead
+   calls are gone; the live pair now uses `hudText()`.
+5. **`scripts/check_boot.sh` + `bootSmoke` CI job**: boots the world on SQLite
+   and asserts `/healthz` -> `ok`, `/status` JSON (`serverName`/`players`/
+   `maxPlayers`), `/metrics` Prometheus exposition, 404 on an unknown path, the
+   `Game world is now online on TCP port` log line and the `started in ...`
+   banner, then tears the process down. CI compiles the server first and
+   `before_script` now installs `curl` alongside `ant`.
+
+### Verification actually run
+- `ant -f Client_Base/build.xml compile`: **passed** (124 sources).
+- `ant -f server/build.xml compile_core compile_plugins`: **passed** (642 + 471
+  sources), twice - once for the sweep, once to rebuild `core.jar` after the
+  negative smoke test.
+- `ant -f PC_Launcher/build.xml compile`: **passed**.
+- `bash scripts/check_theme_parity.sh`: **passed**, `OK: 141 theme-parity
+  checks, 0 failed.` (was 89; 52 new assertions, 26 accessors x both paths).
+- `bash scripts/check_theme_literals.sh`: regenerated, **132 pairs** (was 164);
+  the pre-update diff was pure removals - no new raw literal anywhere.
+- `bash scripts/check_dependencies.sh`, `bash scripts/check_hosting_config.sh`,
+  `bash scripts/build_pages.sh`: all **passed**.
+- `.gitlab-ci.yml` re-parsed with PyYAML after adding `bootSmoke` (8 jobs).
+- **Boot smoke, positive**: `bash scripts/check_boot.sh` -> exit 0 in ~7 s,
+  ports 43494/43594 released afterwards.
+- **Boot smoke, negative**: moved `server/lib/commons-io-2.20.0.jar` aside,
+  rebuilt `core.jar` without it, ran the script -> **exit 1** with the exact
+  `NoClassDefFoundError: org/apache/commons/io/input/CloseShieldInputStream`
+  at `WorldLoader.loadWorld` in the dumped log tail. Jar restored and
+  `core.jar` rebuilt; the script then went green again.
+- **First negative attempt was invalid and is recorded here so it is not
+  repeated**: simply removing the jar from `lib/` did *not* break a boot,
+  because `core.jar` is a fat jar (`<zipgroupfileset dir="${lib}"/>`) and still
+  contained the classes. The check only bites against a freshly built artifact.
+
+### Not verified (and why)
+- No display: the seven windows' premium appearance and classic pixel-identity
+  are compile/guard-verified only. Checklist added to
+  `docs/RUNEWAKE_VISUAL_TEST_MATRIX.md` ("2026-10-05 HUD-window theme sweep").
+- CI itself was not run (no GitLab runner here); `.gitlab-ci.yml` is parse-
+  validated and every command in the new job was executed locally by hand.
+- Android/Docker still unbuildable in this environment (JDK 11+ / no daemon).
+
+### Environment notes for the next session
+- A `SYNC` terminal call that backgrounds `java` blocks until the tool timeout
+  and leaves the process running afterwards. Use `scripts/check_boot.sh`, which
+  backgrounds, polls, and tears down within the call.
+- `dist/` (gitignored) is the staging area for throwaway scripts and logs;
+  `/tmp` paths break the Windows Python.
+- Nothing from this session is committed: the working tree holds the seven
+  migrated windows, `Theme.java`, `ThemeParityTest.java`, the regenerated
+  baseline, `scripts/check_boot.sh`, `.gitlab-ci.yml` and five docs.
+
+### Exact next tasks
+1. Commit the working tree as two logical slices (`feat(client)`: theme sweep;
+   `ci`: boot smoke test) and push - needs the user's go-ahead first.
+2. Human visual pass on the seven newly themed windows in premium mode, plus
+   the classic spot check (matrix section above).
+3. CI: confirm the first pipeline with `bootSmoke` is green on GitLab.
+4. Next scaling slice per `UI_SCALING_PLAN.md` (per-file `ui()` wrapping,
+   `BankPinInterface` first) - still needs a display.
+5. Decide on making `core.jar` thin (would silence the duplicate-SLF4J-binder
+   line and make the fat-jar caveat in item 5 above moot, but changes the
+   undocumented `java -jar core.jar` contract).
+6. Remaining baselined literals are deliberate: `mudclient.java` (63) and
+   `GraphicsController.java` (41) are engine internals, `CustomBankInterface`
+   (8) is translucent overlay shrouds, `BankInterface` (5) is status/debug
+   colour. Do not migrate them without a specific visual reason.
+
+### Follow-on, same session: CI where the releases ship (2026-10-05)
+
+**What was done**
+1. **`.github/workflows/ci.yml`** added, mirroring `.gitlab-ci.yml` job for
+   job: `guards` (shell syntax over `scripts/*.sh`, theme literals,
+   dependencies, hosting config, pages), `client-parity` (compile client, run
+   the 141 parity assertions), `server-boot` (compile server, run
+   `check_boot.sh`), `build` (all three compiles + `PC_Launcher/OpenRSC.jar` as
+   an artifact). Triggers: push to `develop`, PRs to `develop`, manual dispatch;
+   `permissions: contents: read`, concurrency cancel-in-progress. Action majors
+   were confirmed by reading the upstream READMEs, not guessed:
+   `actions/checkout@v7`, `actions/setup-java@v6` (temurin 8, same as the
+   GitLab image), `actions/upload-artifact@v4`.
+2. **`.gitignore` narrowed**: it had a blanket `.github/` rule (from commit
+   `b6b5924ca`, the IntelliJ folder-layout change - no comment, not a decision
+   against workflows). Now `.github/*` + `!.github/workflows/`, so scratch
+   under `.github/` stays ignored while the workflow is trackable. Verified
+   both directions with `git check-ignore`.
+3. **Fixed a real flaw in `.gitlab-ci.yml`**: `bash -n a.sh b.sh` only parses
+   `a.sh` - the extra argument becomes `$1`. Demonstrated by planting a
+   syntax error in a second file: exit 0 (never parsed). `hostingConfigGuard`
+   now loops `scripts/*.sh` with a per-file `bash -n` and fails if any file
+   does not parse; the planted-bad-file test now returns 1.
+
+**Verification actually run**
+- Both YAML files parse (PyYAML; note PyYAML reads `on:` as boolean `True`,
+  which is a parser quirk, not a workflow defect).
+- Every `run:` block extracted from the workflow and executed locally under
+  `bash --noprofile --norc -e -o pipefail` (the exact invocation Actions
+  uses): **all passed** - guards, client compile, parity (141), server
+  compile, world boot, full three-compile build. Only the `Install Ant`
+  provisioning step (`sudo apt-get`) was skipped; its local equivalent (the
+  portable `Portable_Windows/apache-ant-1.10.5`) was put on PATH instead.
+- `git check-ignore`: workflow not ignored, `.github/scratch.txt` still ignored.
+- No local line-ending hazard: all `scripts/*.sh` are stored LF in git, so
+  Linux runners will not see `\r` in bash scripts.
+
+**Not verified**
+- No Actions run has been observed (nothing pushed). The workflow structure,
+  action refs and every command are verified; the runner image itself (apt
+  availability of `ant`, Temurin 8 resolution) is not.
+
+**Alpha-literal audit (investigated, no code change)**
+- Sprite path honours alpha: `drawSpriteClipping` reads `colourTransform >> 24`
+  as opacity, so `CustomBankInterface`'s `0x60FFFFFF`/`0x80FFFFFF`/
+  `0xC0FFFFFF` dimming literals are correct - do not "clean them up".
+- Text path ignores alpha: `plotLetter` writes the colour raw and the screen is
+  `DirectColorModel(32, 0xFF0000, 0xFF00, 0xFF)` (no alpha mask). Two call
+  sites depend on this: the inventory-count ladder in `mudclient` (~line 7816)
+  shifts `0x00FFFFFF` into white/yellow/red, and the exp-gain labels pass
+  `0x00FF0000`/`0x0000FF00`. All carry alpha 0x00, so "fixing" the text
+  renderer to honour alpha would make them invisible. Details in audit item 27.
+- **`scripts/check_theme_literals.sh` now flags 7-digit literals.** Its old
+  `0x{6}({2})?` pattern truncated `0xFF00000` to `0xff0000`, which is why the
+  typo survived the guard. It scans full hex runs and classifies by length
+  (6/8 = colour, >=9 = leading 8 digits so existing pairs such as
+  `MiscFunctions.java:0xc96c5795` are unchanged, 7 = malformed). Verified all
+  four states: passes at 132 pairs, fails on a planted `0xFF00000` with a
+  named pair and an explanation, passes once classified in the baseline, and
+  passes after the plant is removed. Test harness: `dist/test_malformed.sh`.
+
+**Exact next tasks**
+1. Commit as **three** logical slices: `feat(client)` theme sweep, `ci` boot
+   smoke test + `bash -n` fix, `ci` GitHub Actions workflow (+`.gitignore`);
+   push and watch the first Actions run go green.
+2. Visual matrix pass (unchanged).
+3. Next scaling slice per `UI_SCALING_PLAN.md`.
