@@ -133,6 +133,7 @@ does not require an administrator install.
 |---|---|
 | Project direction | [`ROADMAP.md`](ROADMAP.md) |
 | Build and run | [`CONTRIBUTING.md`](CONTRIBUTING.md), [`Commands.md`](Commands.md) |
+| Developer workflow | [`docs/development/building.md`](docs/development/building.md), [`docs/development/local-environment.md`](docs/development/local-environment.md), [`docs/development/releasing.md`](docs/development/releasing.md) |
 | Server operations | [`server/SIMPLE_HOSTING.md`](server/SIMPLE_HOSTING.md), [`server/CENTRALIZED_DATABASE.md`](server/CENTRALIZED_DATABASE.md) |
 | UI scaling | [`UI_SCALING_PLAN.md`](UI_SCALING_PLAN.md) |
 | Architecture and gaps | [`docs/RUNEWAKE_MODERNISATION_AUDIT.md`](docs/RUNEWAKE_MODERNISATION_AUDIT.md) |
@@ -155,7 +156,14 @@ does not require an administrator install.
 
 ## Development checks
 
-From the repository root, the lightweight project checks are:
+One command validates everything (guards, the three compiles, theme parity,
+the Pages build and the world-boot smoke test) — the same steps CI runs:
+
+```sh
+scripts/dev.sh check
+```
+
+The individual checks, from the repository root, are:
 
 ```sh
 bash scripts/check_dependencies.sh
