@@ -68,11 +68,14 @@ def main() -> int:
     if not version or any(char not in "0123456789.-" for char in version):
         raise SystemExit("Version must contain only digits, dots, and hyphens")
     output_dir = (ROOT / args.output_dir).resolve()
-    if output_dir.exists():
-        raise SystemExit(f"Output directory already exists: {output_dir}")
     bundle = output_dir / f"RuneWake-{version}"
     archive = output_dir / f"RuneWake-{version}.zip"
-    output_dir.mkdir(parents=True)
+    # Refuse to clobber a previous build of THIS release, but allow the
+    # default dist/ output dir to already exist (the guards and pages build
+    # create it on any developer machine).
+    if bundle.exists() or archive.exists():
+        raise SystemExit(f"Release output already exists: {bundle}")
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # Build outputs are the release inputs. The project has no test suite, so
     # these are the same Ant targets used by the CI pipeline.

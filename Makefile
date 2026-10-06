@@ -1,4 +1,7 @@
-include .env
+# Optional: a fresh clone has no .env, and `make` must still work for the
+# targets that do not need it (see docs/development/local-environment.md).
+# Targets using MariaDB variables fail with a clear message at recipe time.
+-include .env
 
 # The legacy maintenance targets below still use the administrative
 # MARIADB_ROOT_* values from .env. For unattended backups prefer
