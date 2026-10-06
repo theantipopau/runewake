@@ -136,6 +136,8 @@ does not require an administrator install.
 | Developer workflow | [`docs/development/building.md`](docs/development/building.md), [`docs/development/local-environment.md`](docs/development/local-environment.md), [`docs/development/releasing.md`](docs/development/releasing.md) |
 | Server operations | [`server/SIMPLE_HOSTING.md`](server/SIMPLE_HOSTING.md), [`server/CENTRALIZED_DATABASE.md`](server/CENTRALIZED_DATABASE.md) |
 | UI scaling | [`UI_SCALING_PLAN.md`](UI_SCALING_PLAN.md) |
+| Architecture (how it works) | [`docs/architecture/server.md`](docs/architecture/server.md), [`docs/architecture/client.md`](docs/architecture/client.md), [`docs/architecture/network-protocol.md`](docs/architecture/network-protocol.md), [`docs/architecture/runtime-lifecycle.md`](docs/architecture/runtime-lifecycle.md), [`docs/architecture/client-variants.md`](docs/architecture/client-variants.md) |
+| Technical debt register | [`docs/audit/technical-debt.md`](docs/audit/technical-debt.md) |
 | Architecture and gaps | [`docs/RUNEWAKE_MODERNISATION_AUDIT.md`](docs/RUNEWAKE_MODERNISATION_AUDIT.md) |
 | Branding and identity | [`docs/RUNEWAKE_BRANDING_AUDIT.md`](docs/RUNEWAKE_BRANDING_AUDIT.md) |
 | Artwork provenance | [`docs/RUNEWAKE_ASSET_INVENTORY.md`](docs/RUNEWAKE_ASSET_INVENTORY.md) |
