@@ -1038,3 +1038,75 @@ wrong everywhere, map tab opened briefly.
    push and watch the first Actions run go green.
 2. Visual matrix pass (unchanged).
 3. Next scaling slice per `UI_SCALING_PLAN.md`.
+
+### Phase 4: packet I/O, ISAAC, crypto and config characterization (2026-10-10)
+
+**What was done**
+1. **`scripts/check_characterization_tests.sh`** — plain-main harness
+   (deliberately no test framework, same philosophy as
+   `check_theme_parity.sh`): compiles every `.java` under `server/test/`
+   against `server/core.jar` with the found JDK 8, then runs each class
+   from the working directory its fixtures need. `DB_*` env vars are
+   scrubbed per run so a leaked value cannot invalidate the config
+   assertions.
+2. **Four test classes** (366 checks total):
+   - `server/test/com/openrsc/server/net/PacketIoCharacterizationTest.java`
+     (27) — all three framing families in both directions through Netty
+     `EmbeddedChannel`, the ≥160 two-byte length form, the
+     last-byte-before-opcode quirk, ISAAC opcode encode/decode, client
+     sniffing, and the 93–182 resync-loop misdecode quirk pinned as
+     current behaviour.
+   - `server/test/com/openrsc/server/net/rsc/IsaacCipherCharacterizationTest.java`
+     (315) — the exact ISAAC keystream for a fixed seed, plus
+     encode/decode symmetry through `ISAACContainer`.
+   - `server/test/com/openrsc/server/net/rsc/CryptoCharacterizationTest.java`
+     (7) — XTEA known-answer vector, 8-byte-block tail pass-through, the
+     512-bit RSA modulus (pinned as *current weak* behaviour, not as
+     endorsement), and a 64-byte login-block round trip.
+   - `server/test/com/openrsc/server/ServerConfigurationCharacterizationTest.java`
+     (17) — shipped `default.conf` values, remote-host `VERIFY_IDENTITY`
+     default, websocket port-collision disable. Lives in
+     `com.openrsc.server` for package access to the package-private
+     `initConfig`.
+3. **CI wiring**: the `server-boot` job (GitHub) and `bootSmoke` job
+   (GitLab) run the harness right after the server compile, before the
+   boot smoke. A wire-format refactor now fails CI instead of shipping.
+
+**Verification actually run**
+- `bash scripts/check_characterization_tests.sh` -> exit 0: 27 + 315 + 7 +
+  17 checks, 0 failed (vendored Zulu 8u275; exit status captured under
+  `set -o pipefail`, not masked by the output filter).
+- Fail-closed proven during bring-up: a compile error and a bad classpath
+  each produced exit 1 before the fixes.
+- Expected decoder stdout during the resync test
+  (`Caught invalid incoming opcode...`) is pinned behaviour, not noise.
+- `git check-ignore`: `server/test/build` (`.gitignore` `build/`) and
+  `dist/char_test_work` (`/dist/`) are both ignored.
+- `.gitlab-ci.yml` still pure CRLF (`file(1)`); git diff = 4 inserted
+  lines, no whole-file rewrite.
+
+**Environment notes for the next session**
+- MSYS/Git Bash hazard: `java.exe` cannot parse POSIX `/c/...` classpaths,
+  and this repo path contains a space (`E:/Runescape Classic/openrsc`), so
+  the script derives the repo root with `pwd -W` (POSIX fallback on Linux
+  CI) and an absolute java path so the per-test `cd` works.
+- A `bash script | filter` pipeline hides the script's exit code; capture
+  it with `set -o pipefail` or run unfiltered when judging pass/fail.
+
+**Not verified (and why)**
+- GitLab CI remains unexecuted (no runner for this fork, debt R5); the
+  GitLab job changes mirror the GitHub ones command-for-command.
+- No client-side handshake test: exercising `mudclient.login` end-to-end
+  needs a live socket and the client's frame; the server side of the
+  handshake (RSA login block, ISAAC seed install, framing) is what these
+  tests pin.
+- Login rate limits (S7) and the restart/reboot loop (R4) remain open
+  characterization targets.
+
+**Exact next tasks**
+1. Commit this slice (`ci`: harness + four test classes + CI wiring + doc
+   updates) and push; watch the Actions `server-boot` job go green.
+2. S7: characterize the login rate limits (`MAX_LOGINS_PER_SERVER_PER_TICK`,
+   password-attempt throttle) as the next Phase 4 increment.
+3. R4: boot -> restart -> reboot characterization (needs the shutdown/
+   restart path exposed to the harness).

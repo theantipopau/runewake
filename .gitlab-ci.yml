@@ -63,7 +63,11 @@ bootSmoke:
   stage: build
   script:
     - bash -n scripts/check_boot.sh
+    - bash -n scripts/check_characterization_tests.sh
     - cd server && ant compile_core && ant compile_plugins && cd ../
+    # Characterization pins the CURRENT packet-framing, ISAAC, crypto and
+    # config behaviour; boot smoke then proves the world still loads on top.
+    - bash scripts/check_characterization_tests.sh
     - bash scripts/check_boot.sh
 
 pagesBuild:

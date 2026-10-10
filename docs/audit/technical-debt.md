@@ -83,7 +83,6 @@ guard script or CI job now trips on them.
 | DOC2 | Charter docs still to write: `docs/audit/{security,ui-ux,gameplay,performance}.md` (security content exists in [`../security/`](../security/) — decide whether to move or cross-link), `docs/design/ui-system.md`, `docs/GAMEPLAY_VISION.md`, `docs/ASSET_REGISTER.md`, `docs/COMPATIBILITY.md`, `docs/KNOWN_ISSUES.md`, `CHANGELOG.md`, `docs/MODERNISATION_REVIEW.md` | Phases 7–14 |
 | DOC3 | `docs/ROADMAP.md` charter name vs existing root `ROADMAP.md` (1,885-line session log) — resolve the naming/location collision when writing the charter ROADMAP | Phase 14 |
 | DOC4 | Operations docs exist but are provider-neutral templates (`deployment/systemd/`, `server/SIMPLE_HOSTING.md`, `server/CENTRALIZED_DATABASE.md`) — no doc describes a *rehearsed* deploy (because none happened) | Phase 11/14 |
-| DOC5 | Test-file detection: the repo has exactly one test file (`ThemeParityTest`) and no test framework wired into Ant/CI beyond it — Phase 4 characterization tests will need a harness decision (JUnit via Ant, or a script-runner like the parity check) | Phase 4 |
 
 ## 7. Optional (nice-to-have, no owner yet)
 
@@ -114,8 +113,11 @@ behaviour that is verified elsewhere.
 
 ### How this register is used
 
-- **Phase 4** picks R4, S7 (and packet I/O/login/config) as
-  characterization-test targets.
+- **Phase 4**: packet I/O, ISAAC, crypto (incl. the RSA login-block
+  round trip) and config loading are now pinned by
+  `scripts/check_characterization_tests.sh` (4 plain-main classes under
+  `server/test/`, run in CI's `server-boot`/`bootSmoke` jobs). R4 and S7
+  remain open characterization targets.
 - **Phase 5 (logging)** owns D5 and S4.
 - **Phase 11 (performance)** owns P1–P3, P5 with measurements.
 - **Phase 14 (release)** owns DOC2, DOC3 and the M7 upstream triage.

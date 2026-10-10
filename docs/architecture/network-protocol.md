@@ -206,3 +206,31 @@ decode path, which is what the webclient uses.
 - Client trust boundary: everything the client sends is untrusted; server
   authority is the standing rule (see
   [`../security/threat-model.md`](../security/threat-model.md)).
+
+## Characterization coverage
+
+The framing families, ISAAC opcode streams, crypto primitives and config
+loading described above are **pinned as current behaviour** by
+`scripts/check_characterization_tests.sh` (Phase 4 of the modernisation
+charter). It compiles the four plain-main classes under `server/test/`
+against `server/core.jar` and runs them; CI runs it in the `server-boot`
+(GitHub) / `bootSmoke` (GitLab) job right after `compile_core`.
+
+- `net/PacketIoCharacterizationTest` — all three framing families in both
+  directions (via Netty `EmbeddedChannel`), ISAAC opcode encode/decode,
+  client sniffing, and the 93–182 resync-loop misdecode quirk.
+- `net/rsc/IsaacCipherCharacterizationTest` — the exact keystream for a
+  fixed seed and encode/decode symmetry.
+- `net/rsc/CryptoCharacterizationTest` — the XTEA known-answer vector,
+  8-byte-block tail pass-through, the 512-bit RSA modulus (pinned as
+  *current weak* behaviour, not as endorsement), and a 64-byte login-block
+  round trip.
+- `ServerConfigurationCharacterizationTest` — shipped `default.conf`
+  values, the remote-host `VERIFY_IDENTITY` default, and the websocket
+  port-collision disable.
+
+These tests deliberately assert **today's** bytes, quirks included. If a
+quirk here is ever fixed on purpose (e.g. the resync loop), update the
+matching assertion in the same change — a red characterization test means
+the wire behaviour moved, which for this protocol is a compatibility
+event, not a test failure.

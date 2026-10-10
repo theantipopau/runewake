@@ -73,6 +73,7 @@ Run 2026-10-06 with the vendored toolchain (Zulu 8u275 + Ant 1.10.5):
 | `scripts/check_hosting_config.sh` | OK — SQLITE/preservation defaults safe |
 | `scripts/build_pages.sh` | OK |
 | `scripts/check_boot.sh` (world boot + /healthz, /status, /metrics, 404) | OK — world booted on 43494 |
+| `scripts/check_characterization_tests.sh` (packet I/O, ISAAC, crypto, config) | OK — 366 checks, 0 failed (2026-10-10, Phase 4) |
 
 The tree builds and boots green at the inspected commit. No display is
 available in this environment, so all client-side results are compile- and
