@@ -16,6 +16,9 @@
 #     login-block round trip (512-bit modulus pinned as current weak behaviour)
 #   * ServerConfigurationCharacterizationTest - shipped default.conf values,
 #     remote-host VERIFY_IDENTITY default, websocket port-collision disable
+#   * LoginRateLimitCharacterizationTest - the three login throttles (per-tick
+#     login cap, logins-per-second window, password-guess counter) and the
+#     admin / localhost / IP-ban interactions around them (S7)
 #
 # Requirements: server/core.jar (build with `ant -f server/build.xml
 # compile_core`) and a JDK 8+. Fixture conf files are written by the script
@@ -101,6 +104,12 @@ server_port: 44000
 ws_server_port: 44000
 EOF
 
+# The rate-limit test builds a whole Server from this conf; the throttle
+# knobs are intentionally absent so the code defaults are what gets pinned.
+cat > "$WORK_DIR/rate_limit.conf" <<'EOF'
+server_name: RuneWakeProbe
+EOF
+
 # --- compile ------------------------------------------------------------
 SOURCES="$(find "$TEST_SRC" -name '*.java' | sort)"
 if [ -z "$SOURCES" ]; then
@@ -141,6 +150,9 @@ run_test "crypto"           "$WORK_DIR"               com.openrsc.server.net.rsc
 # initConfig reads connections.conf from CWD and its default file relative to
 # it, so this one runs from server/ with the fixture confs one level up.
 run_test "configuration"    "server"                  com.openrsc.server.ServerConfigurationCharacterizationTest
+# Needs the same CWD as the configuration test (its Server constructor loads
+# the tracked server/connections.conf from here).
+run_test "login-rate-limit" "server"                  com.openrsc.server.LoginRateLimitCharacterizationTest
 
 if [ "$status" -eq 0 ]; then
 	note "OK: all characterization tests passed."

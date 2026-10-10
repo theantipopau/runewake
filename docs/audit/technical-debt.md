@@ -32,12 +32,11 @@ guard script or CI job now trips on them.
 | # | Item | Where | Notes |
 |---|---|---|---|
 | S1 | **RSA keypair generated at 512 bits** if `client.pem`/`server.pem` are absent (`KeyPairGenerator.initialize(512)`) | `net/rsc/Crypto.java:105` | 512-bit RSA is factored cheaply; protects login password blocks. Bump to ≥2048 (authentic clients use the same modulus path, so verify client compatibility first — the modulus is delivered in-band at config time). |
-| S2 | `RSCPacketFilter.ipBanHost` has a **hardcoded host-admin exemption** ("Do not IP ban afmans!") | `RSCPacketFilter.java:201-207` | Intentional operator carve-out; should become a config-driven allowlist rather than a name in source. |
+| S2 | `RSCPacketFilter.ipBanHost` has a **hardcoded host-admin exemption** ("Do not IP ban afmans!") | `RSCPacketFilter.java:201-207` | Intentional operator carve-out; should become a config-driven allowlist rather than a name in source. Behaviour (incl. the `isHostIpBanned` admin override and the localhost carve-out) is pinned by the login rate-limit characterization test. |
 | S3 | 18 historical secrets remain in git history (`.env` DB creds until `123eff4d3`, inherited `ca.key`, reCAPTCHA keys in forum dumps, twitch token) | history only; redacted in `.gitleaks.baseline.json` | Rotation is the owner's action — checklist in [`../security/secret-rotation.md`](../security/secret-rotation.md). History rewrite was considered and declined. |
 | S4 | Login-block details string (`workdir/jarName`) is logged verbatim: `LOGGER.info("Login details for " + username + ": " + loginDetails)` | `LoginPacketHandler.java:502` | Minor fingerprint/PII in logs; truncate or drop to DEBUG. |
 | S5 | The vendored **Zulu 8u275** runtime (late 2020) ships with years of unpatched JDK CVEs | `Portable_Windows/` | Licensed bundle; do NOT remove until a Windows-packaging replacement is tested (see `docs/DEPENDENCIES.md`, `docs/security/configuration.md`). |
 | S6 | Websocket port serves HTTP routes on the **same port** as game traffic when `want_feature_websockets: true` (default) | `Server.start()`, `RSCMultiPortDecoder` | By design (see network-protocol.md), but it widens the exposed surface: `/status`, `/metrics`, WS upgrade all reachable wherever the game port is. Operators who don't need it should turn it off; the boot smoke asserts the routes when on. |
-| S7 | No automated test asserts the login rate limits (`MAX_LOGINS_PER_SERVER_PER_TICK`, password-attempt throttle) actually bound an attacker | `LoginExecutor`, `RSCPacketFilter` | Phase 4 characterization-test candidate. |
 
 ## 3. Reliability
 
@@ -114,10 +113,11 @@ behaviour that is verified elsewhere.
 ### How this register is used
 
 - **Phase 4**: packet I/O, ISAAC, crypto (incl. the RSA login-block
-  round trip) and config loading are now pinned by
-  `scripts/check_characterization_tests.sh` (4 plain-main classes under
-  `server/test/`, run in CI's `server-boot`/`bootSmoke` jobs). R4 and S7
-  remain open characterization targets.
+  round trip), config loading and the login rate limits (S7, closed by
+  `LoginRateLimitCharacterizationTest`) are now pinned by
+  `scripts/check_characterization_tests.sh` (5 plain-main classes under
+  `server/test/`, run in CI's `server-boot`/`bootSmoke` jobs). R4
+  remains the open characterization target.
 - **Phase 5 (logging)** owns D5 and S4.
 - **Phase 11 (performance)** owns P1–P3, P5 with measurements.
 - **Phase 14 (release)** owns DOC2, DOC3 and the M7 upstream triage.

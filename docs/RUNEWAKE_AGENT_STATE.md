@@ -1110,3 +1110,74 @@ wrong everywhere, map tab opened briefly.
    password-attempt throttle) as the next Phase 4 increment.
 3. R4: boot -> restart -> reboot characterization (needs the shutdown/
    restart path exposed to the harness).
+
+### Phase 4 follow-up: login rate limits characterized (S7 closed, 2026-10-11)
+
+**What was done**
+1. **`server/test/com/openrsc/server/LoginRateLimitCharacterizationTest.java`**
+   (39 checks) — pins the three throttles that bound an attacker at login,
+   driven through a headless `new Server(fixture conf)` (constructor only;
+   the database object is built but never opened, no ports bound, no world
+   loaded — verified safe in CI):
+   - **Per-tick login cap** (`MAX_LOGINS_PER_SERVER_PER_TICK`, default 5):
+     a batch of 10 login requests processes exactly 5; the excess are
+     DROPPED, not deferred (waiting longer processes nothing extra);
+     `resetRequestsThisTick()` (called by the game-tick loop) reopens the
+     budget; save/generic queues are unlimited; `add()` before `start()`
+     rejects outright.
+   - **Logins-per-second** (`MAX_LOGINS_PER_SECOND`, default 2): inclusive
+     bound on a 1000 ms sliding window - exactly 2 succeed, the 3rd is
+     denied; denials are recorded too, so they extend the window; the
+     window decays after ~1 s; admin hosts bypass; **127.0.0.1 is NOT
+     exempt** (unlike the connection limiter); a temporary IP ban blocks
+     only when the caller passes `doIpBans=true` (note: `LoginRequest`
+     calls it with `false` and enforces the ban separately).
+   - **Password-guess counter** (`MAX_PASSWORD_GUESSES_PER_FIVE_MINUTES`,
+     default 10): counted per host; the `LoginRequest` guard is
+     `count >= max`, so the 11th guess inside five minutes is the first
+     blocked (boundary pinned at 9 vs 10).
+   - **S2 carve-outs pinned as current behaviour**: `ipBanHost` refuses to
+     ban admin hosts and 127.0.0.1, and `isHostIpBanned` always answers
+     false for admins - the admin exemption beats the IP-ban path.
+2. `scripts/check_characterization_tests.sh` grew a `login-rate-limit`
+   entry (fixture `rate_limit.conf` in the work dir, CWD=server like the
+   configuration test). Suite total is now **405 checks**.
+3. **S7 deleted from the technical-debt register** (closed); S2's note now
+   says the carve-out is pinned; the register footer keeps R4 as the only
+   open characterization target.
+
+**Verification actually run**
+- `bash scripts/check_characterization_tests.sh` -> exit 0; 27 + 315 + 7
+  + 17 + 39 = 405 checks, 0 failed (pipefail-captured).
+- **Runtime fail-closed proven, not assumed**: a planted wrong expectation
+  made the run print `FAIL login-rate-limit` and exit 1 end-to-end through
+  the harness; the plant was then removed and the suite went green again.
+  (The earlier compile-failure path was already proven in the first slice.)
+- Probe phase pinned every threshold against the real code before the
+  test was written (defaults 5/2/10, inclusive lps bound, denial-recording,
+  admin/localhost carve-outs, tick-cap drop semantics).
+
+**Environment notes for the next session**
+- Constructing `Server` reroutes BOTH `System.out` and `System.err` through
+  log4j (`LogUtil.java:69-77`), so plain `println` verdicts get an INFO/ERROR
+  prefix. The test captures the real `System.out` in a static field at
+  class-init (before the constructor runs) and prints verdicts there.
+- `server/connections.conf` is TRACKED (only `db_type` etc.; no rate-limit
+  keys), so the pinned defaults are the code fallbacks everywhere. A
+  developer-local `server/local.conf` could override them - same accepted
+  hazard as the configuration test; CI is clean.
+
+**Not verified (and why)**
+- The `LoginRequest.validateLogin()` call-site wiring is pinned by
+  inspection, not execution: the guard sits after a DB lookup in the
+  method, so running it headless needs a seeded database (left for a DB-
+  backed increment if ever wanted).
+- GitLab CI still unexecuted (no runner, R5); the GitLab job runs the same
+  harness command.
+
+**Exact next tasks**
+1. Commit and push; watch the Actions `server-boot` job run the 5-class
+   suite.
+2. R4 (restart/reboot loop) is now the only open Phase 4 characterization
+   target on the register.
+3. Phase 5+ per the charter (logging, then the audit's ordered priorities).

@@ -228,6 +228,13 @@ against `server/core.jar` and runs them; CI runs it in the `server-boot`
 - `ServerConfigurationCharacterizationTest` — shipped `default.conf`
   values, the remote-host `VERIFY_IDENTITY` default, and the websocket
   port-collision disable.
+- `LoginRateLimitCharacterizationTest` — the three login throttles: the
+  per-tick login cap (over-limit requests dropped, not deferred), the
+  logins-per-second sliding window (inclusive bound, denials recorded,
+  admin bypass, no localhost exemption), the password-guess counter
+  (guard boundary at the 10th guess), and the S2 carve-outs (admins and
+  127.0.0.1 can never be IP-banned). Builds a headless `Server` from a
+  fixture conf; the DB is never opened.
 
 These tests deliberately assert **today's** bytes, quirks included. If a
 quirk here is ever fixed on purpose (e.g. the resync loop), update the
