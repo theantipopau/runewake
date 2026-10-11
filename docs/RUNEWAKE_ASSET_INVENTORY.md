@@ -61,10 +61,11 @@ verification remains tracked in `docs/RUNEWAKE_VISUAL_TEST_MATRIX.md`.
 ## Game-cache texture / model / material integrity (added 2026-10-11)
 
 The RSC-derived cache assets above are now covered by an executable guard,
-`scripts/check_visual_assets.sh` (runs `Client_Base/test/orsc/graphics/three/
-VisualAssetIntegrityTest.java` headless against the built jar, cwd =
-`Client_Base`; wired into the GitHub `client-parity` job and the GitLab
-`themeParityGuard` job). It asserts, over the shipped archives:
+`scripts/check_visual_assets.sh` (runs
+`Client_Base/test/orsc/graphics/three/VisualAssetIntegrityTest.java` headless
+against the built jar, cwd = `Client_Base`; wired into the GitHub
+`client-parity` job and the GitLab `themeParityGuard` job). It asserts, over
+the shipped archives:
 
 - **Models**: every name registered by `EntityHandler` (objects, NPCs, the 20
   spell-effect extras) resolves to a parseable `.ob3` entry in `models.orsc`
