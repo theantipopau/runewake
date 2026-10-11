@@ -9,6 +9,23 @@ import orsc.util.GenUtil;
 
 public final class Scene {
 	static final int TRANSPARENT = 12345678;
+
+	/**
+	 * Clamp a face's texture reference to a texture the renderer actually
+	 * holds. Shipped models carry references up to 66 while the authentic set
+	 * holds 55 textures (the custom set holds 67); the textured draw path
+	 * already falls back to texture 0 for refs beyond the active set, so the
+	 * per-face shade lookup must do the same - indexing m_Hb directly with an
+	 * out-of-range ref threw AIOOBE mid-render under the authentic set.
+	 * Returns texture 0 for any non-negative ref outside [0, textureCount);
+	 * negative (untextured) refs never reach this - callers guard >= 0.
+	 */
+	static int textureShadeIndex(int textureIndex, int textureCount) {
+		if (textureIndex >= 0 && textureIndex < textureCount) {
+			return textureIndex;
+		}
+		return 0;
+	}
 	private final RSModel[] m_Ab;
 	private final int[] m_B = new int[40];
 	private final int m_db;
@@ -2846,7 +2863,7 @@ public final class Scene {
 							}
 
 							if (var25.m_b >= 0) {
-								if (this.m_Hb[var25.m_b] != 1) {
+								if (this.m_Hb[Scene.textureShadeIndex(var25.m_b, this.m_cb)] != 1) {
 									this.m_r[var19] <<= 6;
 								} else {
 									this.m_r[var19] <<= 9;

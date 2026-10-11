@@ -2329,7 +2329,7 @@
     <width>1</width>
     <height>1</height>
     <groundItemVar>0</groundItemVar>
-    <objectModel>runiteruck1</objectModel>
+    <objectModel>runiterock1</objectModel>
   </GameObjectDef>
   <GameObjectDef>
     <name>Rocks</name>

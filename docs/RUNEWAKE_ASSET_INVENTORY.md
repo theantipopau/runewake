@@ -58,6 +58,38 @@ verification remains tracked in `docs/RUNEWAKE_VISUAL_TEST_MATRIX.md`.
 - Android resources — icons/labels inherited; app label rebranded this
   pass. Launcher icon artwork still inherited = open priority.
 
+## Game-cache texture / model / material integrity (added 2026-10-11)
+
+The RSC-derived cache assets above are now covered by an executable guard,
+`scripts/check_visual_assets.sh` (runs `Client_Base/test/orsc/graphics/three/
+VisualAssetIntegrityTest.java` headless against the built jar, cwd =
+`Client_Base`; wired into the GitHub `client-parity` job and the GitLab
+`themeParityGuard` job). It asserts, over the shipped archives:
+
+- **Models**: every name registered by `EntityHandler` (objects, NPCs, the 20
+  spell-effect extras) resolves to a parseable `.ob3` entry in `models.orsc`
+  with geometry. A missing name silently degrades to a 1x1 placeholder model -
+  invisible in-world. This already caught one real typo (`runiteruck1`, fixed
+  2026-10-11 to `runiterock1`, client + server `GameObjectDef.xml`).
+- **Materials (face textures)**: every `faceTextureFront/Back` reference on
+  every model must be TRANSPARENT, a negative untextured sentinel, or below
+  the largest shipped texture set. The authentic set holds 55 textures, the
+  custom set 67; shipped models legitimately ref up to 66 (christmas trees,
+  berry bushes, apple/orange trees, pine trees).
+- **Authentic textures** (sprite ids 3225..): all `textureCount()` present,
+  square 64/128, `boundWidth == width` (the `m_Hb` shade flag is
+  `boundWidth/64-1`, so a bound mismatch silently shades as the wrong size).
+- **Custom textures** (`Custom_Sprites.osar` "textures" subspace): ids unique
+  and the name set covering "0"..count-1 - the loader resolves by NAME via
+  `spriteTree` HashMap, not by list position (entries are stored in
+  lexicographic order, which is fine and expected).
+
+Renderer note: `Scene.textureShadeIndex(ref, textureCount)` is the single
+clamp that keeps refs beyond the active set from indexing `m_Hb` out of
+bounds mid-render (it mirrors the existing texture-0 fallback in the textured
+draw path); its truth table is pinned by the same test. Classic rendering is
+unchanged: in-range refs pass through untouched.
+
 ## Rules in force (from the continuation brief, enforced)
 
 - Pixel-art assets: nearest-neighbour only. Modern/smooth art (fonts,

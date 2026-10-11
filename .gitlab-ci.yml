@@ -53,8 +53,10 @@ themeParityGuard:
   stage: build
   script:
     - bash -n scripts/check_theme_parity.sh
+    - bash -n scripts/check_visual_assets.sh
     - cd Client_Base && ant compile && cd ../
     - bash scripts/check_theme_parity.sh
+    - bash scripts/check_visual_assets.sh
 
 # Boots the world on SQLite and asserts /healthz, /status and /metrics.
 # Compile-clean is not enough: a runtime-only dependency gap (the missing

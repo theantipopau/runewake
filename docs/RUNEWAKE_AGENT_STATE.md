@@ -1181,3 +1181,78 @@ wrong everywhere, map tab opened briefly.
 2. R4 (restart/reboot loop) is now the only open Phase 4 characterization
    target on the register.
 3. Phase 5+ per the charter (logging, then the audit's ordered priorities).
+
+### Visual-asset integrity: texture/model/material probe + two data fixes (2026-10-11)
+
+**What was done**
+1. **Surveyed the texture → material → model pipeline**: textures load via
+   `loadTexturesAuthentic` (55 sprites, ids 3225..) or `loadTextures` (67
+   named entries from `Custom_Sprites.osar`, resolved by NAME through the
+   `spriteTree` HashMap); models parse from `models.orsc` with per-face
+   `faceTextureFront/Back` as material refs; `Scene.m_Hb` (shade flag,
+   `boundWidth/64-1`) is indexed by that ref at render time.
+2. **Two real defects found by a headless probe of the shipped archives and
+   fixed**:
+   - `runiteruck1` model name typo in the client object def
+     (`EntityHandler.java`) and the server `GameObjectDef.xml` — the model
+     never existed in `models.orsc`, so that mineable "Rock" (wilderness
+     runite pair) rendered as a silent 1x1 placeholder (invisible). Fixed to
+     `runiterock1` on both sides.
+   - `Scene.java` shaded the per-face lighting with an unguarded
+     `m_Hb[var25.m_b]` index; shipped models legitimately ref textures
+     63/64/66 (christmas/pine trees, berry bushes, apple/orange trees) while
+     the authentic set holds 55 — an AIOOBE waiting for any authentic-path
+     world that places one. Extracted `Scene.textureShadeIndex(ref, count)`
+     mirroring the texture-0 fallback the textured draw path already does
+     (`var5 >= m_cb → 0`); in-range refs pass through untouched, so classic
+     rendering is byte-identical.
+3. **New committed guard**: `Client_Base/test/orsc/graphics/three/
+   VisualAssetIntegrityTest.java` + `scripts/check_visual_assets.sh` (same
+   shape as the theme-parity pair): every registered model exists/parses/has
+   geometry; every material ref is TRANSPARENT, negative-untextured, or below
+   the largest shipped set; authentic textures all present, square 64/128,
+   boundWidth==width; custom texture ids unique + name-set complete "0"..n-1;
+   `textureShadeIndex` truth table pinned. Wired into the GitHub
+   `client-parity` job and the GitLab `themeParityGuard` job.
+
+**Verification actually run**
+- Guard FAILS on the pre-fix tree (proved detection: `runiteruck1` missing +
+  65 custom-texture order false alarms — see below), then `OK: 5112
+  visual-asset integrity checks, 0 failed` after the fixes.
+- `ant -f Client_Base/build.xml compile` -> BUILD SUCCESSFUL (jar rebuilt so
+  the guard tests the real binary).
+- `bash scripts/check_theme_parity.sh` -> OK 141/0 (re-run after rebuild).
+- `bash scripts/check_characterization_tests.sh` -> exit 0, all 405 checks
+  (server `GameObjectDef.xml` changed).
+- `bash -n` over every `scripts/*.sh` clean; `git diff --check` clean.
+
+**Environment notes for the next session**
+- `ant` is not on PATH here; use
+  `bash Portable_Windows/apache-ant-1.10.5/bin/ant` with
+  `JAVA_HOME=$(pwd -W)/Portable_Windows/zulu8.50.0.51-ca-jdk8.0.275-win_x64`.
+- The custom texture subspace stores entries in LEXICOGRAPHIC id order ("0",
+  "1", "10", …) — that is not a defect: the loader resolves by name via
+  HashMap. The first guard draft asserted positional contiguity (65 false
+  alarms); the committed test asserts name-set completeness instead.
+- `AssetProbe` scratch lives in gitignored `dist/visual_scratch/` (do not
+  commit).
+
+**Not verified (and why)**
+- No rendered-frame diff: confirming "classic rendering byte-identical" for
+  in-range refs is by construction (the clamp passes them through), not by
+  pixel comparison — the repo has no headless render harness yet.
+- The 9 models that ref textures 63-66 still shade as texture 0 under the
+  authentic path (their custom textures simply don't exist in that set);
+  under the custom path they render correctly. Loading the extra authentic
+  sprites (ids 3280..3291 exist in the archive!) to make the authentic path
+  show them too is a deliberate follow-up, not done here.
+
+**Exact next tasks**
+1. Commit and push; watch Actions `client-parity` run the new
+   `check_visual_assets.sh` step green.
+2. Optional follow-up: extend the authentic path to load the 12 extra
+   texture sprites already present in `Authentic_Sprites.orsc` (ids
+   3280..3291) so refs 55-66 render their real textures without the custom
+   archive.
+3. R4 (restart/reboot loop) remains the only open Phase 4 characterization
+   target.

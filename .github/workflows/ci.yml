@@ -91,6 +91,8 @@ jobs:
         run: ant -f Client_Base/build.xml compile
       - name: Theme parity
         run: bash scripts/check_theme_parity.sh
+      - name: Visual asset integrity (textures / models / materials)
+        run: bash scripts/check_visual_assets.sh
 
   # bootSmoke: compile-clean is not enough - a runtime-only dependency gap (the
   # missing commons-io after the commons-compress bump) only shows up at world

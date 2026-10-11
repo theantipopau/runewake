@@ -5833,7 +5833,7 @@ public class EntityHandler {
 		objects.add(new GameObjectDef("Fallen tree", "A fallen tree", "WalkTo", "Examine", 1, 3, 2, 0, "fallentree", i++));
 		objects.add(new GameObjectDef("Danger Sign", "Danger!", "WalkTo", "Examine", 1, 1, 1, 0, "dangersign", i++));
 		objects.add(new GameObjectDef("Rock", "A rocky outcrop", "Mine", "Prospect", 1, 1, 1, 0, "runiterock1", i++));
-		objects.add(new GameObjectDef("Rock", "A rocky outcrop", "Mine", "Prospect", 1, 1, 1, 0, "runiteruck1", i++));
+		objects.add(new GameObjectDef("Rock", "A rocky outcrop", "Mine", "Prospect", 1, 1, 1, 0, "runiterock1", i++));
 		objects.add(new GameObjectDef("Rocks", "A rocky outcrop", "Mine", "Prospect", 1, 1, 1, 0, "rocks1", i++));
 		objects.add(new GameObjectDef("Gravestone", "A big impressive gravestone", "WalkTo", "Examine", 1, 2, 2, 0, "largegrave", i++));
 		objects.add(new GameObjectDef("bone", "Eep!", "WalkTo", "Examine", 1, 1, 1, 0, "curvedbone", i++));
