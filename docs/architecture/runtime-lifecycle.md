@@ -40,7 +40,7 @@ java -jar core.jar [world.conf ...]        (or scripts/dev.sh run [world])
 10. `StartupTrigger` plugin, bind ports, register in `serversList`,
     `running = true`
 
-The boot smoke test (`scripts/check_boot.sh`, CI job `bootSmoke`) asserts
+The boot smoke test (`scripts/check_boot.sh`, CI job `server-boot`) asserts
 this whole sequence ends with `/healthz → ok`, `/status` JSON,
 `/metrics`, and a 404 on an unknown path — then tears it down.
 
@@ -87,7 +87,7 @@ cadence.
 ### 4. Automated lifecycle verification
 
 `scripts/dev.sh check` ends with the boot smoke; CI repeats it
-(`server-boot` on GitHub, `bootSmoke` on GitLab). The guard exists because
+in `server-boot`. The guard exists because
 the failure modes (missing DB, missing merged jar) are invisible until you
 actually boot.
 
@@ -176,13 +176,12 @@ client                                   server
 
 GitHub Actions (`.github/workflows/ci.yml`, 5 jobs):
 `guards` → `secret-scan` → `client-parity` → `server-boot` → `build`
-(+ launcher artifact upload). GitLab (`.gitlab-ci.yml`, 8 jobs) mirrors it
-with `themeGuard`, `dependencyGuard`, `hostingConfigGuard`,
-`themeParityGuard`, `bootSmoke`, `secretScan`, `build`, `launcherUpload`,
-`pagesBuild`. Locally the identical sequence is one command:
+(+ launcher artifact upload). GitHub is the only pipeline since 2026-10-18
+(the upstream-format `.gitlab-ci.yml` was deleted). Locally the identical
+sequence is one command:
 `scripts/dev.sh check` (guards → three compiles → 141-assertion parity →
-Pages build → boot smoke). CI's `server-boot`/`bootSmoke` jobs additionally
-run `scripts/check_characterization_tests.sh` (467 checks: packet I/O,
+Pages build → boot smoke). CI's `server-boot` job additionally
+runs `scripts/check_characterization_tests.sh` (467 checks: packet I/O,
 ISAAC, crypto, config, login rate limits, lifecycle) before the boot smoke.
 
 ## Known lifecycle gaps

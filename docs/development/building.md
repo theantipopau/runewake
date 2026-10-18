@@ -33,10 +33,10 @@ green local `check` means a green pipeline. The script finds `$JAVA_HOME` /
 
 | Component | Tool | Command | Output | Verified |
 | --- | --- | --- | --- | --- |
-| Server core + plugins | Ant (`server/build.xml`) | `compile_core`, `compile_plugins` | `server/core.jar`, `server/plugins.jar` (fat jars) | Windows locally, GitHub `ubuntu-latest`, GitLab |
-| Desktop client | Ant (`Client_Base/build.xml`) | `compile` | `Client_Base/Open_RSC_Client.jar` (fat jar) | Windows locally, GitHub, GitLab |
-| PC launcher | Ant (`PC_Launcher/build.xml`) | `compile` | `PC_Launcher/OpenRSC.jar` | Windows locally, GitHub, GitLab |
-| Static site (Pages) | `scripts/build_pages.sh` | — | staged Pages tree | Windows locally, both CIs |
+| Server core + plugins | Ant (`server/build.xml`) | `compile_core`, `compile_plugins` | `server/core.jar`, `server/plugins.jar` (fat jars) | Windows locally, GitHub `ubuntu-latest` |
+| Desktop client | Ant (`Client_Base/build.xml`) | `compile` | `Client_Base/Open_RSC_Client.jar` (fat jar) | Windows locally, GitHub |
+| PC launcher | Ant (`PC_Launcher/build.xml`) | `compile` | `PC_Launcher/OpenRSC.jar` | Windows locally, GitHub |
+| Static site (Pages) | `scripts/build_pages.sh` | — | staged Pages tree | Windows locally, GitHub CI |
 | Release bundle | `scripts/build_release.py` | `scripts/dev.sh release <ver>` | `dist/RuneWake-<ver>/` + `.zip` + SHA-256 | Windows locally (smoke-tested 2026-10-06; 0.1.0/0.1.1 shipped this way) |
 | Android client | Gradle | see `Android_Client/` | — | **Unverified** — needs JDK 11+, not exercised by CI |
 
@@ -49,7 +49,7 @@ The desktop client compiles **two source roots together** — `Client_Base/src`
 **Active:** the Ant builds above, `scripts/dev.sh`, `run-client.bat` /
 `run-server.bat`, `Start-Linux.sh` / `Start-Windows.cmd` (interactive menus),
 `Packaging/build-installer.bat`, `docker-compose.yml` (MariaDB only),
-`.github/workflows/ci.yml` and `.gitlab-ci.yml`.
+`.github/workflows/ci.yml` (the only pipeline since 2026-10-18).
 
 **Inactive or broken (inherited from OpenRSC — do not use):**
 
@@ -65,18 +65,18 @@ graph, fat-jar packaging (`zipgroupfileset`) and Java 8 target must be fully
 understood first, and any migration must keep producing identical artefacts
 with a temporary fallback (mission rule).
 
-## CI (two pipelines, same commands)
+## CI (GitHub Actions only)
 
 `bash -n` parses every `scripts/*.sh` individually on Linux runners, and each
 job runs one workflow command's underlying step:
 
-| GitHub job | GitLab job | Runs |
-| --- | --- | --- |
-| `guards` | `themeGuard`, `dependencyGuard`, `hostingConfigGuard`, `pagesBuild` | shell syntax, literal/dependency/hosting guards, pages |
-| `secret-scan` | `secretScan` | Gitleaks over full history (baseline-filtered) |
-| `client-parity` | `themeParityGuard` | client compile + parity |
-| `server-boot` | `bootSmoke` | server compile + world boot smoke |
-| `build` | `build`, `launcherUpload` | three compiles + `OpenRSC.jar` artifact |
+| GitHub job | Runs |
+| --- | --- |
+| `guards` | shell syntax, literal/dependency/hosting guards, pages |
+| `secret-scan` | Gitleaks over full history (baseline-filtered) |
+| `client-parity` | client compile + parity |
+| `server-boot` | server compile + world boot smoke |
+| `build` | three compiles + `OpenRSC.jar` artifact |
 
 No IntelliJ or other IDE configuration is required by any build step, and no
 build step downloads dependencies — `server/lib` and `PC_Client/lib` are

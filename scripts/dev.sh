@@ -4,7 +4,7 @@
 #
 # One command per job, so nobody has to remember the underlying Ant targets,
 # guard scripts or JDK paths. Every verb delegates to the same implementations
-# CI runs (.github/workflows/ci.yml and .gitlab-ci.yml), so a green local
+# CI runs (.github/workflows/ci.yml), so a green local
 # `check` means a green pipeline.
 #
 # Usage: scripts/dev.sh <command> [args]

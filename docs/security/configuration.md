@@ -40,9 +40,10 @@ Rules that keep this safe:
 ## CI secrets
 
 The GitHub workflow requests only `contents: read` and uses the default
-`GITHUB_TOKEN`. No API keys, no cloud credentials, no analytics. The GitLab
-pipeline likewise provisions nothing beyond `ant`, `curl`, `python3`, `unzip`
-and the Gitleaks binary. Adding any new secret to CI requires: an owner, a
+`GITHUB_TOKEN`. No API keys, no cloud credentials, no analytics. The
+pipeline provisions nothing beyond `ant`, `curl`, `python3`, `unzip`
+and the Gitleaks binary (the upstream-format `.gitlab-ci.yml` was deleted
+2026-10-18). Adding any new secret to CI requires: an owner, a
 rotation procedure, and an entry in this document.
 
 ## Vendored runtime review (Phase 1 finding)

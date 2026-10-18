@@ -176,12 +176,11 @@ bash scripts/check_theme_parity.sh
 bash scripts/check_boot.sh
 ```
 
-Two pipelines run the same checks: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
-on GitHub Actions, where releases are actually published, and
-[`.gitlab-ci.yml`](.gitlab-ci.yml) in the upstream OpenRSC format. They run the
-theme-literal and dependency checks, compile the server core, server plugins,
-client and launcher, execute the theme-parity assertions after the client
-compile, and `bootSmoke` boots the world on SQLite and asserts `/healthz`,
+One pipeline runs the checks: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
+on GitHub Actions, where releases are actually published. It runs the
+theme-literal and dependency checks, compiles the server core, server plugins,
+client and launcher, executes the theme-parity assertions after the client
+compile, and `server-boot` boots the world on SQLite and asserts `/healthz`,
 `/status`, `/metrics` and the 404 path before merge. Build outputs and the
 exact verification matrix are recorded in the
 [visual test matrix](docs/RUNEWAKE_VISUAL_TEST_MATRIX.md)

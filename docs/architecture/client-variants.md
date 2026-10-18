@@ -38,7 +38,7 @@ One jar, two trees (this is the detail that trips up new contributors):
 
 Build: `scripts/dev.sh build-client` (delegates to `ant -f Client_Base/build.xml compile`).
 Guards: `check_theme_literals.sh`, `check_theme_parity.sh` (141 assertions)
-run against this jar in CI (`client-parity` / `themeParityGuard`).
+run against this jar in CI (`client-parity`).
 
 Tests live in `Client_Base/test/` — today exactly one,
 `ThemeParityTest.java`. `scripts/check_theme_parity.sh` wipes and
@@ -111,7 +111,7 @@ and [technical-debt.md](../audit/technical-debt.md)):
   `Portable_Windows` Ant instead.
 - **`server/build.gradle` + `server/gradlew`** — Gradle mirror of the Ant
   build, unused by any script or CI job (versions kept in step with
-  `server/lib` by policy; `dependencyGuard` checks jars, not Gradle).
+  `server/lib` by policy; `guards` checks jars, not Gradle).
 - **`Android_Client/.../.idea/`, root `.idea/`** — tracked IDE state
   (61 files) that should eventually be untracked.
 - **`Backups/.gitsave`** — a lone tracked marker in `Backups/`.

@@ -45,7 +45,6 @@ guard script or CI job now trips on them.
 | R1 | `server/inc/sqlite/*.db` are **gitignored**, and `SqliteGameDatabaseConnection.open()` hard-exits when the file is absent → a fresh clone cannot boot without seeding | `server/inc/sqlite/`, `scripts/check_boot.sh`, `scripts/build_release.py` | Mitigated: both the smoke test and the release builder seed from tracked `server/database/sqlite/`. A human running `java -jar core.jar` directly on a fresh clone still hits it — worth a friendlier startup message. |
 | R2 | `World.load()` **catches and logs** its own exceptions, so a partially loaded world (no regions, no NPCs) still comes up | `model/world/World.java:427-429` | Server then advertises healthy on `/healthz`. Consider failing fast or surfacing degraded state in `/status`. |
 | R3 | Achievement system is half-wired: `Server.start()` has the load commented out and `PlayerService.loadPlayerAchievements` is commented out, but `AchievementSystem` is still constructed | `Server.java:426-428`, `PlayerService.java:61` | Either finish the wiring or delete the object; today it's a standing "why doesn't anything happen" trap. |
-| R5 | No GitLab runner executes this fork's `.gitlab-ci.yml` (8 jobs written, never run) | `.gitlab-ci.yml` | GitHub Actions (5 jobs) is the live pipeline; the GitLab file is verified by YAML parse + local command equivalence only. |
 | R6 | Android build unverified (needs JDK 11+ and an Android SDK); macOS path documented but unexercised | `Android_Client/`, `docs/development/building.md` | Recorded honestly in the build matrix; not claimed green. |
 | R7 | Client visual states have **no display-backed verification** here (login console frame, 7 HUD windows, settings tab) | [`../RUNEWAKE_VISUAL_TEST_MATRIX.md`](../RUNEWAKE_VISUAL_TEST_MATRIX.md) | Compile + guard verified only; one expected classic delta (Party-button hover red) noted. |
 | R8 | `SystemUtil.exit(1)` appears 23 times in server startup paths — most are correct failsafes, but any late failure kills a running world without a drain | `server/src` | Consider graceful `closeProcess` for post-bind failures. |
@@ -65,7 +64,7 @@ guard script or CI job now trips on them.
 | # | Item | Where | Notes |
 |---|---|---|---|
 | M1 | `mudclient.java` is **18,848 lines** — game loop, input, UI, login, rendering in one class; `PacketHandler` is 2,948 | `Client_Base/src/orsc/` | The single biggest obstacle to safe changes. Any Phase 6+ UI work should keep carving panels out into `com/openrsc/interfaces/*` (27 windows already live there). |
-| M2 | Two build systems per component: Ant is authoritative, `server/build.gradle` + `gradlew` are unused mirrors (versions aligned in the 0.1.1 arc but not machine-enforced) | `server/build.gradle`, `docs/DEPENDENCIES.md` | `dependencyGuard` checks jars on disk, not the Gradle strings. Pick one: either delete Gradle or add a drift check. |
+| M2 | Two build systems per component: Ant is authoritative, `server/build.gradle` + `gradlew` are unused mirrors (versions aligned in the 0.1.1 arc but not machine-enforced) | `server/build.gradle`, `docs/DEPENDENCIES.md` | `guards` checks jars on disk, not the Gradle strings. Pick one: either delete Gradle or add a drift check. |
 | M3 | Tracked IDE state: **61 `.idea/` files** (root and nested Android project) plus `Backups/.gitsave` | `.idea/`, `Android_Client/.../.idea/` | Should be untracked with a `.gitignore` rule; harmless but noisy in every diff. |
 | M4 | `Payload*Parser`/`Payload*Generator` families (13 each) are copy-paste per client version; adding a version means editing ~4 files by hand | `net/rsc/parsers/impl/`, `net/rsc/generators/impl/` | Known cost of multi-version support (client-variants.md §4). A table-driven approach would collapse them. |
 | M5 | TODO inventory: **152 in server**, 21 in client, 6 `@Deprecated` — concentrated in `GameStateUpdater` (15), `ActionSender` (9), `LoginPacketHandler` (6), `Bank`/`NpcDrops`/`Inventory` (6/6/5) | `server/src`, `Client_Base/src` | This register supersedes none of them; the top files are where to start. |
@@ -116,7 +115,7 @@ behaviour that is verified elsewhere.
   `LoginRateLimitCharacterizationTest`) and the boot-restart-reboot loop
   (R4, closed by `ServerLifecycleCharacterizationTest`) are now pinned by
   `scripts/check_characterization_tests.sh` (6 plain-main classes under
-  `server/test/`, run in CI's `server-boot`/`bootSmoke` jobs). Phase 4
+  `server/test/`, run in CI's `server-boot` job). Phase 4
   has no open characterization targets.
 - **Phase 5 (logging)** owns D5 and S4.
 - **Phase 11 (performance)** owns P1–P3, P5 with measurements.

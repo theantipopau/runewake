@@ -230,4 +230,4 @@ security debt rather than removed, since removing it changes ban behaviour.
   `Packet`s onto players; SQL only runs on the single-thread pools.
 - **`core.jar` is a fat jar** that merges `server/lib/*.jar`; deleting a
   jar without rebuilding does not break a boot, but a fresh build of a
-  tree missing a jar does (this is exactly what `bootSmoke` guards).
+  tree missing a jar does (this is exactly what `server-boot` guards).

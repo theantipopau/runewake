@@ -29,7 +29,7 @@ the current `develop` branch and the latest tagged release only.
 ## Automated secret scanning
 
 Every push and pull request runs a **Gitleaks** job (GitHub Actions; a
-matching `secretScan` job exists in `.gitlab-ci.yml`):
+only pipeline — the upstream-format `.gitlab-ci.yml` was deleted 2026-10-18):
 
 ```bash
 gitleaks git . -c .gitleaks.toml -b .gitleaks.baseline.json --redact --no-banner

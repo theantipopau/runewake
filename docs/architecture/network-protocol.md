@@ -214,7 +214,7 @@ loading described above are **pinned as current behaviour** by
 `scripts/check_characterization_tests.sh` (Phase 4 of the modernisation
 charter). It compiles the four plain-main classes under `server/test/`
 against `server/core.jar` and runs them; CI runs it in the `server-boot`
-(GitHub) / `bootSmoke` (GitLab) job right after `compile_core`.
+job right after `compile_core`.
 
 - `net/PacketIoCharacterizationTest` — all three framing families in both
   directions (via Netty `EmbeddedChannel`), ISAAC opcode encode/decode,

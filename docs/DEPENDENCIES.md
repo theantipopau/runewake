@@ -27,7 +27,7 @@ Run the guard from the repository root:
 bash scripts/check_dependencies.sh
 ```
 
-The guard is also run by the `dependencyGuard` job in `.gitlab-ci.yml`.
+The guard is also run by the `guards` job in `.github/workflows/ci.yml`.
 When it fails, update the build file and the vendored jar together; do not
 paper over a missing file by broadening a classpath.
 

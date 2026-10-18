@@ -175,9 +175,8 @@ release-time-acquisition options; Zulu 8u275 is a late-2020 build).
 `scripts/check_*.sh` (7 guards), `scripts/build_release.py` (0.1.x bundles),
 `scripts/build_pages.sh`, `run-client.bat` / `run-server.bat`,
 `Start-Linux.sh` / `Start-Windows.cmd` (menu front-ends),
-`.gitlab-ci.yml` (themeGuard, dependencyGuard, hostingConfigGuard,
-themeParityGuard, bootSmoke, pagesBuild, build, launcherUpload),
-`.github/workflows/ci.yml` (guards, client-parity, server-boot, build),
+`.github/workflows/ci.yml` (guards, client-parity, server-boot, build) —
+the only pipeline since 2026-10-18 (`.gitlab-ci.yml` deleted, R5 closed),
 `Packaging/build-installer.bat`, `docker-compose.yml` (MariaDB only — the
 game-server-in-Docker path was removed).
 
@@ -225,7 +224,7 @@ Method: fork point = merge-base `e08bf9264` (2026-06-29). `git diff
 Changed surface by area: `Client_Base` 71, `server` 60, `web` 10, `scripts` 9,
 `docs` 9, `PC_Launcher` 6, `Packaging` 5, `PC_Client` 4, `Android_Client` 4,
 `deployment` 3, `assets` 3, plus root files (README, ROADMAP, UI_SCALING_PLAN,
-Makefile, `.gitignore`, `.gitlab-ci.yml`, docker-compose, run-*.bat).
+Makefile, `.gitignore`, docker-compose, run-*.bat).
 
 **RuneWake-specific areas:** the `Theme` design-token system
 (`Client_Base/src/orsc/graphics/gui/Theme.java` + `ThemeParityTest`), the

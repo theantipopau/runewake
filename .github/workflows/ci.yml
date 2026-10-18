@@ -1,9 +1,8 @@
-# RuneWake CI - the GitHub Actions mirror of .gitlab-ci.yml.
+# RuneWake CI - GitHub Actions is the only pipeline (GitHub-only decision
+# 2026-10-18; the upstream-format .gitlab-ci.yml was deleted).
 #
 # Releases are published on GitHub (see docs/RELEASES.md), so this is the
-# pipeline whose result actually means something for this fork; the GitLab file
-# is kept in step as the upstream OpenRSC format. Every job below corresponds
-# to a GitLab job and runs the same command, so the two stay interchangeable.
+# pipeline whose result actually means something for this fork.
 #
 # Nothing is downloaded at build time: server/lib and PC_Client/lib are
 # vendored in the repository, so there is no dependency cache to manage - a run
@@ -26,7 +25,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # themeGuard + dependencyGuard + hostingConfigGuard + pagesBuild
+  # shell syntax + theme literals + dependencies + hosting config + pages
   guards:
     name: Static guards
     runs-on: ubuntu-latest
@@ -53,7 +52,7 @@ jobs:
       - name: Pages build
         run: bash scripts/build_pages.sh
 
-  # secretScan: Gitleaks over the FULL history, filtered by the reviewed
+  # secret-scan: Gitleaks over the FULL history, filtered by the reviewed
   # redacted baseline (.gitleaks.baseline.json), so any new secret anywhere -
   # tree or history - fails the build. Config: .gitleaks.toml.
   secret-scan:
@@ -73,7 +72,7 @@ jobs:
       - name: Scan repository history for secrets
         run: gitleaks git . -c .gitleaks.toml -b .gitleaks.baseline.json --redact --no-banner
 
-  # themeParityGuard: compile the client, then execute the off-path/on-path
+  # client-parity: compile the client, then execute the off-path/on-path
   # invariant (classic returns the exact inherited literal, premium resolves to
   # the intended token) for all 141 assertions.
   client-parity:
@@ -94,7 +93,7 @@ jobs:
       - name: Visual asset integrity (textures / models / materials)
         run: bash scripts/check_visual_assets.sh
 
-  # bootSmoke: compile-clean is not enough - a runtime-only dependency gap (the
+  # server-boot: compile-clean is not enough - a runtime-only dependency gap (the
   # missing commons-io after the commons-compress bump) only shows up at world
   # load, so boot the world on SQLite and probe /healthz, /status and /metrics.
   # The same job also runs the characterization tests that pin the CURRENT
@@ -119,8 +118,8 @@ jobs:
       - name: Boot the world and probe its endpoints
         run: bash scripts/check_boot.sh
 
-  # build: the same three compiles GitLab runs, publishing the launcher jar as
-  # a downloadable artifact (GitLab exposes the same file from its build job).
+  # build: the same three compiles every job above runs, publishing the launcher
+  # jar as a downloadable artifact.
   build:
     name: Full build
     runs-on: ubuntu-latest
