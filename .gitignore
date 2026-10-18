@@ -117,6 +117,7 @@ Android_Client/.idea/
 # cut on GitHub, so that is where CI has to run.
 .github/*
 !.github/workflows/
+!.github/dependabot.yml
 
 PC_Launcher/OpenRSC.jar
 PC_Launcher/Cache/

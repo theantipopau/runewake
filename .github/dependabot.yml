@@ -1,0 +1,14 @@
+# Dependabot (Gate 6) — GitHub Actions only.
+#
+# The Java dependencies are vendored jars (see docs/DEPENDENCIES.md), not a
+# lockfile, so there is nothing for Dependabot to update there. The Gradle
+# files are an unused mirror of the Ant build (debt M2), so they are
+# deliberately excluded to avoid update PRs against dead files. That leaves
+# the Actions pinned in .github/workflows/ci.yml.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
