@@ -29,6 +29,17 @@ public class MySQLDatabaseConnection extends JDBCDatabaseConnection {
 		// Close the old connection before attempting to open a new connection.
 		close();
 
+		// A MySQL-backed world is the production shape (SQLite is the local
+		// path and needs no password), and an empty password never works
+		// against the shipped compose stack (MARIADB_ALLOW_EMPTY_PASSWORD
+		// is "no"). Refuse early with a clear message instead of a
+		// cryptic connect failure two steps later.
+		if (getServer().getConfig().DB_PASS == null || getServer().getConfig().DB_PASS.isEmpty()) {
+			LOGGER.error("Refusing to start: DB_PASS is blank. Set a database password via the DB_PASS "
+				+ "environment variable or the db_pass setting; see .env.example.");
+			SystemUtil.exit(1);
+		}
+
 		try {
 			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (final ClassNotFoundException e) {
