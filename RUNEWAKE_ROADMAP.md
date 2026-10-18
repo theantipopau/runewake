@@ -26,9 +26,9 @@ else lives here. Honest states only.
   5a secrets/startup check · 5b server to modern LTS (client stays 8) ·
   5c Docker/healthchecks/backups/Flyway-or-equivalent · 5d WS+Caddy (note:
   WS transport + HTTP routes already exist — verify, don't rebuild) ·
-  5e metrics (`/metrics` gained tick + heap gauges 2026-10-18) + rate
-  limits + password-KDF review + `docs/HOSTING.md` — all urgent for a
-  public world.
+  5e metrics (tick + heap gauges 2026-10-18) + rate limits + password-KDF
+  review + `docs/HOSTING.md` (operator runbook 2026-10-18) — all urgent
+  for a public world.
 - [ ] **GATE 6 — Branding/Launcher/CI/Release:** README done in an
   earlier pass; left: launcher refresh, Android decision, Backups/
   Portable_Windows placement, SECURITY contacts, Dependabot,
