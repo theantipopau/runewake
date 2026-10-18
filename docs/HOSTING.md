@@ -55,9 +55,11 @@ unset MYSQL_PASSWORD
 ```
 
 Copy the `.sql.gz` + `.sha256` off the host. Quarterly at minimum, restore
-one backup into a scratch database and boot the world against the copy —
-an untested backup is not a backup. SQLite worlds: stop the server first
-and copy the whole `server/inc/sqlite/` directory.
+one backup into a scratch database with `scripts/restore_mariadb.sh` (it
+verifies the checksum, integrity-tests the stream, and refuses the live
+database name without `RESTORE_ALLOW_LIVE=1`) and boot the world against
+the copy — an untested backup is not a backup. SQLite worlds: stop the
+server first and copy the whole `server/inc/sqlite/` directory.
 
 ## Monitoring
 
