@@ -181,13 +181,18 @@ with `themeGuard`, `dependencyGuard`, `hostingConfigGuard`,
 `themeParityGuard`, `bootSmoke`, `secretScan`, `build`, `launcherUpload`,
 `pagesBuild`. Locally the identical sequence is one command:
 `scripts/dev.sh check` (guards → three compiles → 141-assertion parity →
-Pages build → boot smoke).
+Pages build → boot smoke). CI's `server-boot`/`bootSmoke` jobs additionally
+run `scripts/check_characterization_tests.sh` (467 checks: packet I/O,
+ISAAC, crypto, config, login rate limits, lifecycle) before the boot smoke.
 
 ## Known lifecycle gaps
 
-- Restart (`stop()`/`start()`) is exercised only in theory — no test boots,
-  restarts, and reboots a world (candidate for Phase 4 characterization
-  tests).
+- Restart (`stop()`/`start()`) is pinned by `ServerLifecycleCharacterizationTest`
+  (Phase 4, R4): boot → two in-place restart cycles → `closeProcess`
+  shutdown → cold reboot, asserting world repopulation, port re-bind, and
+  `serversList` membership at each step. What remains untested is restart
+  *under load* (players online, combat events in flight) — the daily event
+  is still the only thing that exercises that.
 - Client visual states (login console frame, HUD theme windows) have no
   automated lifecycle coverage; the
   [visual test matrix](../RUNEWAKE_VISUAL_TEST_MATRIX.md) tracks the manual

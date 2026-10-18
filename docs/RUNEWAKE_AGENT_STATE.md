@@ -1269,3 +1269,75 @@ wrong everywhere, map tab opened briefly.
    decision), not reusing these ids.
 3. R4 (restart/reboot loop) remains the only open Phase 4 characterization
    target.
+
+### Phase 4 follow-up: boot-restart-reboot loop characterized (R4 closed, 2026-10-18)
+
+**What was done**
+1. **`server/test/com/openrsc/server/ServerLifecycleCharacterizationTest.java`**
+   (62 checks) — drives the real `closeProcess` → `shutdown`/`restart` →
+   `checkShutdown` → `stop()` → `start()` path in-process through a headless
+   `new Server(fixture conf)` + `start()` (full world boot: DB open, world
+   load, plugins from `./plugins.jar`, Netty bind on both ports):
+   - **Construction starts nothing** (not running, no flags, no pending
+     shutdown, executor stopped, unlisted); `checkShutdown()` on an idle
+     server is a no-op.
+   - **Boot**: running, listed in `serversList`, NPCs populated (guards the
+     R2 partial-load hazard — `World.load()` swallows its own exceptions),
+     login executor up, game TCP port accepting.
+   - **Restart ×2** (reboot): `restart(0)` accepted once, second
+     `restart`/`shutdown`/`closeProcess` refused while pending (single-flight
+     pinned); countdown flips `shuttingDown`+`restarting` on the next
+     640 ms tick; `checkShutdown()` stops+re-starts in place — still running,
+     never left `serversList`, flags cleared, world repopulated, port
+     re-bound. The second cycle proves repeatability (patch re-application,
+     plugin reload, Netty rebind).
+   - **`closeProcess(0, null)` shutdown**: no restart — removed from
+     `serversList`, executor stopped, port refused.
+   - **Cold reboot**: `start()` after a full stop re-registers; trailing
+     double `stop()` is a clean no-op.
+2. `scripts/check_characterization_tests.sh` grew a `lifecycle` entry
+   (fixture `lifecycle.conf`: name `RuneWakeLifecycleProbe`, off-range ports
+   43794/43795, dedicated `runewake_lifecycle_char` DB seeded from the
+   tracked schema when absent — same pattern as `check_boot.sh`; new
+   `server/plugins.jar` prerequisite). Suite total is now **467 checks**
+   (27 + 315 + 7 + 17 + 39 + 62). The test takes ~2 min (three world boots
+   + four stops, dominated by loads and Netty graceful-shutdown waits).
+3. **R4 deleted from the technical-debt register** (closed); the register
+   footer now reads Phase 4 has no open characterization targets.
+   `runtime-lifecycle.md` gaps + CI paragraph, `repository-state.md` counts,
+   and the GitHub/GitLab job comments updated to match.
+
+**Verification actually run**
+- `bash scripts/check_characterization_tests.sh` → exit 0; all 467 checks,
+  0 failed (pipefail-captured).
+- **Runtime fail-closed proven, not assumed**: a planted inverted expectation
+  (`never left serversList` → false) made the run print `FAIL lifecycle`
+  (62 checks, 2 failed — one per restart cycle) and exit 1 end-to-end
+  through the harness; the plant was removed and the suite went green again.
+- Earlier bring-up failure also caught honestly: `getTimeUntilShutdown()`
+  returns `long`, which needed its own `expect` overload (compile error →
+  harness exit 1 before the fix).
+
+**Environment notes for the next session**
+- The lifecycle DB (`server/inc/sqlite/runewake_lifecycle_char.db`) is
+  gitignored and persists between runs; patches apply on first boot and
+  re-apply on every restart (by design — that is part of what is pinned).
+- NPC-count pins are `> 0`, not exact: the tick loop runs between pins and
+  timed spawns could move an exact count. Deliberate anti-flake choice.
+- `SystemUtil.exit(1)` on any `start()` failure kills the test JVM — the
+  harness reports it as FAIL, which is the correct fail-closed behaviour.
+- 20 s poll timeout for the countdown flag; actual flip is < 1 s (one game
+  tick). If this ever goes flaky, the wait — not the assertions — is where
+  to look first.
+
+**Not verified (and why)**
+- Restart *under load* (players online, combat in flight): the daily event
+  remains the only thing exercising that; the test pins the unloaded cycle.
+- GitLab CI still unexecuted (no runner, R5); the GitLab job runs the same
+  harness command.
+
+**Exact next tasks**
+1. Commit and push; watch the Actions `server-boot` job run the 6-class
+   suite (≈467 checks + boot smoke).
+2. Phase 4 has no open targets — Phase 5+ per the charter (logging, then
+   the audit's ordered priorities).

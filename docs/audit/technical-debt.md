@@ -45,7 +45,6 @@ guard script or CI job now trips on them.
 | R1 | `server/inc/sqlite/*.db` are **gitignored**, and `SqliteGameDatabaseConnection.open()` hard-exits when the file is absent → a fresh clone cannot boot without seeding | `server/inc/sqlite/`, `scripts/check_boot.sh`, `scripts/build_release.py` | Mitigated: both the smoke test and the release builder seed from tracked `server/database/sqlite/`. A human running `java -jar core.jar` directly on a fresh clone still hits it — worth a friendlier startup message. |
 | R2 | `World.load()` **catches and logs** its own exceptions, so a partially loaded world (no regions, no NPCs) still comes up | `model/world/World.java:427-429` | Server then advertises healthy on `/healthz`. Consider failing fast or surfacing degraded state in `/status`. |
 | R3 | Achievement system is half-wired: `Server.start()` has the load commented out and `PlayerService.loadPlayerAchievements` is commented out, but `AchievementSystem` is still constructed | `Server.java:426-428`, `PlayerService.java:61` | Either finish the wiring or delete the object; today it's a standing "why doesn't anything happen" trap. |
-| R4 | Restart path (`closeProcess` → `stop()` → `start()`) is exercised only by the daily/hourly scheduled events; **no test boots, restarts, and reboots** a world | `Server.checkShutdown()` | Phase 4 candidate; the boot smoke covers cold start only. |
 | R5 | No GitLab runner executes this fork's `.gitlab-ci.yml` (8 jobs written, never run) | `.gitlab-ci.yml` | GitHub Actions (5 jobs) is the live pipeline; the GitLab file is verified by YAML parse + local command equivalence only. |
 | R6 | Android build unverified (needs JDK 11+ and an Android SDK); macOS path documented but unexercised | `Android_Client/`, `docs/development/building.md` | Recorded honestly in the build matrix; not claimed green. |
 | R7 | Client visual states have **no display-backed verification** here (login console frame, 7 HUD windows, settings tab) | [`../RUNEWAKE_VISUAL_TEST_MATRIX.md`](../RUNEWAKE_VISUAL_TEST_MATRIX.md) | Compile + guard verified only; one expected classic delta (Party-button hover red) noted. |
@@ -113,11 +112,12 @@ behaviour that is verified elsewhere.
 ### How this register is used
 
 - **Phase 4**: packet I/O, ISAAC, crypto (incl. the RSA login-block
-  round trip), config loading and the login rate limits (S7, closed by
-  `LoginRateLimitCharacterizationTest`) are now pinned by
-  `scripts/check_characterization_tests.sh` (5 plain-main classes under
-  `server/test/`, run in CI's `server-boot`/`bootSmoke` jobs). R4
-  remains the open characterization target.
+  round trip), config loading, the login rate limits (S7, closed by
+  `LoginRateLimitCharacterizationTest`) and the boot-restart-reboot loop
+  (R4, closed by `ServerLifecycleCharacterizationTest`) are now pinned by
+  `scripts/check_characterization_tests.sh` (6 plain-main classes under
+  `server/test/`, run in CI's `server-boot`/`bootSmoke` jobs). Phase 4
+  has no open characterization targets.
 - **Phase 5 (logging)** owns D5 and S4.
 - **Phase 11 (performance)** owns P1–P3, P5 with measurements.
 - **Phase 14 (release)** owns DOC2, DOC3 and the M7 upstream triage.

@@ -98,8 +98,9 @@ jobs:
   # missing commons-io after the commons-compress bump) only shows up at world
   # load, so boot the world on SQLite and probe /healthz, /status and /metrics.
   # The same job also runs the characterization tests that pin the CURRENT
-  # packet-framing, ISAAC, crypto and config behaviour (Phase 4 of the
-  # modernisation charter), so a refactor of the wire format fails here too.
+  # packet-framing, ISAAC, crypto, config, login-limit and lifecycle
+  # behaviour (Phase 4 of the modernisation charter), so a refactor of the
+  # wire format or the restart path fails here too.
   server-boot:
     name: Server compile + world boot smoke
     runs-on: ubuntu-latest
@@ -113,7 +114,7 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ant
       - name: Compile server
         run: ant -f server/build.xml compile_core compile_plugins
-      - name: Characterization tests (packet I/O, ISAAC, crypto, config)
+      - name: Characterization tests (packet I/O, ISAAC, crypto, config, limits, lifecycle)
         run: bash scripts/check_characterization_tests.sh
       - name: Boot the world and probe its endpoints
         run: bash scripts/check_boot.sh

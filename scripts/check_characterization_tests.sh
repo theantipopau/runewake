@@ -19,10 +19,17 @@
 #   * LoginRateLimitCharacterizationTest - the three login throttles (per-tick
 #     login cap, logins-per-second window, password-guess counter) and the
 #     admin / localhost / IP-ban interactions around them (S7)
+#   * ServerLifecycleCharacterizationTest - the boot -> restart -> reboot
+#     loop (R4): construction starts nothing, start() boots the world,
+#     restart() is single-flight and checkShutdown() stops+re-starts in
+#     place (twice), closeProcess() shuts down without restarting, and
+#     start() after a full stop (cold reboot) is legal
 #
-# Requirements: server/core.jar (build with `ant -f server/build.xml
-# compile_core`) and a JDK 8+. Fixture conf files are written by the script
-# itself; nothing else is needed.
+# Requirements: server/core.jar + server/plugins.jar (build with `ant -f
+# server/build.xml compile_core compile_plugins`), a JDK 8+, and python3
+# with sqlite3 (only when the lifecycle database has to be seeded).
+# Fixture conf files are written by the script itself; nothing else is
+# needed.
 #
 # Usage: scripts/check_characterization_tests.sh
 #
@@ -50,7 +57,14 @@ note() { printf '%s\n' "$*"; }
 
 if [ ! -f "$SERVER_JAR" ]; then
 	echo "FAIL: $SERVER_JAR missing; build it first with:" >&2
-	echo "  ant -f server/build.xml compile_core" >&2
+	echo "  ant -f server/build.xml compile_core compile_plugins" >&2
+	exit 1
+fi
+# The lifecycle test boots a whole world, and PluginHandler opens
+# ./plugins.jar relative to CWD=server.
+if [ ! -f "server/plugins.jar" ]; then
+	echo "FAIL: server/plugins.jar missing; build it first with:" >&2
+	echo "  ant -f server/build.xml compile_core compile_plugins" >&2
 	exit 1
 fi
 
@@ -110,6 +124,63 @@ cat > "$WORK_DIR/rate_limit.conf" <<'EOF'
 server_name: RuneWakeProbe
 EOF
 
+# The lifecycle test boots a whole world from this conf. Ports sit off the
+# documented world range (43593-43599 game / 43493-43499 WS) so the test
+# never clashes with a dev server or the boot smoke; everything else is a
+# code default. db_type comes from the tracked server/connections.conf
+# (sqlite); db_name is dedicated so the test never touches a dev world.
+cat > "$WORK_DIR/lifecycle.conf" <<'EOF'
+server_name: RuneWakeLifecycleProbe
+server_port: 43794
+ws_server_port: 43795
+db_name: runewake_lifecycle_char
+EOF
+
+# Fresh clones (every CI runner) have no server/inc/sqlite/*.db because
+# *.db is gitignored, and the server refuses to start without the file.
+# Seed the lifecycle database from the checked-in schema the same way
+# scripts/check_boot.sh seeds the smoke-test world.
+LIFECYCLE_DB="server/inc/sqlite/runewake_lifecycle_char.db"
+if [ ! -f "$LIFECYCLE_DB" ]; then
+	note "Seeding absent $LIFECYCLE_DB from server/database/sqlite (fresh checkout)"
+	PY_BIN=""
+	for candidate in python3 python; do
+		candidate_path=$(command -v "$candidate" 2>/dev/null) || continue
+		if "$candidate_path" -c "import sqlite3" >/dev/null 2>&1; then
+			PY_BIN=$candidate_path
+			break
+		fi
+	done
+	if [ -z "$PY_BIN" ]; then
+		echo "FAIL: python3 (or python) with sqlite3 is required to seed the absent SQLite database $LIFECYCLE_DB" >&2
+		exit 1
+	fi
+	"$PY_BIN" - <<'PY_SEED_EOF'
+import pathlib
+import sqlite3
+
+root = pathlib.Path("server")
+schema = root / "database" / "sqlite"
+db_path = root / "inc" / "sqlite" / "runewake_lifecycle_char.db"
+db_path.parent.mkdir(parents=True, exist_ok=True)
+connection = sqlite3.connect(str(db_path))
+try:
+    connection.executescript((schema / "core.sqlite").read_text(encoding="utf-8"))
+    for addon in ("add_auctionhouse.sqlite", "add_bank_presets.sqlite", "add_clans.sqlite",
+                  "add_equipment_tab.sqlite", "add_npc_kill_counting.sqlite"):
+        connection.executescript((schema / "addons" / addon).read_text(encoding="utf-8"))
+    connection.commit()
+finally:
+    connection.close()
+PY_SEED_EOF
+	if [ "$?" -ne 0 ]; then
+		rm -f "$LIFECYCLE_DB"
+		echo "FAIL: failed to seed $LIFECYCLE_DB from the checked-in schema" >&2
+		exit 1
+	fi
+	note "OK  seeded $LIFECYCLE_DB from the checked-in schema"
+fi
+
 # --- compile ------------------------------------------------------------
 SOURCES="$(find "$TEST_SRC" -name '*.java' | sort)"
 if [ -z "$SOURCES" ]; then
@@ -153,6 +224,10 @@ run_test "configuration"    "server"                  com.openrsc.server.ServerC
 # Needs the same CWD as the configuration test (its Server constructor loads
 # the tracked server/connections.conf from here).
 run_test "login-rate-limit" "server"                  com.openrsc.server.LoginRateLimitCharacterizationTest
+# Boots a whole world: three starts, four stops (~2 min, dominated by world
+# loads and the Netty graceful-shutdown quiet periods). Same CWD: relative
+# paths (connections.conf, ./plugins.jar, inc/sqlite) resolve from server/.
+run_test "lifecycle"        "server"                  com.openrsc.server.ServerLifecycleCharacterizationTest
 
 if [ "$status" -eq 0 ]; then
 	note "OK: all characterization tests passed."
