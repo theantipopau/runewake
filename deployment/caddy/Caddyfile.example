@@ -1,0 +1,25 @@
+# Example Caddyfile: publish the world status endpoints over HTTPS (Gate 5d).
+#
+# Copy to /etc/caddy/Caddyfile and set WORLD_HOST to the public hostname.
+# Caddy obtains and renews the certificate automatically. Only the read-only
+# HTTP routes (/status, /healthz, /metrics) are proxied — the raw game
+# protocol on TCP 43594 is NOT HTTP and still needs its own reachable route
+# (firewall/security-list), as does a Cloudflare Tunnel alternative.
+#
+# Validate with: caddy fmt --overwrite && caddy validate
+# Then check from outside: curl --fail https://WORLD_HOST/status
+{
+	auto_https disable_redirects
+}
+
+{$WORLD_HOST} {
+	# The world listens on loopback; Caddy is the only HTTPS entry point.
+	@status {
+		path /status /healthz /metrics
+	}
+	reverse_proxy @status 127.0.0.1:43494
+
+	# Everything else (including the WebSocket upgrade path) is refused
+	# at the edge until an operator explicitly needs it.
+	respond / 404
+}

@@ -63,6 +63,9 @@ and copy the whole `server/inc/sqlite/` directory.
 
 - **Liveness:** external uptime monitor on `/healthz` (answers `200 ok`).
   Alert on non-200 or timeout.
+- **HTTPS:** terminate TLS at the edge with the example in
+  `deployment/caddy/Caddyfile.example` (status routes only) or a
+  Cloudflare Tunnel; the game TCP port is never HTTP-proxied.
 - **Dashboard:** scrape `/metrics` (same port) — `runewake_players_online`,
   `runewake_players_max`, `runewake_uptime_seconds`,
   `runewake_tick_last_duration_ms`, `runewake_tick_current`,
