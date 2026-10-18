@@ -1,5 +1,7 @@
 package com.openrsc.server.net.rsc;
 
+import com.openrsc.server.util.rsc.DataConversions;
+
 import java.math.BigInteger;
 
 /**
@@ -30,6 +32,7 @@ public final class CryptoCharacterizationTest {
 		xteaTailBytesPassThrough();
 		rsaKeySizeIs512();
 		rsaLoginBlockRoundTrips();
+		passwordHashing();
 
 		System.out.println((failures == 0 ? "OK" : "FAIL") + ": " + checks
 			+ " crypto characterization checks, " + failures + " failed.");
@@ -87,6 +90,25 @@ public final class CryptoCharacterizationTest {
 		expect("rsa decrypt length for a 64-byte block", dec.length, 64);
 		expect("rsa login block round-trips",
 			new BigInteger(1, dec).equals(m) ? 1 : 0, 1);
+	}
+
+	private static void passwordHashing() {
+		// Stored credential hygiene for a public world: new hashes are
+		// bcrypt (cost 10, SecureRandom salt); pre-bcrypt rows verify
+		// through the legacy comparison branch and are flagged for the
+		// rehash-on-login upgrade in LoginRequest.
+		String modern = DataConversions.hashPassword("hunter2", null);
+		expect("modern hash verifies", DataConversions.checkPassword("hunter2", null, modern) ? 1 : 0, 1);
+		expect("modern hash rejects wrong password", DataConversions.checkPassword("hunter3", null, modern) ? 1 : 0, 0);
+		expect("modern hash needs no rehash", DataConversions.passwordNeedsRehash(modern) ? 1 : 0, 0);
+		// Legacy row shape is the raw sha512(salt + md5(password)) hex
+		// digest (128 chars, no bcrypt prefix) - hashPassword() always
+		// bcrypts, so only pre-bcrypt rows look like this. The predicate
+		// is purely syntactic, which is exactly what drives the
+		// LoginRequest upgrade branch.
+		String legacy = new String(new char[128]).replace("\0", "a");
+		expect("legacy shape flagged for rehash", DataConversions.passwordNeedsRehash(legacy) ? 1 : 0, 1);
+		expect("empty password never verifies", DataConversions.checkPassword("", null, modern) ? 1 : 0, 0);
 	}
 
 	private static byte[] hexToBytes(String hex) {

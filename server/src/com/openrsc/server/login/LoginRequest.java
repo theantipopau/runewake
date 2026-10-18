@@ -272,6 +272,21 @@ public abstract class LoginRequest extends LoginExecutorProcess{
 				return new ValidatedLogin(LoginResponse.INVALID_CREDENTIALS);
 			}
 
+			// Opportunistic upgrade: pre-bcrypt password formats verify
+			// above via the legacy comparison branch, but nothing ever
+			// rewrote them. Now that the password is proven correct,
+			// persist the modern bcrypt hash so the legacy value stops
+			// working. A failed upgrade must never fail the login itself.
+			if (!isSimLogin && DataConversions.passwordNeedsRehash(playerData.password)) {
+				try {
+					getServer().getDatabase().saveNewPassword(playerData.id,
+						DataConversions.hashPassword(getPassword(), null));
+					LOGGER.info("Upgraded legacy password hash for " + username);
+				} catch (final GameDatabaseException e) {
+					LOGGER.error("Failed to upgrade legacy password hash for " + username, e);
+				}
+			}
+
 			// Doing this at end because we only want to flag the host as an admin _IF_ they know the password.
 			if(isAdmin) {
 				getServer().getPacketFilter().addAdminHost(getIpAddress());
