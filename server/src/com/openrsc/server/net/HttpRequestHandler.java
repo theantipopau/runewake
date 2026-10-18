@@ -100,6 +100,14 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
 		int playerCount = server.getWorld().getPlayers().size();
 		int maxPlayers = server.getConfig().MAX_PLAYERS;
 		long uptimeSeconds = (System.nanoTime() - server.getServerStartedTime()) / 1_000_000_000L;
+		// Last game-tick processing time in whole milliseconds; the tick
+		// budget is config GAME_TICK (default 640 ms), so a monitor can
+		// alert long before monitorTickPerformance starts logging lates.
+		long lastTickMillis = server.getLastTickDuration() / 1_000_000L;
+		long currentTick = server.getCurrentTick();
+		Runtime runtime = Runtime.getRuntime();
+		long heapUsedBytes = runtime.totalMemory() - runtime.freeMemory();
+		long heapMaxBytes = runtime.maxMemory();
 
 		String body = "# HELP runewake_players_online Players currently logged in.\n"
 			+ "# TYPE runewake_players_online gauge\n"
@@ -109,7 +117,19 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
 			+ "runewake_players_max " + maxPlayers + "\n"
 			+ "# HELP runewake_uptime_seconds Seconds since the world started.\n"
 			+ "# TYPE runewake_uptime_seconds gauge\n"
-			+ "runewake_uptime_seconds " + uptimeSeconds + "\n";
+			+ "runewake_uptime_seconds " + uptimeSeconds + "\n"
+			+ "# HELP runewake_tick_last_duration_ms Last game-tick processing time in milliseconds.\n"
+			+ "# TYPE runewake_tick_last_duration_ms gauge\n"
+			+ "runewake_tick_last_duration_ms " + lastTickMillis + "\n"
+			+ "# HELP runewake_tick_current Current game tick number.\n"
+			+ "# TYPE runewake_tick_current gauge\n"
+			+ "runewake_tick_current " + currentTick + "\n"
+			+ "# HELP runewake_jvm_heap_used_bytes JVM heap currently in use.\n"
+			+ "# TYPE runewake_jvm_heap_used_bytes gauge\n"
+			+ "runewake_jvm_heap_used_bytes " + heapUsedBytes + "\n"
+			+ "# HELP runewake_jvm_heap_max_bytes JVM heap size limit.\n"
+			+ "# TYPE runewake_jvm_heap_max_bytes gauge\n"
+			+ "runewake_jvm_heap_max_bytes " + heapMaxBytes + "\n";
 
 		writeBody(ctx, request, HttpResponseStatus.OK, PROMETHEUS_CONTENT_TYPE, body, headOnly);
 	}
