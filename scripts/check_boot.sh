@@ -243,6 +243,10 @@ note "OK  /status  -> $status_json"
 metrics=$(curl -s -m 5 "http://127.0.0.1:$PORT/metrics" || true)
 printf '%s' "$metrics" | grep -q '# TYPE runewake_' || die "/metrics is not Prometheus exposition"
 printf '%s' "$metrics" | grep -q 'runewake_players_online' || die "/metrics lacks runewake_players_online"
+printf '%s' "$metrics" | grep -q 'runewake_tick_last_duration_ms' || die "/metrics lacks runewake_tick_last_duration_ms"
+printf '%s' "$metrics" | grep -q 'runewake_tick_current' || die "/metrics lacks runewake_tick_current"
+printf '%s' "$metrics" | grep -q 'runewake_jvm_heap_used_bytes' || die "/metrics lacks runewake_jvm_heap_used_bytes"
+printf '%s' "$metrics" | grep -q 'runewake_jvm_heap_max_bytes' || die "/metrics lacks runewake_jvm_heap_max_bytes"
 note "OK  /metrics -> $(printf '%s' "$metrics" | grep -c '^runewake_') gauges"
 
 code=$(curl -s -o /dev/null -w '%{http_code}' -m 5 "http://127.0.0.1:$PORT/not-a-real-route" || true)
