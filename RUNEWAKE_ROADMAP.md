@@ -24,15 +24,16 @@ else lives here. Honest states only.
   Balances only in the Runewake preset.
 - [ ] **GATE 5 — Backend (public-world urgency, decided 2026-10-18):**
   5a secrets/startup check · 5b server to modern LTS (client stays 8) ·
-  5c Docker/healthchecks/backups/Flyway-or-equivalent · 5d WS+Caddy (note:
-  WS transport + HTTP routes already exist — verify, don't rebuild) ·
+  5c Docker/healthchecks/backups/Flyway-or-equivalent · 5d WS+Caddy (WS
+  transport + HTTP routes verified in-tree; `deployment/caddy/` example
+  added 2026-10-18 for status HTTPS) ·
   5e metrics (tick + heap gauges 2026-10-18) + rate limits + password-KDF
   review + `docs/HOSTING.md` (operator runbook 2026-10-18) — all urgent
   for a public world.
 - [ ] **GATE 6 — Branding/Launcher/CI/Release:** README done in an
   earlier pass; left: launcher refresh, Android decision, Backups/
-  Portable_Windows placement, SECURITY contacts, Dependabot,
-  CONTRIBUTING rewrite (still upstream text). Decided 2026-10-18:
+  Portable_Windows placement, SECURITY contacts, CONTRIBUTING rewrite
+  (still upstream text). Dependabot for Actions added 2026-10-18. Decided 2026-10-18:
   GitHub-only — `.gitlab-ci.yml` deleted 2026-10-18 (R5 closed).
 
 ## Matt's decisions (2026-10-18, GATE 0 exit)
