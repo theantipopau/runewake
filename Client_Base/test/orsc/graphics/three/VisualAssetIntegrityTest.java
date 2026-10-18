@@ -16,8 +16,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -42,6 +47,18 @@ import java.util.zip.ZipFile;
  *       texture names must cover "0"..count-1 exactly once - the loader
  *       resolves them by NAME through a HashMap, not by list position - and
  *       each entry must likewise be square and bound-consistent.</li>
+ *   <li>The authentic texture id block (3225..) must end before the crown /
+ *       window icon block at 3284, that icon block must stay
+ *       non-texture-shaped, no model ref beyond the authentic set may have
+ *       texture-shaped art in Authentic_Sprites.orsc (there is none for the
+ *       tree/bush textures - the authentic path shades them as texture 0 on
+ *       purpose), and {@code mudclient.loadTexturesAuthentic} must stay bound
+ *       to {@code EntityHandler.textureCount()} with its single
+ *       {@code loadSprite(spriteTexture + i, ...)} call. This pins the
+ *       2026-10-11 probe finding that ids 3280..3291 are gap sprites plus UI
+ *       icons, NOT the 12 missing tree textures an earlier note claimed:
+ *       feeding them to Scene.setFrustum (which reads a full 64^2/128^2 index
+ *       block) throws AIOOBE during texture load.</li>
  * </ul>
  *
  * Plain {@code main} on purpose, like ThemeParityTest: no test framework, must
@@ -53,6 +70,9 @@ public final class VisualAssetIntegrityTest {
 
 	private static int checks = 0;
 	private static int failures = 0;
+
+	/** Every distinct material ref seen on shipped models: ref -> first model name. */
+	private static final Map<Integer, String> modelTextureRefs = new TreeMap<Integer, String>();
 
 	public static void main(String[] args) throws Exception {
 		// Same load the client performs (MEMBER_WORLD=false); only items are
@@ -82,6 +102,8 @@ public final class VisualAssetIntegrityTest {
 		verifyAuthenticTextures(textureCount);
 		verifyModels(maxTextureCount);
 		verifyShadeClamp(textureCount);
+		verifyTextureBlockLayout(textureCount, maxTextureCount);
+		verifyTextureLoaderWiring();
 
 		System.out.println((failures == 0 ? "OK" : "FAIL") + ": " + checks
 			+ " visual-asset integrity checks, " + failures + " failed."
@@ -224,6 +246,9 @@ public final class VisualAssetIntegrityTest {
 		if (ref == Scene.TRANSPARENT || ref < 0) {
 			return;
 		}
+		if (!modelTextureRefs.containsKey(ref)) {
+			modelTextureRefs.put(ref, name);
+		}
 		if (ref >= maxTextureCount) {
 			fail("model '" + name + "' face " + face + " " + side + " texture ref " + ref
 				+ " beyond every shipped set (authentic/custom max " + maxTextureCount + ")");
@@ -275,6 +300,131 @@ public final class VisualAssetIntegrityTest {
 			"shade clamp falls back to 0 for refs 63/64 under the authentic set");
 		check(Scene.textureShadeIndex(66, 67) == 66,
 			"shade clamp keeps ref 66 under the custom set (67)");
+	}
+
+	/**
+	 * The authentic texture id block is spriteTexture(3225)..+textureCount-1.
+	 * Two invariants pin the 2026-10-11 full-archive probe finding that ids
+	 * 3280..3291 are NOT "12 extra tree textures":
+	 *
+	 * <ul>
+	 *   <li>The block must end at or before 3283 - i.e. stay clear of the
+	 *       crown/window icon block that loadMediaAuthentic claims with
+	 *       {@code loadSprite(3284, "media", 11)} + {@code setIconsStart(0,
+	 *       3284)}. Growing textureCount into it overwrites icon sprite slots
+	 *       and then crashes Scene.setFrustum with AIOOBE: those sprites are
+	 *       9x9/13x11, while setFrustum reads a full 64^2/128^2 index block
+	 *       (m_Hb = boundWidth/64-1 makes 13x11 behave as "128").</li>
+	 *   <li>For every model ref beyond the authentic set, the corresponding
+	 *       sprite (3225+ref) must NOT be texture-shaped: fingerprinting all
+	 *       2259 archive entries found no such art anywhere, so texture-0
+	 *       fallback is the correct authentic-path behaviour and only the
+	 *       custom archive carries these textures. If this ever fails, real
+	 *       art was added - review the loader and this guard together.</li>
+	 * </ul>
+	 */
+	private static void verifyTextureBlockLayout(int textureCount, int maxTextureCount) throws Exception {
+		int base = 3225; // mudclient.spriteTexture
+		int iconBlockStart = 3284; // loadMediaAuthentic: loadSprite(3284, "media", 11) + setIconsStart(0, 3284)
+		check(base + textureCount <= iconBlockStart,
+			"authentic texture block (" + base + ".." + (base + textureCount - 1)
+				+ ") stays clear of the crown/window icon block at " + iconBlockStart);
+
+		File file = new File("Cache/video/Authentic_Sprites.orsc");
+		if (!file.exists()) {
+			return; // presence already failed in verifyAuthenticTextures
+		}
+		ZipFile zip = new ZipFile(file);
+		try {
+			// The 11 media icons at 3284..3294: must exist and must not be
+			// mistaken for world textures (they are 9x9/13x11 UI art).
+			for (int id = iconBlockStart; id <= iconBlockStart + 10; id++) {
+				ZipEntry entry = zip.getEntry(String.valueOf(id));
+				if (entry == null) {
+					fail("media icon sprite " + id + " missing from authentic archive");
+					continue;
+				}
+				Sprite sprite = Sprite.unpack(DataConversions.streamToBuffer(
+					new BufferedInputStream(zip.getInputStream(entry))));
+				int w = sprite.getWidth();
+				boolean textureShaped = w == sprite.getHeight() && (w == 64 || w == 128)
+					&& sprite.getSomething1() == w;
+				check(!textureShaped,
+					"media icon " + id + " is not texture-shaped (" + w + "x" + sprite.getHeight() + ")");
+			}
+
+			// Refs the authentic set does not cover: no texture-shaped art may
+			// exist at their would-be sprite id, or the fallback contract is
+			// no longer true and the loader must be extended deliberately.
+			for (Map.Entry<Integer, String> me : modelTextureRefs.entrySet()) {
+				int ref = me.getKey();
+				if (ref < textureCount) {
+					continue;
+				}
+				int spriteId = base + ref;
+				ZipEntry entry = zip.getEntry(String.valueOf(spriteId));
+				if (entry == null) {
+					check(true, "model '" + me.getValue() + "' ref " + ref + ": authentic sprite "
+						+ spriteId + " absent - confirmed no authentic art (texture-0 fallback)");
+					continue;
+				}
+				Sprite sprite = Sprite.unpack(DataConversions.streamToBuffer(
+					new BufferedInputStream(zip.getInputStream(entry))));
+				int w = sprite.getWidth();
+				boolean textureShaped = w == sprite.getHeight() && (w == 64 || w == 128)
+					&& sprite.getSomething1() == w;
+				check(!textureShaped,
+					"model '" + me.getValue() + "' ref " + ref + ": authentic sprite " + spriteId
+						+ " is not texture-shaped (" + w + "x" + sprite.getHeight()
+						+ ") - no authentic art exists for this ref; texture-0 fallback is correct");
+			}
+		} finally {
+			zip.close();
+		}
+	}
+
+	/**
+	 * Source-level wiring tripwire: the authentic texture loader must stay
+	 * driven by {@code EntityHandler.textureCount()} from
+	 * {@code mudclient.spriteTexture}, and no literal sprite id may be loaded
+	 * with package "texture". Hardcoding an extra range (e.g.
+	 * {@code loadSprite(3280, "texture", 12)}) is exactly the change this
+	 * guard exists to block: 3280..3283 are unused gap sprites (one is a
+	 * non-square 51x128) and 3284..3294 are window/crown icons - feeding any
+	 * of them to Scene.setFrustum throws AIOOBE during texture load.
+	 */
+	private static void verifyTextureLoaderWiring() throws Exception {
+		File src = new File("src/orsc/mudclient.java");
+		check(src.exists(), "mudclient source present for loader-wiring check");
+		if (!src.exists()) {
+			return;
+		}
+		String text = new String(Files.readAllBytes(src.toPath()), StandardCharsets.UTF_8);
+		int sig = text.indexOf("private void loadTexturesAuthentic");
+		int next = sig >= 0 ? text.indexOf("private void loadSprite(", sig) : -1;
+		check(sig >= 0 && next > sig, "loadTexturesAuthentic method located in mudclient.java");
+		if (sig < 0 || next <= sig) {
+			return;
+		}
+		String body = text.substring(sig, next);
+		check(body.contains("i < EntityHandler.textureCount()"),
+			"loadTexturesAuthentic loop bound is EntityHandler.textureCount()");
+		int loads = countOccurrences(body, "loadSprite(");
+		check(loads == 1, "loadTexturesAuthentic performs exactly one loadSprite (found " + loads + ")");
+		check(body.contains("loadSprite(spriteTexture + i"),
+			"loadSprite in loadTexturesAuthentic uses spriteTexture + i base id");
+		check(!Pattern.compile("loadSprite\\(\\s*\\d+\\s*,\\s*\\\"texture\\\"").matcher(text).find(),
+			"no literal sprite id is loaded with package \"texture\" anywhere in mudclient.java");
+	}
+
+	private static int countOccurrences(String haystack, String needle) {
+		int count = 0;
+		int idx = 0;
+		while ((idx = haystack.indexOf(needle, idx)) >= 0) {
+			count++;
+			idx += needle.length();
+		}
+		return count;
 	}
 
 	private static void check(boolean ok, String label) {

@@ -1242,17 +1242,30 @@ wrong everywhere, map tab opened briefly.
   in-range refs is by construction (the clamp passes them through), not by
   pixel comparison — the repo has no headless render harness yet.
 - The 9 models that ref textures 63-66 still shade as texture 0 under the
-  authentic path (their custom textures simply don't exist in that set);
-  under the custom path they render correctly. Loading the extra authentic
-  sprites (ids 3280..3291 exist in the archive!) to make the authentic path
-  show them too is a deliberate follow-up, not done here.
+  authentic path; under the custom path they render correctly. An earlier
+  note here proposed loading "extra authentic sprites (ids 3280..3291)" as
+  the fix — **disproved 2026-10-11 by a full-archive probe** (see the
+  tripwire section below): those ids are gap sprites and window/crown icons,
+  not tree textures. Texture-0 fallback is the correct authentic-path
+  behaviour; real art for refs 55-66 exists only in `Custom_Sprites.osar`.
 
 **Exact next tasks**
 1. Commit and push; watch Actions `client-parity` run the new
    `check_visual_assets.sh` step green.
-2. Optional follow-up: extend the authentic path to load the 12 extra
-   texture sprites already present in `Authentic_Sprites.orsc` (ids
-   3280..3291) so refs 55-66 render their real textures without the custom
-   archive.
+2. ~~Optional follow-up: extend the authentic path to load the 12 extra
+   texture sprites (ids 3280..3291)~~ **withdrawn — premise disproven
+   2026-10-11.** A fingerprint probe over all 2259 entries of
+   `Authentic_Sprites.orsc` found no tree/bush texture pixels anywhere in it;
+   3280..3283 are unused gap sprites (3281 is a non-square 51x128) and
+   3284..3294 are the 11 window/crown icons (`loadSprite(3284, "media", 11)`
+   + `setIconsStart(0, 3284)`). Loading that range as textures feeds 9x9/
+   13x11 sprites to `Scene.setFrustum`, which reads a full 64²/128² index
+   block → AIOOBE during texture load. The new tripwire in
+   `VisualAssetIntegrityTest` (block-boundary, icon-block shape,
+   ref→sprite shape, loader-wiring checks) now fails CI if anyone tries
+   either variant; both failure modes were proven with inverted scratch runs.
+   If authentic-path trees are wanted later, the route is authored 64²/128²
+   art added to the authentic texture defs deliberately (a design/assets
+   decision), not reusing these ids.
 3. R4 (restart/reboot loop) remains the only open Phase 4 characterization
    target.

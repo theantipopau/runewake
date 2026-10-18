@@ -84,6 +84,17 @@ the shipped archives:
   and the name set covering "0"..count-1 - the loader resolves by NAME via
   `spriteTree` HashMap, not by list position (entries are stored in
   lexicographic order, which is fine and expected).
+- **Texture-block layout / loader wiring** (added 2026-10-11): the authentic
+  texture id block (3225..) must end before the window/crown icon block at
+  3284; those icons must exist and not be texture-shaped; every model ref
+  beyond the authentic set must have NO texture-shaped sprite at its would-be
+  id (a full-archive fingerprint proved the tree/bush textures are absent
+  from `Authentic_Sprites.orsc` — texture-0 fallback is the correct
+  authentic-path behaviour); and `mudclient.loadTexturesAuthentic` must stay
+  bound to `EntityHandler.textureCount()` with no literal sprite id loaded
+  under the `"texture"` package. This pins the 2026-10-11 finding that ids
+  3280..3291 are gap sprites + UI icons, not the "12 extra tree textures" an
+  earlier draft of the agent-state doc proposed loading.
 
 Renderer note: `Scene.textureShadeIndex(ref, textureCount)` is the single
 clamp that keeps refs beyond the active set from indexing `m_Hb` out of

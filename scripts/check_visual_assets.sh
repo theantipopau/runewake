@@ -16,6 +16,11 @@
 #   * authentic textures (ids 3225..) all exist, square 64/128, with
 #     boundWidth == width so the m_Hb shade flag is correct; custom textures
 #     are contiguous, square, and likewise bound-consistent.
+#   * the authentic texture block stays clear of the window/crown icon block
+#     at 3284, refs beyond the authentic set have no texture-shaped sprite
+#     at their would-be id (no authentic tree art exists - texture-0
+#     fallback is correct), and loadTexturesAuthentic stays bound to
+#     EntityHandler.textureCount() with no hardcoded "texture" sprite ids.
 #
 # Requires the client to be built first:
 #   ant -f Client_Base/build.xml compile
