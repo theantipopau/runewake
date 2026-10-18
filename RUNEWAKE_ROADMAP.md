@@ -22,15 +22,29 @@ else lives here. Honest states only.
   collection log, tasks, events, combat clarity, auctionhouse+. One
   commit per item, `want_*` server flag, tests where logic lives.
   Balances only in the Runewake preset.
-- [ ] **GATE 5 — Backend:** 5a secrets/startup check · 5b Java LTS ·
+- [ ] **GATE 5 — Backend (public-world urgency, decided 2026-10-18):**
+  5a secrets/startup check · 5b server to modern LTS (client stays 8) ·
   5c Docker/healthchecks/backups/Flyway-or-equivalent · 5d WS+Caddy (note:
   WS transport + HTTP routes already exist — verify, don't rebuild) ·
   5e metrics (note: `/metrics` today has players/uptime only) + rate
-  limits + password-KDF review + `docs/HOSTING.md`.
+  limits + password-KDF review + `docs/HOSTING.md` — all urgent for a
+  public world.
 - [ ] **GATE 6 — Branding/Launcher/CI/Release:** README done in an
   earlier pass; left: launcher refresh, Android decision, Backups/
   Portable_Windows placement, SECURITY contacts, Dependabot,
-  CONTRIBUTING rewrite (still upstream text).
+  CONTRIBUTING rewrite (still upstream text). Decided 2026-10-18:
+  GitHub-only — delete `.gitlab-ci.yml` in this gate (R5 then closes).
+
+## Matt's decisions (2026-10-18, GATE 0 exit)
+
+- **Java:** client stays on 8 for old machines; server moves to a modern
+  LTS first (Gate 5b).
+- **Visibility: public world.** Security/IP/moderation bar is higher:
+  rate limits, password-KDF review, moderation tooling and the hosting
+  guide (Gate 5e) are urgent, not nice-to-have.
+- **Secrets:** going-forward only, no history rewrite. Rotation of the
+  historically exposed values is still Matt's action (S3).
+- **CI:** GitHub-only (see Gate 6).
 
 ## Parking Lot
 
