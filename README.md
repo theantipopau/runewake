@@ -145,6 +145,7 @@ does not require an administrator install.
 | Java libraries | [`docs/DEPENDENCIES.md`](docs/DEPENDENCIES.md) |
 | Static server browser | [`web/server-browser/README.md`](web/server-browser/README.md) |
 | GitHub Pages layout | [`web/site/README.md`](web/site/README.md), [`docs/FREE_HOSTING.md`](docs/FREE_HOSTING.md) |
+| Hosting a public world | [`docs/HOSTING.md`](docs/HOSTING.md) (operations), [`docs/FREE_HOSTING.md`](docs/FREE_HOSTING.md) (setup) |
 | Releases | [`docs/RELEASES.md`](docs/RELEASES.md) |
 | Security | [`SECURITY.md`](SECURITY.md) |
 
