@@ -1,117 +1,114 @@
-# Contributing to OpenRSC
+# Contributing to RuneWake
 
-We'd love for you to contribute to our source code and to make OpenRSC even better than it is
-today! Here are the guidelines we'd like you to follow:
+RuneWake is a volunteer, non-commercial continuation of
+[OpenRSC](https://gitlab.com/openrsc/openrsc) and is licensed under the
+[GNU Affero General Public License v3](LICENSE). Contributions are accepted on
+[GitHub](https://github.com/theantipopau/runewake) and are assumed to be
+licensed under the same terms. The RuneScape Classic game content is
+third-party material; see [README.md](README.md) for provenance and credits.
 
-* [Merge Request Submission Guidelines](#submit-pr)
-* [Suggested Developer Software](#software)
-* [Developer Installation Process](#install)
-* [Before You Start](#pre)
-* [Code Standards](#standards)
-* [Manual Install Script](#manual)
+This file describes the workflow this fork actually uses. The inherited
+OpenRSC developer notes live in the upstream repository and are not a
+description of this project.
 
-## <a name="submit-pr"></a> Merge Request Submission Guidelines
-Before you submit your merge request consider the following guidelines:
+## Before you start
 
-* Search [GitLab](https://gitlab.com/openrsc/openrsc/merge_requests) for an open or closed Merge Request
-  that relates to your submission. You don't want to duplicate effort.
-* Create a [fork](https://gitlab.com/openrsc/openrsc/-/forks/new) of this repository.
-* Create the [development environment](#install)
-* Make your changes in a new git branch:
+- **Search the [issues](https://github.com/theantipopau/runewake/issues)** for
+  an existing report or proposal. Duplicate effort helps nobody.
+- **Open an issue before** changing gameplay balance, the network protocol, the
+  database schema, or committed assets. Those changes need a decision before
+  code, because they affect every client build and every existing world.
+- **Security problems do not belong in a public issue.** Follow
+  [SECURITY.md](SECURITY.md): private reports for anything that could take over
+  an account or duplicate items.
 
-    ```shell
-    git checkout -b my-fix-branch develop
-    ```
+## Set up a working tree
 
-* Create your patch commit.
-* Commit your changes using a descriptive commit message.
+```sh
+git clone https://github.com/theantipopau/runewake.git
+cd runewake
+scripts/dev.sh check
+```
 
-    ```shell
-    git commit -a
-    ```
-  Note: the optional commit `-a` command line option will automatically "add" and "rm" edited files.
+No IDE, Docker, or network access is required. `scripts/dev.sh` uses
+`$JAVA_HOME`/`$ANT_HOME` when set and otherwise the vendored JDK 8 and Ant in
+`Portable_Windows/`. Details:
+[local-environment.md](docs/development/local-environment.md) and
+[building.md](docs/development/building.md).
 
-* Push your branch to GitLab:
+## Make the change
 
-    ```shell
-    git push origin my-fix-branch
-    ```
+1. Branch from `develop`:
 
-* In GitLab, send a merge request to `Game`.
+   ```sh
+   git checkout -b fix/bank-pin-resize develop
+   ```
 
+2. Keep one logical change per commit, with a message that says **why**.
+   Reverting one behaviour should not require unpicking an unrelated reformat.
+3. Follow the surrounding code: tabs, the existing brace and naming style, and
+   no drive-by reformatting of untouched lines. A diff should be reviewable.
+4. Behaviour that players can notice goes behind a `want_*` world flag with a
+   default that preserves current behaviour, and the balance value belongs to
+   the Runewake preset rather than the authentic one.
+5. Database changes are a new ordered file in
+   [`server/database/mysql/patches/`](server/database/mysql/patches). Never edit
+   `core.sql`/`retro.sql` for a live world — they are destructive initialization
+   scripts for an empty database.
+6. The protocol is sacred: no opcode, packet layout, `CLIENT_VERSION`, or cache
+   change without an explicit decision and a matching bump for the PC client,
+   the Android client, and the server together.
+7. Update the documentation the change invalidates. A flag nobody can find is
+   not finished.
 
-* If we suggest changes, then:
+## Verify before opening a pull request
 
-  * Make the required updates.
-  * Commit your changes to your branch (e.g. `my-fix-branch`).
-  * Push the changes to your GitLab repository (this will update your Merge Request).
+```sh
+scripts/dev.sh check
+```
 
-    You can also amend the initial commits and force push them to the branch.
+That is the same sequence CI runs: shell and literal guards, dependency and
+hosting-configuration checks, all three compiles, the theme-parity assertions,
+the Pages build and the world-boot smoke test. A green local `check` means a
+green pipeline; `.github/workflows/ci.yml` is the only pipeline.
 
-    ```shell
-    git rebase develop -i
-    git push origin my-fix-branch -f
-    ```
+When a check fails, fix the cause. Do not delete an assertion, weaken a test,
+or silence a warning to get to green — if a check is genuinely wrong, say so in
+the pull request and explain the evidence.
 
-    This is generally easier to follow, but separate commits are useful if the Merge Request contains
-    iterations that might be interesting to see side-by-side.
+Individual checks, when you need one of them:
 
-#### After your merge request is merged
+```sh
+bash scripts/check_theme_parity.sh     # needs Client_Base/Open_RSC_Client.jar
+bash scripts/check_boot.sh             # needs server/core.jar + plugins.jar
+bash scripts/check_characterization_tests.sh
+bash scripts/check_hosting_config.sh
+```
 
-After your merge request is merged, you can safely delete your branch and merge the changes
-from the main (upstream) repository:
+## Pull requests
 
-* Delete the remote branch on GitLab either through the GitLab web UI or your local shell as follows:
+- Target `develop` — it is this fork's default branch and the branch releases
+  are cut from. Describe the player-visible effect, the verification you ran,
+  and anything you could not verify.
+- Keep the branch small enough to review; split unrelated work.
+- Do not commit `dist/`, built jars, `server/inc/sqlite/*.db`, `.env`, or log
+  files — they are gitignored for a reason. If you need a secret, it does not
+  belong in the repository at all.
+- CI must pass and a maintainer must approve before merge.
 
-    ```shell
-    git push origin --delete my-fix-branch
-    ```
+## Assets and dependencies
 
-* Check out the develop branch:
+- Record new artwork, fonts, sounds, or model files in
+  [docs/RUNEWAKE_ASSET_INVENTORY.md](docs/RUNEWAKE_ASSET_INVENTORY.md) with its
+  origin and licence. Unattributed art cannot be shipped.
+- New Java libraries are vendored in `server/lib/` or `PC_Client/lib/` and
+  listed in [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md);
+  `scripts/check_dependencies.sh` fails if a referenced jar is missing. Prefer
+  not adding one at all.
 
-    ```shell
-    git checkout develop -f
-    ```
+## Upstream
 
-* Delete the local branch:
-
-    ```shell
-    git branch -D my-fix-branch
-    ```
-
-* Update your develop with the latest upstream version:
-
-    ```shell
-    git pull --ff upstream develop
-    ```
-
-## <a name="software"></a> Suggested Developer Software
-
-**IntelliJ IDEA Community** https://www.jetbrains.com/idea/download/
-
-**Git Fork** https://git-fork.com/
-
-**MariaDB** https://mariadb.org/download/
-
-**Sublime Text Editor** https://www.sublimetext.com/
-
-## <a name="install"></a> Developer Installation Process
-
-You will need to either use the set up script for Windows or Linux/Mac that comes in the repository or do it all manually.
-
-If you choose to install everything manually and not use the set up scripts, the following are required to be installed to ensure we are all using the same development environment tools:
-
-**MariaDB**, **OpenJDK**, **PHPMyAdmin**, **NGINX** or **Apache web server**, **PHP**, **Git Fork** or **git**
-
-## <a name="pre"></a> Before You Start:
-
-1. Download RSC+ to use for replaying authentic content: https://github.com/RSCPlus/rscplus
-2. Clone the Game repo and set up as you wish: https://orsc.dev/open-rsc/Game
-3. Download any replays you need: https://orsc.dev/open-rsc/RSC-Plus-Replays
-
-## <a name="standards"></a> Code Standards:
-
-- Use single TABs, coupled with <tabspace>
-- Claim or make tickets before working on features
-- Make PRs from your local fork into the main repo
-- Squash merge commits by using git pull --rebase before making your PRs
+Fixes to the shared engine may also be useful to OpenRSC itself — send them
+upstream to <https://gitlab.com/openrsc/openrsc> where the change is not
+fork-specific. The upstream attribution in [README.md](README.md) and
+[LICENSE](LICENSE) is preserved by design.
