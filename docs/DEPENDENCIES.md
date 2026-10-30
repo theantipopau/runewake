@@ -58,7 +58,14 @@ notice and any bundled dependency notices.
 | `log4j-iostreams-2.25.2.jar` | 2.25.2 | Log4j stream layouts | Apache-2.0 |
 | `log4j-slf4j-impl-2.25.2.jar` | 2.25.2 | SLF4J 1.7-to-Log4j2 binder | Apache-2.0; this is the 1.7 binder JDA's shaded SLF4J API needs |
 | `mysql-connector-j-9.4.0.jar` | 9.4.0 | MySQL/MariaDB JDBC connectivity | GPL-2.0 with Classpath/linking exception; preserve notices |
-| `netty-all-4.1.67.Final.jar` | 4.1.67.Final | Server networking and protocol transport | Apache-2.0; last release of the artifact that is still a true uber-jar |
+| `netty-common-4.1.139.Final.jar` | 4.1.139.Final | Event loops, buffers' platform plumbing, `AttributeKey` | Apache-2.0 |
+| `netty-buffer-4.1.139.Final.jar` | 4.1.139.Final | `ByteBuf`, the packet buffer type | Apache-2.0 |
+| `netty-resolver-4.1.139.Final.jar` | 4.1.139.Final | Address resolution for the transport | Apache-2.0 |
+| `netty-transport-4.1.139.Final.jar` | 4.1.139.Final | Channels, pipelines, NIO transport | Apache-2.0 |
+| `netty-transport-native-unix-common-4.1.139.Final.jar` | 4.1.139.Final | Shared native-transport support required by the transport module | Apache-2.0 |
+| `netty-codec-4.1.139.Final.jar` | 4.1.139.Final | `ByteToMessageDecoder` and the codec base classes | Apache-2.0 |
+| `netty-codec-http-4.1.139.Final.jar` | 4.1.139.Final | HTTP server codec, WebSocket frames and permessage-deflate | Apache-2.0 |
+| `netty-handler-4.1.139.Final.jar` | 4.1.139.Final | `SslContextBuilder`, TLS and optional-SSL handling | Apache-2.0 |
 | `sqlite-jdbc-3.50.3.0.jar` | 3.50.3.0 | Embedded SQLite database support | Apache-2.0 |
 | `xpp3-1.1.4c.jar` | 1.1.4c | XML pull parsing used by XStream integrations | XPP3 licence; preserve upstream notice |
 | `xstream-1.4.21.jar` | 1.4.21 | XML serialization/configuration | BSD-3-Clause |
@@ -88,7 +95,7 @@ xstream 1.4.9, json 20190722, commons-lang3 3.12.0, guava 30.1.1):
 
 | Was | Now | Why |
 |---|---|---|
-| `netty-all-4.1.33.Final` | `netty-all-4.1.67.Final` | 4.1.33 has multiple DoS/request-smuggling advisories. 4.1.67 is the last release published as a genuine uber-jar, so the single-vendored-file model still holds. |
+| `netty-all-4.1.33.Final` | `netty-all-4.1.67.Final` | 4.1.33 has multiple DoS/request-smuggling advisories. 4.1.67 is the last release published as a genuine uber-jar, so the single-vendored-file model still held at the time — superseded 2026-10-30, see below. |
 | `log4j-* 2.17.0` | `log4j-* 2.25.2` | 2.17.0 was the post-Log4Shell emergency release; 2.25.x is the maintained line. |
 | `log4j-slf4j18-impl` | `log4j-slf4j-impl` | The 1.8 binder cannot serve JDA's shaded SLF4J 1.7 API. The 1.7 binder fixes the NOP fallback (see below). |
 | `commons-compress-1.18` | `commons-compress-1.28.0` | Fixes the 1.26.0-era decompression DoS/OOM advisories. |
@@ -116,6 +123,39 @@ so Gradle and Ant compiled against different artifacts). Every version string
 in that file now matches the vendored filename, the unused
 `repo.spring.io/libs-release` repository is gone, and the `jcenter` comment
 that motivated the local JDA file was replaced with a note pointing here.
+
+## Netty refresh (2026-10-30)
+
+`netty-all` stopped being a usable single artifact after 4.1.67: every later
+release of that coordinate is a ~4 KB aggregator with no classes in it. The
+project was therefore pinned to a 2021 build that predates the fixes for the
+`codec-http` header-validation flaws (4.1.71), several DoS advisories, the
+HTTP/2 rapid-reset class (4.1.100) and the 4.1.115 hardening — and 43494 is a
+publicly reachable HTTP/WebSocket port.
+
+The vendored artifact is now the eight split modules at **4.1.139.Final**:
+`common`, `buffer`, `resolver`, `transport`,
+`transport-native-unix-common`, `codec`, `codec-http`, `handler`. That is
+exactly what `netty-all` used to bundle for this codebase; nothing else in
+`io.netty` is imported. `server/build.xml` and the inactive
+`server/build.gradle` name the same eight files, and
+`scripts/check_dependencies.sh` fails if one disappears.
+
+`RSCMultiPortDecoder` also lost its deprecated no-argument
+`WebSocketServerCompressionHandler()`. That constructor passed `0` for
+`maxAllocation`, which means *unbounded*: one small compressed frame could
+inflate into an arbitrary allocation on the public port. It now passes 64 KiB,
+the same limit the `HttpObjectAggregator` in that pipeline already uses.
+
+Verified on 2026-10-30 with the vendored JDK 8 (no warnings):
+
+| Check | Result |
+|---|---|
+| `ant compile_core compile_plugins` | 642 + 471 sources compiled, fat jar built, **no deprecation warning** (previously one, from the unbounded handler) |
+| `scripts/check_boot.sh` | world booted; `/healthz` ok, `/status`, `/metrics` (7 gauges), unknown path 404 |
+| WebSocket upgrade probe | `101 Switching Protocols` with and without `permessage-deflate` offered; server accepted the extension, subprotocol `binary` |
+| `scripts/check_characterization_tests.sh` | all six classes pass, including the 62 lifecycle checks |
+| `scripts/check_dependencies.sh` | every referenced jar present |
 
 ## Resolved runtime issue: JDA and SLF4J
 

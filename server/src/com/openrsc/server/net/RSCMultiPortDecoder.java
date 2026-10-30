@@ -18,6 +18,7 @@ public final class RSCMultiPortDecoder extends ByteToMessageDecoder implements A
 	public static final AttributeKey<ConnectionAttachment> attachment = AttributeKey.valueOf("conn-attachment");
 	private final DecoderMode mode;
 	private final Server server;
+	private static final int MAX_WEBSOCKET_DECOMPRESSION_BYTES = 65536;
 
 	public RSCMultiPortDecoder(DecoderMode mode, Server server) {
 		this.mode = mode;
@@ -63,7 +64,13 @@ public final class RSCMultiPortDecoder extends ByteToMessageDecoder implements A
 		ctx.pipeline().addBefore(Server.rscConnectionHandlerId, "httpcodec", new HttpServerCodec());
 		ctx.pipeline().addBefore(Server.rscConnectionHandlerId, "aggregator", new HttpObjectAggregator(65536));
 		ctx.pipeline().addBefore(Server.rscConnectionHandlerId, "httphandler", new HttpRequestHandler("/", this.server));
-		ctx.pipeline().addBefore(Server.rscConnectionHandlerId, "compreshandler", new WebSocketServerCompressionHandler());
+		// Bound the permessage-deflate buffer. The deprecated no-argument
+		// constructor passed 0, which means "unlimited": one small compressed
+		// frame could then inflate to an arbitrarily large allocation on a
+		// publicly reachable port. Game frames are far smaller, and this matches
+		// the HTTP aggregator limit above.
+		ctx.pipeline().addBefore(Server.rscConnectionHandlerId, "compreshandler",
+			new WebSocketServerCompressionHandler(MAX_WEBSOCKET_DECOMPRESSION_BYTES));
 		ctx.pipeline().addBefore(Server.rscConnectionHandlerId, "wshandler", new WebSocketServerProtocolHandler("/", "binary", true));
 		ctx.pipeline().addBefore(Server.rscConnectionHandlerId, "framehandler", new WebSocketFrameHandler());
 	}

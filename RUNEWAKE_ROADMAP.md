@@ -24,16 +24,18 @@ else lives here. Honest states only.
   Balances only in the Runewake preset.
 - [ ] **GATE 5 — Backend (public-world urgency, decided 2026-10-18):**
   5a secrets/startup check · 5b server to modern LTS (client stays 8) ·
-  5c Docker/healthchecks/backups/Flyway-or-equivalent · 5d WS+Caddy (WS
+  5c Docker/healthchecks/backups/ordered patches · 5d WS+Caddy (WS
   transport + HTTP routes verified in-tree; `deployment/caddy/` example
   added 2026-10-18 for status HTTPS) ·
   5e metrics (tick + heap gauges 2026-10-18) + rate limits + password-KDF
-  review + `docs/HOSTING.md` (operator runbook 2026-10-18) — all urgent
-  for a public world.
+  review + `docs/HOSTING.md` (operator runbook 2026-10-18) + credential
+  handling (no DB password in an argument list, 2026-10-30) — all urgent
+  for a public world. Also landed under 5: netty 4.1.67 → 4.1.139 as split
+  jars with a bounded WebSocket decompression buffer (2026-10-30).
 - [ ] **GATE 6 — Branding/Launcher/CI/Release:** README done in an
-  earlier pass; left: launcher refresh, Android decision, Backups/
-  Portable_Windows placement, SECURITY contacts, CONTRIBUTING rewrite
-  (still upstream text). Dependabot for Actions added 2026-10-18. Decided 2026-10-18:
+  earlier pass; CONTRIBUTING rewritten for this fork 2026-10-30. Left:
+  launcher refresh, Android decision, Backups/Portable_Windows placement,
+  SECURITY private contact. Dependabot for Actions added 2026-10-18. Decided 2026-10-18:
   GitHub-only — `.gitlab-ci.yml` deleted 2026-10-18 (R5 closed).
 
 ## Matt's decisions (2026-10-18, GATE 0 exit)
@@ -49,8 +51,8 @@ else lives here. Honest states only.
 
 ## Parking Lot
 
-- (GATE 0) Gradle/AGP age, MariaDB 11.4 vs 12.3, netty/JDA/guice staleness
-  — see `docs/AUDIT.md` §4/§9.
+- (GATE 0) Gradle/AGP age, MariaDB 11.4 vs 12.3, JDA 4.0.0 and guice 5.0.2
+  staleness — see `docs/AUDIT.md` §4/§9. Netty is done (4.1.139, 2026-10-30).
 - (GATE 0) `server/build.gradle` mirror, Makefile argv passwords.
 - Clients share `Client_Base/` — every client change must compile PC +
   Android or be platform-guarded.

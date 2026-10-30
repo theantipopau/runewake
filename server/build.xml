@@ -43,16 +43,18 @@
                 <pathelement location="${lib}/commons-io-2.20.0.jar"/>
                 <pathelement location="${lib}/commons-compress-1.28.0.jar"/>
                 <pathelement location="${lib}/commons-collections4-4.5.0.jar"/>
-                <pathelement location="${lib}/netty-all-4.1.67.Final.jar"/>
-                <!--
-                <pathelement location="${lib}/netty-common-4.1.67.Final.jar"/>
-                <pathelement location="${lib}/netty-transport-4.1.67.Final.jar"/>
-                <pathelement location="${lib}/netty-transport-native-unix-common-4.1.67.Final.jar"/>
-                <pathelement location="${lib}/netty-buffer-4.1.67.Final.jar"/>
-                <pathelement location="${lib}/netty-codec-4.1.67.Final.jar"/>
-                <pathelement location="${lib}/netty-codec-http-4.1.67.Final.jar"/>
-                <pathelement location="${lib}/netty-handler-4.1.67.Final.jar"/>
-                -->
+                <!-- Netty is vendored as its split jars: netty-all stopped being a
+                     true uber-jar after 4.1.67 (4.1.68+ are ~4 KB aggregator
+                     POMs with no classes), so a single netty-all entry can no
+                     longer carry a supported release. -->
+                <pathelement location="${lib}/netty-common-4.1.139.Final.jar"/>
+                <pathelement location="${lib}/netty-buffer-4.1.139.Final.jar"/>
+                <pathelement location="${lib}/netty-resolver-4.1.139.Final.jar"/>
+                <pathelement location="${lib}/netty-transport-4.1.139.Final.jar"/>
+                <pathelement location="${lib}/netty-transport-native-unix-common-4.1.139.Final.jar"/>
+                <pathelement location="${lib}/netty-codec-4.1.139.Final.jar"/>
+                <pathelement location="${lib}/netty-codec-http-4.1.139.Final.jar"/>
+                <pathelement location="${lib}/netty-handler-4.1.139.Final.jar"/>
                 <pathelement location="${lib}/log4j-api-2.25.2.jar"/>
                 <pathelement location="${lib}/log4j-core-2.25.2.jar"/>
                 <pathelement location="${lib}/log4j-iostreams-2.25.2.jar"/>
