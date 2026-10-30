@@ -20,7 +20,7 @@ reproduced in this document — only key names, locations and behaviour.
 | Key | Consumer |
 |---|---|
 | `DB_TYPE`, `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`, `DB_TABLE_PREFIX`, `DB_SSL_MODE`, `DB_CONNECT_TIMEOUT` | Server database connection (env override over `connections.conf`) |
-| `MARIADB_DATABASE`, `MARIADB_ROOT_USER`, `MARIADB_ROOT_PASSWORD`, `MARIADB_USER`, `MARIADB_PASSWORD`, `MARIADB_BIND_ADDRESS`, `MARIADB_HOST_PORT` | `docker-compose.yml` MariaDB service (fails fast with `:?set … in .env` if unset) |
+| `MARIADB_DATABASE`, `MARIADB_ROOT_PASSWORD`, `MARIADB_ROOT_HOST`, `MARIADB_USER`, `MARIADB_PASSWORD`, `MARIADB_BIND_ADDRESS`, `MARIADB_HOST_PORT` | `docker-compose.yml` MariaDB service (required keys fail fast with `:?set … in .env` if unset). `MARIADB_ROOT_USER` is **not** read by the official image — it only names the admin account for the legacy `make` targets below |
 | `MARIADB_PASS` | Legacy alias accepted by docker-compose for older local `.env` files |
 | `MYSQL_DUMPS_DIR`, `MYSQL_*` | `scripts/backup_mariadb.sh` (restricted backup account) and legacy Makefile targets |
 | `TERMINAL_WEBHOOK` | Optional Discord webhook used by one Makefile cleanup-notification target |
@@ -32,10 +32,12 @@ Rules that keep this safe:
    [`secret-rotation.md`](secret-rotation.md) for the residual history risk.
 2. New configuration knobs belong in `.env.example` first (placeholder value),
    then in the consumer.
-3. The legacy Makefile targets pass `MARIADB_ROOT_PASSWORD` on the process
-   command line (visible in `ps` on shared hosts). Prefer
-   `scripts/backup_mariadb.sh`, which reads the environment and uses a
-   private temporary client file. The Makefile header documents this.
+3. The legacy Makefile targets run every `mysql`/`mysqldump`/`mysqladmin`
+   command through `scripts/mysql_client.sh`, which reads `MYSQL_*` (falling
+   back to `MARIADB_ROOT_*`) and hands the client a mode 0600 option file, so no
+   password appears in the argument list or shell history. For unattended
+   backups still prefer `scripts/backup_mariadb.sh`, which uses a restricted
+   account and writes a checksummed dump.
 
 ## CI secrets
 

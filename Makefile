@@ -3,10 +3,12 @@
 # Targets using MariaDB variables fail with a clear message at recipe time.
 -include .env
 
-# The legacy maintenance targets below still use the administrative
-# MARIADB_ROOT_* values from .env. For unattended backups prefer
-# scripts/backup_mariadb.sh, which uses a restricted account and a private
-# temporary client file instead of putting a password in command arguments.
+# The legacy maintenance targets below run mysql/mysqldump through
+# scripts/mysql_client.sh: it resolves MYSQL_* (or the administrative
+# MARIADB_ROOT_* fallback) and hands the client a mode 0600 option file, so no
+# password appears in the argument list or the shell history. For unattended
+# backups prefer scripts/backup_mariadb.sh, which uses a restricted account and
+# writes a checksummed dump.
 #########################################
 #####      Legacy Maintenance       #####
 #########################################
@@ -23,7 +25,7 @@ backup-mariadb-full:
 	chmod 700 $(MYSQL_DUMPS_DIR)
 	mkdir -p $(MYSQL_DUMPS_DIR)/full/`date "+%Y%m"`
 	chmod 700 $(MYSQL_DUMPS_DIR)/full/`date "+%Y%m"`
-	mysqldump -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} --single-transaction --quick --lock-tables=false 2> $(MYSQL_DUMPS_DIR)/mysqldump_errors.log | gzip > $(MYSQL_DUMPS_DIR)/full/`date "+%Y%m"`/`date "+%Y%m%d-%H%M-%Z"`-${db}-full.sql.gz
+	bash scripts/mysql_client.sh mysqldump ${db} --single-transaction --quick --lock-tables=false 2> $(MYSQL_DUMPS_DIR)/mysqldump_errors.log | gzip > $(MYSQL_DUMPS_DIR)/full/`date "+%Y%m"`/`date "+%Y%m%d-%H%M-%Z"`-${db}-full.sql.gz
 
 # Creates a schema-only dump for all tables and data-only dump for selected tables (excluding log tables) of the specified database, then combines them into a single compressed file.
 # Call via "make backup-mariadb db=cabbage"
@@ -34,12 +36,12 @@ backup-mariadb:
 	mkdir -p $(MYSQL_DUMPS_DIR)/`date "+%Y%m"`
 	chmod 700 $(MYSQL_DUMPS_DIR)/`date "+%Y%m"`
 	@if [ "${db}" = "board" ] || [ "${db}" = "wiki" ] || [ "${db}" = "laravel" ]; then \
-		mysqldump -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} --single-transaction --quick --lock-tables=false 2> $(MYSQL_DUMPS_DIR)/mysqldump_errors.log | gzip > $(MYSQL_DUMPS_DIR)/`date "+%Y%m"`/`date "+%Y%m%d-%H%M-%Z"`-${db}.sql.gz; \
+		bash scripts/mysql_client.sh mysqldump ${db} --single-transaction --quick --lock-tables=false 2> $(MYSQL_DUMPS_DIR)/mysqldump_errors.log | gzip > $(MYSQL_DUMPS_DIR)/`date "+%Y%m"`/`date "+%Y%m%d-%H%M-%Z"`-${db}.sql.gz; \
 	else \
 		# Schema-only dump \
-		mysqldump -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} --single-transaction --quick --lock-tables=false --no-data 2> $(MYSQL_DUMPS_DIR)/mysqldump_errors.log > $(MYSQL_DUMPS_DIR)/temp_schema_${db}.sql; \
+		bash scripts/mysql_client.sh mysqldump ${db} --single-transaction --quick --lock-tables=false --no-data 2> $(MYSQL_DUMPS_DIR)/mysqldump_errors.log > $(MYSQL_DUMPS_DIR)/temp_schema_${db}.sql; \
 		# Data-only dump for tables excluding specific log tables \
-		mysqldump -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} --single-transaction --quick --lock-tables=false --no-create-info \
+		bash scripts/mysql_client.sh mysqldump ${db} --single-transaction --quick --lock-tables=false --no-create-info \
 		--ignore-table=${db}.generic_logs \
 		--ignore-table=${db}.droplogs \
 		--ignore-table=${db}.chat_logs \
@@ -48,10 +50,10 @@ backup-mariadb:
 		--ignore-table=${db}.live_feeds 2> $(MYSQL_DUMPS_DIR)/mysqldump_errors.log > $(MYSQL_DUMPS_DIR)/temp_data_${db}.sql; \
 		# Data dump for log tables minus droplogs with data from the last week \
 		for table in generic_logs chat_logs trade_logs private_message_logs live_feeds; do \
-			mysqldump -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} $$table --single-transaction --quick --lock-tables=false --no-create-info --where="time >= UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 7 DAY))" 2> $(MYSQL_DUMPS_DIR)/mysqldump_errors.log >> $(MYSQL_DUMPS_DIR)/temp_data_${db}.sql; \
+			bash scripts/mysql_client.sh mysqldump ${db} $$table --single-transaction --quick --lock-tables=false --no-create-info --where="time >= UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 7 DAY))" 2> $(MYSQL_DUMPS_DIR)/mysqldump_errors.log >> $(MYSQL_DUMPS_DIR)/temp_data_${db}.sql; \
 		done; \
 		# Data dump for droplogs table with data from last week because droplogs uses different timestamp column name \
-		mysqldump -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} droplogs --single-transaction --quick --lock-tables=false --no-create-info --where="ts >= DATE_SUB(NOW(), INTERVAL 7 DAY)" 2> $(MYSQL_DUMPS_DIR)/mysqldump_errors.log >> $(MYSQL_DUMPS_DIR)/temp_data_${db}.sql; \
+		bash scripts/mysql_client.sh mysqldump ${db} droplogs --single-transaction --quick --lock-tables=false --no-create-info --where="ts >= DATE_SUB(NOW(), INTERVAL 7 DAY)" 2> $(MYSQL_DUMPS_DIR)/mysqldump_errors.log >> $(MYSQL_DUMPS_DIR)/temp_data_${db}.sql; \
 		# Combine schema and data dumps, then compress \
 		cat $(MYSQL_DUMPS_DIR)/temp_schema_${db}.sql $(MYSQL_DUMPS_DIR)/temp_data_${db}.sql | gzip > $(MYSQL_DUMPS_DIR)/`date "+%Y%m"`/`date "+%Y%m%d-%H%M-%Z"`-${db}.sql.gz; \
 		# Cleanup temp files \
@@ -62,12 +64,12 @@ backup-mariadb:
 # Call via "make purge-old-logs db=cabbage"
 purge-old-logs:
 	@[ "${db}" ] || ( echo ">> db is not set"; exit 1 )
-	mysql -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} --execute="DELETE FROM generic_logs WHERE time < UNIX_TIMESTAMP(NOW() - INTERVAL 3 MONTH);"
-	mysql -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} --execute="DELETE FROM droplogs WHERE ts < NOW() - INTERVAL 3 MONTH;"
-	mysql -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} --execute="DELETE FROM chat_logs WHERE time < UNIX_TIMESTAMP(NOW() - INTERVAL 3 MONTH);"
-	mysql -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} --execute="DELETE FROM trade_logs WHERE time < UNIX_TIMESTAMP(NOW() - INTERVAL 3 MONTH);"
-	mysql -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} --execute="DELETE FROM private_message_logs WHERE time < UNIX_TIMESTAMP(NOW() - INTERVAL 3 MONTH);"
-	mysql -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} --execute="DELETE FROM live_feeds WHERE time < UNIX_TIMESTAMP(NOW() - INTERVAL 3 MONTH);"
+	bash scripts/mysql_client.sh mysql ${db} --execute="DELETE FROM generic_logs WHERE time < UNIX_TIMESTAMP(NOW() - INTERVAL 3 MONTH);"
+	bash scripts/mysql_client.sh mysql ${db} --execute="DELETE FROM droplogs WHERE ts < NOW() - INTERVAL 3 MONTH;"
+	bash scripts/mysql_client.sh mysql ${db} --execute="DELETE FROM chat_logs WHERE time < UNIX_TIMESTAMP(NOW() - INTERVAL 3 MONTH);"
+	bash scripts/mysql_client.sh mysql ${db} --execute="DELETE FROM trade_logs WHERE time < UNIX_TIMESTAMP(NOW() - INTERVAL 3 MONTH);"
+	bash scripts/mysql_client.sh mysql ${db} --execute="DELETE FROM private_message_logs WHERE time < UNIX_TIMESTAMP(NOW() - INTERVAL 3 MONTH);"
+	bash scripts/mysql_client.sh mysql ${db} --execute="DELETE FROM live_feeds WHERE time < UNIX_TIMESTAMP(NOW() - INTERVAL 3 MONTH);"
 	curl -i -H "Accept: application/json" -H "Content-Type:application/json" -X POST --data "{ \"content\": \"\", \"embeds\": [ { \"title\": \"Clean-up of ${db} database completed.\", \"color\": 1087508, \"description\": \"Public, Private, and Global messages older than 3 months have been removed from the live database.\n\nAlso deleted were Generic logs (such as dropping items), logs of items received as drops by monsters, trade logs, and the live_feeds events older than 3 months.\n\nThese records now only exist in database backups.\" } ] }" $(TERMINAL_WEBHOOK)
 
 #########################################
@@ -103,7 +105,7 @@ rank-mariadb:
 	@[ "${db}" ] || ( echo ">> db is not set"; exit 1 )
 	@[ "${group}" ] || ( echo ">> group is not set"; exit 1 	)
 	@[ "${username}" ] || ( echo ">> username is not set"; exit 1 )
-	mysql -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} -e "USE ${db}; UPDATE players SET group_id = '${group}' WHERE players.username = '${username}';"
+	bash scripts/mysql_client.sh mysql -e "USE ${db}; UPDATE players SET group_id = '${group}' WHERE players.username = '${username}';"
 
 # Sets a specified username to be in a specified group in a specified database
 # Call via "make rank-sqlite db=cabbage group=0 username=wolf"
@@ -119,7 +121,7 @@ namechange-mariadb:
 	@[ "${db}" ] || ( echo ">> db is not set"; exit 1 )
 	@[ "${oldname}" ] || ( echo ">> oldname is not set"; exit 1 	)
 	@[ "${newname}" ] || ( echo ">> newname is not set"; exit 1 )
-	mysql -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} -e "USE ${db}; UPDATE players SET username = '${newname}' WHERE players.username = '${oldname}';"
+	bash scripts/mysql_client.sh mysql -e "USE ${db}; UPDATE players SET username = '${newname}' WHERE players.username = '${oldname}';"
 
 # Changes a specified username to be a new username in a specified database
 # Call via "make namechange-sqlite db=cabbage oldname=wolf newname=wolf2"
@@ -133,13 +135,13 @@ namechange-sqlite:
 # Call via "make create-mariadb db=cabbage"
 create-mariadb:
 	@[ "${db}" ] || ( echo ">> db is not set"; exit 1 )
-	mysql -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} -e "create database ${db};"
+	bash scripts/mysql_client.sh mysql -e "create database ${db};"
 
 # Imports the core.sql file to a specified database
 # Call via "make import-authentic-mariadb db=preservation"
 import-authentic-mariadb:
 	@[ "${db}" ] || ( echo ">> db is not set"; exit 1 )
-	mysql -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} < server/database/mysql/core.sql
+	bash scripts/mysql_client.sh mysql ${db} < server/database/mysql/core.sql
 
 # Imports the core.sqlite file to a specified database
 # Call via "make import-authentic-sqlite db=preservation"
@@ -151,14 +153,14 @@ import-authentic-sqlite:
 # Call via "make import-custom-mariadb db=cabbage"
 import-custom-mariadb:
 	@[ "${db}" ] || ( echo ">> db is not set"; exit 1 )
-	mysql -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} < server/database/mysql/core.sql
-	mysql -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} < server/database/mysql/addons/add_auctionhouse.sql
-	mysql -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} < server/database/mysql/addons/add_bank_presets.sql
-	mysql -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} < server/database/mysql/addons/add_clans.sql
-	mysql -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} < server/database/mysql/addons/add_equipment_tab.sql
-	mysql -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} < server/database/mysql/addons/add_harvesting.sql
-	mysql -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} < server/database/mysql/addons/add_npc_kill_counting.sql
-	mysql -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} < server/database/mysql/addons/add_runecraft.sql
+	bash scripts/mysql_client.sh mysql ${db} < server/database/mysql/core.sql
+	bash scripts/mysql_client.sh mysql ${db} < server/database/mysql/addons/add_auctionhouse.sql
+	bash scripts/mysql_client.sh mysql ${db} < server/database/mysql/addons/add_bank_presets.sql
+	bash scripts/mysql_client.sh mysql ${db} < server/database/mysql/addons/add_clans.sql
+	bash scripts/mysql_client.sh mysql ${db} < server/database/mysql/addons/add_equipment_tab.sql
+	bash scripts/mysql_client.sh mysql ${db} < server/database/mysql/addons/add_harvesting.sql
+	bash scripts/mysql_client.sh mysql ${db} < server/database/mysql/addons/add_npc_kill_counting.sql
+	bash scripts/mysql_client.sh mysql ${db} < server/database/mysql/addons/add_runecraft.sql
 
 # Imports the addon sqlite files to a specified database
 # Call via "make import-custom-sqlite db=cabbage"
@@ -175,7 +177,7 @@ import-custom-sqlite:
 # Call via "make import-retro-mariadb db=2001scape"
 import-retro-mariadb:
 	@[ "${db}" ] || ( echo ">> db is not set"; exit 1 )
-	mysql -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} < server/database/mysql/retro.sql
+	bash scripts/mysql_client.sh mysql ${db} < server/database/mysql/retro.sql
 
 # Imports the retro.sqlite file to a specified database
 # Call via "make import-retro-sqlite db=2001scape"
@@ -190,7 +192,7 @@ backup-mariadb-local:
 	@[ "${db}" ] || ( echo ">> db is not set"; exit 1 )
 	mkdir -p $(MYSQL_DUMPS_DIR)
 	chmod 700 $(MYSQL_DUMPS_DIR)
-	mysqldump -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db} --single-transaction --quick --lock-tables=false | zip > $(MYSQL_DUMPS_DIR)/`date "+%Y%m%d-%H%M-%Z"`-${db}.zip
+	bash scripts/mysql_client.sh mysqldump ${db} --single-transaction --quick --lock-tables=false | zip > $(MYSQL_DUMPS_DIR)/`date "+%Y%m%d-%H%M-%Z"`-${db}.zip
 
 # Creates a database export of the specified database and saves to the output directory specified in the .env file.  Good for utilizing as a crontab.
 # Call via "make backup-sqlite-local db=cabbage"
@@ -205,7 +207,7 @@ backup-sqlite-local:
 restore-mariadb-local:
 	@[ "${db}" ] || ( echo ">> db is not set"; exit 1 )
 	@[ "${name}" ] || ( echo ">> name is not set"; exit 1 )
-	unzip -p $(MYSQL_DUMPS_DIR)/${name} | mysql -u${MARIADB_ROOT_USER} -p${MARIADB_ROOT_PASSWORD} ${db}
+	unzip -p $(MYSQL_DUMPS_DIR)/${name} | bash scripts/mysql_client.sh mysql ${db}
 
 # Unzips a database backup zip file in the output directory specified in the .env file and then imports it into the specified database as a database restoration from backup method
 # Call via "make restore-mariadb-local name=20191017-0226-EDT-cabbage.zip db=cabbage"

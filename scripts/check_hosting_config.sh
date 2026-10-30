@@ -191,6 +191,12 @@ if [ -f "$compose_file" ]; then
   if grep -Eq 'image:[[:space:]]*mariadb:latest' "$compose_file"; then
     error "docker-compose.yml uses the unpinned mariadb:latest image"
   fi
+  # The official MariaDB image never reads MARIADB_ROOT_USER (it is a Bitnami
+  # variable), and a required ${MARIADB_ROOT_USER:?...} makes `docker compose up`
+  # abort on the empty value the template ships.
+  if grep -Eq 'MARIADB_ROOT_USER:[[:space:]]*\$\{MARIADB_ROOT_USER:' "$compose_file"; then
+    error "docker-compose.yml requires MARIADB_ROOT_USER, which the MariaDB image does not read"
+  fi
 fi
 
 for schema in "$ROOT/server/database/mysql/core.sql" "$ROOT/server/database/mysql/retro.sql"; do

@@ -6,8 +6,13 @@ services:
     restart: unless-stopped
     environment:
       MARIADB_DATABASE: ${MARIADB_DATABASE:?set MARIADB_DATABASE in .env}
-      MARIADB_ROOT_USER: ${MARIADB_ROOT_USER:?set MARIADB_ROOT_USER in .env}
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?set MARIADB_ROOT_PASSWORD in .env}
+      # The image has no MARIADB_ROOT_USER knob (that is a Bitnami-only
+      # variable); the supported setting is the root host pattern. Default
+      # keeps root reachable over the loopback-published port for the legacy
+      # make targets; set MARIADB_ROOT_HOST=localhost to restrict root to the
+      # container's own socket and use `docker compose exec mariadb mysql`.
+      MARIADB_ROOT_HOST: ${MARIADB_ROOT_HOST:-%}
       MARIADB_USER: ${MARIADB_USER:?set MARIADB_USER in .env}
       # MARIADB_PASS is accepted as a legacy alias for existing local .env files.
       MARIADB_PASSWORD: ${MARIADB_PASSWORD:-${MARIADB_PASS:?set MARIADB_PASSWORD (or legacy MARIADB_PASS) in .env}}
