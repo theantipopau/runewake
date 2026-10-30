@@ -1,0 +1,5 @@
+# Shell scripts run on Linux hosts and CI runners, including the copies inside
+# release bundles built on Windows. A CRLF checkout gives the shebang a trailing
+# carriage return and breaks execution there, so pin them to LF everywhere
+# (core.autocrlf=true otherwise rewrites them on a Windows clone).
+*.sh text eol=lf
