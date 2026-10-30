@@ -78,6 +78,13 @@ job runs one workflow command's underlying step:
 | `server-boot` | server compile + world boot smoke |
 | `build` | three compiles + `OpenRSC.jar` artifact |
 
+`ci.yml` is not the only workflow. `vendored-dependencies.yml` runs weekly
+(Mondays 06:17 UTC) and on demand: it compares the jars listed in
+`.github/vendored-dependencies.json` with Maven Central and maintains one
+**Vendored jar review** issue. It never gates a push or PR - the jar-drift gate
+stays in `guards` via `scripts/check_dependencies.sh`. See
+[`../DEPENDENCIES.md`](../DEPENDENCIES.md#periodic-review).
+
 No IntelliJ or other IDE configuration is required by any build step, and no
 build step downloads dependencies — `server/lib` and `PC_Client/lib` are
 vendored in the repository (`scripts/check_dependencies.sh` fails if one is
