@@ -1,0 +1,201 @@
+{
+  "comment": "Manifest for the scheduled vendored-jar review (.github/workflows/vendored-dependencies.yml). Dependabot cannot see jars that are committed to the repository, so each vendored jar records the upstream coordinate it came from and the version actually on disk. scripts/check_vendored_dependencies.py compares the two against Maven Central and reports anything that has moved. When a jar is added, renamed or upgraded, update this file in the same commit; a jar on disk with no entry is reported as unmanaged.",
+  "repositories": ["https://repo1.maven.org/maven2"],
+  "jars": [
+    {
+      "jar": "server/lib/JDA-4.0.0_55-withDependencies.jar",
+      "group": "net.dv8tion",
+      "artifact": "JDA",
+      "version": "4.0.0_55",
+      "tracking": "line",
+      "note": "Shaded withDependencies build comes from the JDA GitHub releases (4.x was published to jcenter, which no longer serves it); Central only lists 5.x and 6.x, so this is compared by release line only."
+    },
+    {
+      "jar": "server/lib/commons-codec-1.19.0.jar",
+      "group": "commons-codec",
+      "artifact": "commons-codec",
+      "version": "1.19.0",
+      "note": "Published under the legacy commons-codec groupId, not org.apache.commons."
+    },
+    {
+      "jar": "server/lib/commons-collections4-4.5.0.jar",
+      "group": "org.apache.commons",
+      "artifact": "commons-collections4",
+      "version": "4.5.0"
+    },
+    {
+      "jar": "server/lib/commons-compress-1.28.0.jar",
+      "group": "org.apache.commons",
+      "artifact": "commons-compress",
+      "version": "1.28.0",
+      "note": "1.27+ needs commons-io at runtime (CloseShieldInputStream); bump commons-io with it."
+    },
+    {
+      "jar": "server/lib/commons-io-2.20.0.jar",
+      "group": "commons-io",
+      "artifact": "commons-io",
+      "version": "2.20.0"
+    },
+    {
+      "jar": "server/lib/commons-lang-2.6.jar",
+      "group": "commons-lang",
+      "artifact": "commons-lang",
+      "version": "2.6",
+      "note": "Legacy org.apache.commons.lang 2.x line, frozen upstream. Only a 3.x migration would change this."
+    },
+    {
+      "jar": "server/lib/commons-lang3-3.18.0.jar",
+      "group": "org.apache.commons",
+      "artifact": "commons-lang3",
+      "version": "3.18.0"
+    },
+    {
+      "jar": "server/lib/disruptor-3.4.4.jar",
+      "group": "com.lmax",
+      "artifact": "disruptor",
+      "version": "3.4.4",
+      "note": "Supports Log4j async logging; keep in step with the log4j line."
+    },
+    {
+      "jar": "server/lib/emoji-java-5.1.1.jar",
+      "group": "com.vdurmont",
+      "artifact": "emoji-java",
+      "version": "5.1.1",
+      "note": "Upstream project is archived; treat a 6.x move as a fork evaluation, not a bump."
+    },
+    {
+      "jar": "server/lib/gitlab4j-api-4.12.17.jar",
+      "group": "org.gitlab4j",
+      "artifact": "gitlab4j-api",
+      "version": "4.12.17"
+    },
+    {
+      "jar": "server/lib/guava-33.4.8-jre.jar",
+      "group": "com.google.guava",
+      "artifact": "guava",
+      "version": "33.4.8-jre"
+    },
+    {
+      "jar": "server/lib/guice-5.0.2-jar-with-dependencies.jar",
+      "group": "com.google.inject",
+      "artifact": "guice",
+      "version": "5.0.2",
+      "classifier": "jar-with-dependencies",
+      "note": "The shaded classifier is what the build needs; a plain guice jar will not boot on its own."
+    },
+    {
+      "jar": "server/lib/json-20250517.jar",
+      "group": "org.json",
+      "artifact": "json",
+      "version": "20250517"
+    },
+    {
+      "jar": "server/lib/log4j-api-2.25.2.jar",
+      "group": "org.apache.logging.log4j",
+      "artifact": "log4j-api",
+      "version": "2.25.2"
+    },
+    {
+      "jar": "server/lib/log4j-core-2.25.2.jar",
+      "group": "org.apache.logging.log4j",
+      "artifact": "log4j-core",
+      "version": "2.25.2"
+    },
+    {
+      "jar": "server/lib/log4j-iostreams-2.25.2.jar",
+      "group": "org.apache.logging.log4j",
+      "artifact": "log4j-iostreams",
+      "version": "2.25.2"
+    },
+    {
+      "jar": "server/lib/log4j-slf4j-impl-2.25.2.jar",
+      "group": "org.apache.logging.log4j",
+      "artifact": "log4j-slf4j-impl",
+      "version": "2.25.2",
+      "note": "Must stay the SLF4J 1.7 binder for JDA's shaded API; log4j-slf4j2-impl is not a drop-in here."
+    },
+    {
+      "jar": "server/lib/mysql-connector-j-9.4.0.jar",
+      "group": "com.mysql",
+      "artifact": "mysql-connector-j",
+      "version": "9.4.0"
+    },
+    {
+      "jar": "server/lib/netty-buffer-4.1.139.Final.jar",
+      "group": "io.netty",
+      "artifact": "netty-buffer",
+      "version": "4.1.139.Final"
+    },
+    {
+      "jar": "server/lib/netty-codec-4.1.139.Final.jar",
+      "group": "io.netty",
+      "artifact": "netty-codec",
+      "version": "4.1.139.Final"
+    },
+    {
+      "jar": "server/lib/netty-codec-http-4.1.139.Final.jar",
+      "group": "io.netty",
+      "artifact": "netty-codec-http",
+      "version": "4.1.139.Final",
+      "note": "The public 43494 HTTP/WebSocket port runs on this; treat header-validation advisories here as urgent."
+    },
+    {
+      "jar": "server/lib/netty-common-4.1.139.Final.jar",
+      "group": "io.netty",
+      "artifact": "netty-common",
+      "version": "4.1.139.Final"
+    },
+    {
+      "jar": "server/lib/netty-handler-4.1.139.Final.jar",
+      "group": "io.netty",
+      "artifact": "netty-handler",
+      "version": "4.1.139.Final"
+    },
+    {
+      "jar": "server/lib/netty-resolver-4.1.139.Final.jar",
+      "group": "io.netty",
+      "artifact": "netty-resolver",
+      "version": "4.1.139.Final"
+    },
+    {
+      "jar": "server/lib/netty-transport-4.1.139.Final.jar",
+      "group": "io.netty",
+      "artifact": "netty-transport",
+      "version": "4.1.139.Final"
+    },
+    {
+      "jar": "server/lib/netty-transport-native-unix-common-4.1.139.Final.jar",
+      "group": "io.netty",
+      "artifact": "netty-transport-native-unix-common",
+      "version": "4.1.139.Final"
+    },
+    {
+      "jar": "server/lib/sqlite-jdbc-3.50.3.0.jar",
+      "group": "org.xerial",
+      "artifact": "sqlite-jdbc",
+      "version": "3.50.3.0",
+      "note": "Bundles the native SQLite library; boot the world on SQLite after every bump."
+    },
+    {
+      "jar": "server/lib/xpp3-1.1.4c.jar",
+      "group": "xpp3",
+      "artifact": "xpp3",
+      "version": "1.1.4c",
+      "tracking": "line",
+      "expected_ahead": true,
+      "note": "1.1.4c is the final XPP3 release and is not served by Maven Central (which stops at 1.1.3.4.O); the jar comes from the upstream distribution, so it is older-by-comparison here only because the coordinate lags."
+    },
+    {
+      "jar": "server/lib/xstream-1.4.21.jar",
+      "group": "com.thoughtworks.xstream",
+      "artifact": "xstream",
+      "version": "1.4.21",
+      "note": "Deserialises world config; never move to a pre-1.4.20 release."
+    },
+    {
+      "jar": "PC_Client/lib/discord-rpc.jar",
+      "tracking": "manual",
+      "note": "Vendored without a version in the filename and with no Maven coordinate; check the Discord RPC bridge upstream release when touching Rich Presence."
+    }
+  ]
+}

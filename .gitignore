@@ -118,6 +118,7 @@ Android_Client/.idea/
 .github/*
 !.github/workflows/
 !.github/dependabot.yml
+!.github/vendored-dependencies.json
 
 PC_Launcher/OpenRSC.jar
 PC_Launcher/Cache/

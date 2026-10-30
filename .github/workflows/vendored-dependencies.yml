@@ -1,0 +1,57 @@
+# Vendored dependency review.
+#
+# Dependabot covers the Actions pinned in .github/workflows/ci.yml (see
+# .github/dependabot.yml). It cannot cover the Java libraries, because those are
+# committed to the repository as jars in server/lib and PC_Client/lib with no
+# lockfile to update. This workflow is that missing half: once a week it asks
+# Maven Central what each coordinate in .github/vendored-dependencies.json
+# publishes, and keeps a single "Vendored jar review" issue in step with the
+# answer. The issue is closed when everything is current and rewritten when it
+# is not, so it never duplicates or stacks up.
+#
+# Nothing here runs on a push or PR, and nothing here blocks the build: the
+# report is advisory. The guard that fails a build on jar drift is
+# scripts/check_dependencies.sh, which stays in the CI `guards` job.
+
+name: Vendored dependency review
+
+on:
+  schedule:
+    # Mondays, 06:17 UTC - ahead of the working week, after Dependabot's own run.
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: Compare vendored jars with upstream
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Dependency drift guard (build files vs jars on disk)
+        run: bash scripts/check_dependencies.sh
+
+      - name: Compare with Maven Central and write the report
+        id: report
+        run: python3 scripts/check_vendored_dependencies.py --output "$RUNNER_TEMP/vendored-deps-report.md"
+
+      - name: Open, update or close the review issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/open_dependency_review_issue.sh "$RUNNER_TEMP/vendored-deps-report.md"
+
+      - name: Keep the report as a run artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: vendored-deps-report
+          path: ${{ runner.temp }}/vendored-deps-report.md
+          if-no-files-found: warn

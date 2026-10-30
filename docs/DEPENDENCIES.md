@@ -185,6 +185,81 @@ on the classpath. Both listed binders are the same Log4j 2.25.2 binder. Making
 contract for undocumented `java -jar core.jar` use, so it was deliberately
 left alone here.
 
+## Periodic review
+
+Dependabot watches the Actions pinned in `.github/workflows/ci.yml`; it cannot
+watch the Java libraries, because they are committed jars with no lockfile
+(see [`.github/dependabot.yml`](../.github/dependabot.yml)).
+[`.github/workflows/vendored-dependencies.yml`](../.github/workflows/vendored-dependencies.yml)
+is the other half of that story: every Monday at 06:17 UTC, plus on demand, it
+compares each tracked jar with Maven Central and keeps exactly one issue in
+step with the answer.
+
+| Piece | Role |
+| --- | --- |
+| [`.github/vendored-dependencies.json`](../.github/vendored-dependencies.json) | The manifest: one entry per vendored jar with its upstream `group`/`artifact`/`version`, an optional `classifier`, a `note`, and a `tracking` mode |
+| [`scripts/check_vendored_dependencies.py`](../scripts/check_vendored_dependencies.py) | Reads the manifest, fetches each coordinate's `maven-metadata.xml`, writes the Markdown report and a `current`/`review` status file |
+| [`scripts/open_dependency_review_issue.sh`](../scripts/open_dependency_review_issue.sh) | Creates, rewrites or closes the single **Vendored jar review** issue (`dependencies` label) from that report |
+
+The issue is advisory, not a build gate. `scripts/check_dependencies.sh` stays
+the guard that fails CI when a build file references a jar that is not on disk.
+
+### What the report means
+
+- **Actionable — newer release in the current line.** Same major line, so an
+  API-compatible maintenance bump. These are the ones to actually schedule.
+- **New major line available.** A migration, not a bump: it needs an API review
+  and often a newer JDK. Listed so the decision is not forgotten.
+- **Could not check.** The coordinate's metadata was unreadable or incomplete;
+  look these up by hand before closing the issue.
+- **Unmanaged jars.** Files on disk with no manifest entry, so nothing tracks
+  them. Adding an entry is part of adding a jar.
+- **Missing jars.** Manifest entries with no file behind them.
+
+Prereleases (`alpha`, `beta`, `rc`, `snapshot`, milestone builds) never count as
+a newer release, so the report does not chase alpha lines such as Netty 5. A
+quarterly look at those is still worthwhile, just not automation's job.
+
+### Tracking modes
+
+| `tracking` | Behaviour |
+| --- | --- |
+| `maven` (default) | The exact vendored version must be published at the coordinate, or the entry is reported as not checkable |
+| `line` | Only the release line is compared. Use it for jars published elsewhere (the JDA shaded build, XPP3 1.1.4c, which Central does not serve) |
+| `manual` | No usable coordinate; listed for a human to check |
+
+`expected_ahead: true` marks a jar that is legitimately newer than anything at
+its coordinate, so it is reported but does not keep the issue open.
+
+### Run it by hand
+
+```sh
+# Report to the terminal (no side effects)
+python3 scripts/check_vendored_dependencies.py
+
+# Report to a file, plus report.md.status containing current or review
+python3 scripts/check_vendored_dependencies.py --output vendored-deps-report.md
+
+# Prove every vendored jar still loads on Java 8 (class-file major <= 52;
+# META-INF/versions/ variants and root module-info.class are ignored)
+python3 scripts/check_vendored_dependencies.py --verify-java8
+
+# See what the issue step would do, without touching GitHub
+DRY_RUN=1 bash scripts/open_dependency_review_issue.sh vendored-deps-report.md
+```
+
+The workflow can also be triggered manually from the Actions tab
+(`workflow_dispatch`); it uploads the report as a run artifact either way.
+
+### Taking an update from the issue
+
+Work through the checklist in the issue body, which is this file's
+[updating procedure](#updating-a-dependency) in short form: Java 8 ABI check,
+POM dependencies, release notes, then the jar + `server/build.xml` +
+`server/build.gradle` + manifest + this document in one commit, then
+`scripts/dev.sh check`. Update the manifest's `version` in that same commit so
+the next run closes the entry instead of repeating it.
+
 ## Updating a dependency
 
 1. Identify every source import and every Ant target that uses the library.
@@ -206,8 +281,10 @@ left alone here.
 8. Verify the replacement is still Java 8 compatible: every base
    (non-`META-INF/versions/`) class must be at most class-file major 52, and
    only the root `module-info.class` may be newer.
-5. Exercise the feature that needs the library. A successful compile does not
+9. Exercise the feature that needs the library. A successful compile does not
    prove a shaded-jar, logging, database, or native bridge runtime works.
-6. Review the diff for accidental binary churn and keep the source-quality
-   artwork and runtime asset rules in `docs/RUNEWAKE_ASSET_INVENTORY.md`
-   separate from Java libraries.
+10. Record the new version in `.github/vendored-dependencies.json` so the next
+    review closes this entry instead of reporting it again.
+11. Review the diff for accidental binary churn and keep the source-quality
+    artwork and runtime asset rules in `docs/RUNEWAKE_ASSET_INVENTORY.md`
+    separate from Java libraries.

@@ -3,3 +3,8 @@
 # carriage return and breaks execution there, so pin them to LF everywhere
 # (core.autocrlf=true otherwise rewrites them on a Windows clone).
 *.sh text eol=lf
+
+# Same reasoning for the Python helpers in scripts/: they carry a shebang and
+# run on Linux runners, where a CRLF checkout would produce spurious diffs and
+# CRLF-terminated report output.
+*.py text eol=lf

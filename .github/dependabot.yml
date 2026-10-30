@@ -1,10 +1,16 @@
 # Dependabot (Gate 6) — GitHub Actions only.
 #
-# The Java dependencies are vendored jars (see docs/DEPENDENCIES.md), not a
-# lockfile, so there is nothing for Dependabot to update there. The Gradle
-# files are an unused mirror of the Ant build (debt M2), so they are
-# deliberately excluded to avoid update PRs against dead files. That leaves
-# the Actions pinned in .github/workflows/ci.yml.
+# Dependabot covers the Actions pinned in .github/workflows/ci.yml, which is
+# all it can see here: the Java dependencies are vendored jars (see
+# docs/DEPENDENCIES.md) with no lockfile for it to update, and the Gradle files
+# are an unused mirror of the Ant build (debt M2), so they are deliberately
+# excluded to avoid update PRs against dead files.
+#
+# The vendored jars are covered by the other half of Gate 6 instead:
+# .github/workflows/vendored-dependencies.yml compares every entry in
+# .github/vendored-dependencies.json with Maven Central weekly and maintains a
+# single "Vendored jar review" issue. Add a manifest entry in the same commit
+# as any new or upgraded jar, or it is reported as unmanaged.
 version: 2
 updates:
   - package-ecosystem: github-actions
